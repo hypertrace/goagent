@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"sync/atomic"
 
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/kv"
@@ -38,7 +37,10 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	span.SetAttribute("http.request.body", string(body))
+	if len(body) > 0 {
+		span.SetAttribute("http.request.body", string(body))
+
+	}
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
 	// create http.ResponseWriter interceptor for tracking response size and
@@ -50,10 +52,13 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		code := ri.getStatusCode()
 		sCode := strconv.Itoa(code)
 		span.SetAttribute("http.status_code", sCode)
+		if len(ri.body) > 0 {
+			span.SetAttribute("http.response.body", string(ri.body))
+		}
 		span.End()
 	}()
 
-	h.delegate.ServeHTTP(rw, r)
+	h.delegate.ServeHTTP(ri, r)
 }
 
 // NewHandler returns an instrumented handler
@@ -68,7 +73,7 @@ func NewHandler(h http.Handler) http.Handler {
 // and returned status code.
 type rwInterceptor struct {
 	w          http.ResponseWriter
-	size       uint64
+	body       []byte
 	statusCode int
 }
 
@@ -78,7 +83,7 @@ func (r *rwInterceptor) Header() http.Header {
 
 func (r *rwInterceptor) Write(b []byte) (n int, err error) {
 	n, err = r.w.Write(b)
-	atomic.AddUint64(&r.size, uint64(n))
+	r.body = append(r.body, b...)
 	return
 }
 
@@ -89,10 +94,6 @@ func (r *rwInterceptor) WriteHeader(i int) {
 
 func (r *rwInterceptor) getStatusCode() int {
 	return r.statusCode
-}
-
-func (r *rwInterceptor) getResponseSize() string {
-	return strconv.FormatUint(atomic.LoadUint64(&r.size), 10)
 }
 
 func (r *rwInterceptor) wrap() http.ResponseWriter {

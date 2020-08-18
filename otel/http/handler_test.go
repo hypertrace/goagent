@@ -47,7 +47,8 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 	flusher := initTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write([]byte("test_response_body"))
+		rw.Write([]byte("test_res"))
+		rw.Write([]byte("ponse_body"))
 	})
 
 	ih := NewHandler(h)

@@ -39,7 +39,7 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// only records the body if it is not empty and the content type
 	// header is application/json
-	if len(body) > 0 && isJSONContentType(r.Header) {
+	if len(body) > 0 && isContentTypeInAllowList(r.Header) {
 		span.SetAttribute("http.request.body", string(body))
 
 	}
@@ -54,7 +54,7 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		code := ri.getStatusCode()
 		sCode := strconv.Itoa(code)
 		span.SetAttribute("http.status_code", sCode)
-		if len(ri.body) > 0 && isJSONContentType(ri.Header()) {
+		if len(ri.body) > 0 && isContentTypeInAllowList(ri.Header()) {
 			span.SetAttribute("http.response.body", string(ri.body))
 		}
 
@@ -69,8 +69,21 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.delegate.ServeHTTP(ri, r)
 }
 
-func isJSONContentType(h http.Header) bool {
-	return h.Get("content-type") == "application/json"
+var contentTypeAllowList = []string{
+	"application/json",
+	"application/x-www-form-urlencoded",
+}
+
+func isContentTypeInAllowList(h http.Header) bool {
+	for _, contentType := range contentTypeAllowList {
+		// we look for cases like charset=UTF-8; application/json
+		for _, value := range h.Values("content-type") {
+			if value == contentType {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // NewHandler returns an instrumented handler

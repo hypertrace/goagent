@@ -109,14 +109,14 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 		},
 		"content type headers but empty body": {
 			requestContentType:             "application/json",
-			responseContentType:            "application/json",
+			responseContentType:            "application/x-www-form-urlencoded",
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
 		"content type and body": {
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
-			requestContentType:             "application/json",
+			requestContentType:             "application/x-www-form-urlencoded",
 			responseContentType:            "Application/JSON",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,

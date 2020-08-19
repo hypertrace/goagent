@@ -16,6 +16,10 @@ type handler struct {
 	delegate http.Handler
 }
 
+func isJSONContentType(h http.Header) bool {
+	return h.Get("content-type") == "application/json"
+}
+
 func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	_, span := global.TraceProvider().Tracer("ai.traceable").Start(
 		r.Context(),
@@ -26,9 +30,9 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		),
 	)
 
-	// Set and attribute per each header.
+	// Set an attribute per each request header.
 	for key, value := range r.Header {
-		span.SetAttribute("http.header."+key, value)
+		span.SetAttribute("http.request.header."+key, value)
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -37,7 +41,7 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if len(body) > 0 {
+	if len(body) > 0 && isJSONContentType(r.Header) {
 		span.SetAttribute("http.request.body", string(body))
 
 	}
@@ -52,9 +56,15 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		code := ri.getStatusCode()
 		sCode := strconv.Itoa(code)
 		span.SetAttribute("http.status_code", sCode)
-		if len(ri.body) > 0 {
+		if len(ri.body) > 0 && isJSONContentType(ri.Header()) {
 			span.SetAttribute("http.response.body", string(ri.body))
 		}
+
+		// Set an attribute per each request header.
+		for key, value := range ri.Header() {
+			span.SetAttribute("http.response.header."+key, value)
+		}
+
 		span.End()
 	}()
 

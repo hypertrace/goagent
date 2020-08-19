@@ -117,7 +117,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
 			requestContentType:             "application/json",
-			responseContentType:            "application/json",
+			responseContentType:            "Application/JSON",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,
 		},

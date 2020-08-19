@@ -16,10 +16,6 @@ type handler struct {
 	delegate http.Handler
 }
 
-func isJSONContentType(h http.Header) bool {
-	return h.Get("content-type") == "application/json"
-}
-
 func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	_, span := global.TraceProvider().Tracer("ai.traceable").Start(
 		r.Context(),
@@ -30,7 +26,7 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		),
 	)
 
-	// Set an attribute per each request header.
+	// Sets an attribute per each request header.
 	for key, value := range r.Header {
 		span.SetAttribute("http.request.header."+key, value)
 	}
@@ -41,6 +37,8 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	// only records the body if it is not empty and the content type
+	// header is application/json
 	if len(body) > 0 && isJSONContentType(r.Header) {
 		span.SetAttribute("http.request.body", string(body))
 
@@ -60,7 +58,7 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			span.SetAttribute("http.response.body", string(ri.body))
 		}
 
-		// Set an attribute per each request header.
+		// Sets an attribute per each response header.
 		for key, value := range ri.Header() {
 			span.SetAttribute("http.response.header."+key, value)
 		}
@@ -69,6 +67,10 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}()
 
 	h.delegate.ServeHTTP(ri, r)
+}
+
+func isJSONContentType(h http.Header) bool {
+	return h.Get("content-type") == "application/json"
 }
 
 // NewHandler returns an instrumented handler

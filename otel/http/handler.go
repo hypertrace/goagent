@@ -22,7 +22,7 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		r.Method,
 		trace.WithAttributes(
 			kv.String("http.method", r.Method),
-			kv.String("http.path", r.URL.Path),
+			kv.String("http.url", r.URL.String()),
 		),
 	)
 

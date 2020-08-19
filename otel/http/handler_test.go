@@ -59,7 +59,7 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 
 	ih := NewHandler(h)
 
-	r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader("test_request_body"))
+	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("api_key", "xyz123abc")
 	w := httptest.NewRecorder()
 
@@ -76,8 +76,8 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 			assert.Equal(t, "202", kv.Value.AsString())
 		case "http.method":
 			assert.Equal(t, "GET", kv.Value.AsString())
-		case "http.path":
-			assert.Equal(t, "/foo", kv.Value.AsString())
+		case "http.url":
+			assert.Equal(t, "http://traceable.ai/foo?user_id=1", kv.Value.AsString())
 		case "http.request.header.request_id":
 			assert.Equal(t, "abc123xyz", kv.Value.AsString())
 		case "http.response.header.api_key":

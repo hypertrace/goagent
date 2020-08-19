@@ -22,13 +22,13 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		r.Method,
 		trace.WithAttributes(
 			kv.String("http.method", r.Method),
-			kv.String("http.path", r.URL.Path),
+			kv.String("http.url", r.URL.String()),
 		),
 	)
 
-	// Set and attribute per each header.
+	// Sets an attribute per each request header.
 	for key, value := range r.Header {
-		span.SetAttribute("http.header."+key, value)
+		span.SetAttribute("http.request.header."+key, value)
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -37,7 +37,9 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if len(body) > 0 {
+	// only records the body if it is not empty and the content type
+	// header is application/json
+	if len(body) > 0 && isContentTypeInAllowList(r.Header) {
 		span.SetAttribute("http.request.body", string(body))
 
 	}
@@ -52,13 +54,36 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		code := ri.getStatusCode()
 		sCode := strconv.Itoa(code)
 		span.SetAttribute("http.status_code", sCode)
-		if len(ri.body) > 0 {
+		if len(ri.body) > 0 && isContentTypeInAllowList(ri.Header()) {
 			span.SetAttribute("http.response.body", string(ri.body))
 		}
+
+		// Sets an attribute per each response header.
+		for key, value := range ri.Header() {
+			span.SetAttribute("http.response.header."+key, value)
+		}
+
 		span.End()
 	}()
 
 	h.delegate.ServeHTTP(ri, r)
+}
+
+var contentTypeAllowList = []string{
+	"application/json",
+	"application/x-www-form-urlencoded",
+}
+
+func isContentTypeInAllowList(h http.Header) bool {
+	for _, contentType := range contentTypeAllowList {
+		// we look for cases like charset=UTF-8; application/json
+		for _, value := range h.Values("content-type") {
+			if value == contentType {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // NewHandler returns an instrumented handler

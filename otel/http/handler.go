@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/kv"
+	"go.opentelemetry.io/otel/api/propagation"
 	"go.opentelemetry.io/otel/api/trace"
 )
 
@@ -17,13 +18,16 @@ type handler struct {
 }
 
 func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	_, span := global.TraceProvider().Tracer("ai.traceable").Start(
-		r.Context(),
+	ctx := propagation.ExtractHTTP(r.Context(), global.Propagators(), r.Header)
+
+	ctxWithSpan, span := global.TraceProvider().Tracer("ai.traceable").Start(
+		ctx,
 		r.Method,
 		trace.WithAttributes(
 			kv.String("http.method", r.Method),
 			kv.String("http.url", r.URL.String()),
 		),
+		trace.WithSpanKind(trace.SpanKindServer),
 	)
 
 	// Sets an attribute per each request header.
@@ -66,7 +70,7 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		span.End()
 	}()
 
-	h.delegate.ServeHTTP(ri, r)
+	h.delegate.ServeHTTP(ri, r.WithContext(ctxWithSpan))
 }
 
 var contentTypeAllowList = []string{

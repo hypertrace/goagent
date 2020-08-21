@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option go_package = "github.com/traceableai/goagent/example/grpc/message";
+
+package message;
+
+service Messenger {
+  // Sends a message
+  rpc SendMessage(MessageRequest) returns (MessageReply) {}
+}
+
+message MessageRequest { string subject = 1; }
+
+message MessageReply { bool ack = 1; }

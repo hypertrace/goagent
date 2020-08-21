@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/traceableai/goagent"
-	pb "github.com/traceableai/goagent/examples/grpc/message"
+	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
 	_ "github.com/traceableai/goagent/otel"
 	"google.golang.org/grpc"
 )
 
 const (
-	address        = "localhost:50051"
-	defaultSubject = ""
+	address     = "localhost:50051"
+	defaultName = "world"
 )
 
 func main() {
@@ -32,18 +32,18 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewMessengerClient(conn)
+	c := pb.NewGreeterClient(conn)
 
 	// Contact the server and print out its response.
-	subject := defaultSubject
+	name := defaultName
 	if len(os.Args) > 1 {
-		subject = os.Args[1]
+		name = os.Args[1]
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.SendMessage(ctx, &pb.MessageRequest{Subject: subject})
+	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
-	log.Printf("Ack: %v", r.GetAck())
+	log.Printf("Greeting: %v", r.GetMessage())
 }

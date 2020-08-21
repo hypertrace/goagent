@@ -4,11 +4,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 
 	"github.com/traceableai/goagent"
-	pb "github.com/traceableai/goagent/examples/grpc/message"
+	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
 	_ "github.com/traceableai/goagent/otel"
 	"google.golang.org/grpc"
 )
@@ -19,13 +20,13 @@ const (
 
 // server is used to implement helloworld.GreeterServer.
 type server struct {
-	pb.UnimplementedMessengerServer
+	pb.UnimplementedGreeterServer
 }
 
 // SayHello implements helloworld.GreeterServer
-func (s *server) SendMessage(ctx context.Context, in *pb.MessageRequest) (*pb.MessageReply, error) {
-	log.Printf("Received: %v", in.Subject)
-	return &pb.MessageReply{Ack: true}, nil
+func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	log.Printf("Received: %q", in.Name)
+	return &pb.HelloReply{Message: fmt.Sprintf("hello %s", in.Name)}, nil
 }
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 		grpc.UnaryInterceptor(goagent.Instrumentation.GRPCInterceptor.UnaryServer()),
 		grpc.StreamInterceptor(goagent.Instrumentation.GRPCInterceptor.StreamServer()),
 	)
-	pb.RegisterMessengerServer(s, &server{})
+	pb.RegisterGreeterServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

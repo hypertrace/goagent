@@ -10,7 +10,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/propagation"
 	"go.opentelemetry.io/otel/api/standard"
+	apitrace "go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -42,6 +44,9 @@ func initTracer() func() []*trace.SpanData {
 		log.Fatal(err)
 	}
 	global.SetTraceProvider(tp)
+	global.SetPropagators(propagation.New(
+		propagation.WithExtractors(apitrace.B3{}),
+	))
 	return func() []*trace.SpanData {
 		return exporter.Flush()
 	}
@@ -69,6 +74,7 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 1, len(spans))
 	assert.Equal(t, "GET", spans[0].Name)
+	assert.Equal(t, apitrace.SpanKindServer, spans[0].SpanKind)
 
 	for _, kv := range spans[0].Attributes {
 		switch kv.Key {
@@ -117,7 +123,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
 			requestContentType:             "application/x-www-form-urlencoded",
-			responseContentType:            "Application/JSON",
+			responseContentType:            "Application/JSON; charset=UTF-8",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,
 		},
@@ -161,4 +167,25 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
+	flusher := initTracer()
+
+	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
+
+	ih := NewHandler(h)
+
+	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
+	r.Header.Add("X-B3-TraceId", "1f46165474d11ee5836777d85df2cdab")
+	r.Header.Add("X-B3-SpanId", "1ee58677d8df2cab")
+	r.Header.Add("X-B3-Sampled", "1")
+	w := httptest.NewRecorder()
+
+	ih.ServeHTTP(w, r)
+
+	spans := flusher()
+	assert.Equal(t, 1, len(spans))
+	assert.Equal(t, "1f46165474d11ee5836777d85df2cdab", spans[0].SpanContext.TraceID.String())
+	assert.Equal(t, "1ee58677d8df2cab", spans[0].ParentSpanID.String())
 }

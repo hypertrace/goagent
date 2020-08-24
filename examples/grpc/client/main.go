@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/traceableai/goagent"
 	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
 	_ "github.com/traceableai/goagent/otel"
 	"google.golang.org/grpc"
@@ -25,7 +24,6 @@ func main() {
 		address,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		grpc.WithUnaryInterceptor(goagent.Instrumentation.GRPCInterceptor.UnaryClient()),
 	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -44,5 +42,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
+
 	log.Printf("Greeting: %v", r.GetMessage())
 }

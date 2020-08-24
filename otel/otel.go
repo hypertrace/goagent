@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/traceableai/goagent"
-	"github.com/traceableai/goagent/otel/grpc"
+	"github.com/traceableai/goagent/otel/grpc/server"
 	"github.com/traceableai/goagent/otel/http/server"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/standard"
@@ -18,8 +18,7 @@ import (
 func init() {
 	initTracer()
 	goagent.Instrumentation.HTTPHandler = server.NewHandler
-	goagent.Instrumentation.GRPCInterceptor.UnaryClient = grpc.NewUnaryClientInterceptor
-	goagent.Instrumentation.GRPCInterceptor.UnaryServer = grpc.NewUnaryServerInterceptor
+	goagent.Instrumentation.GRPCInterceptor.UnaryServer = server.NewUnaryServerInterceptor
 }
 
 func initTracer() {

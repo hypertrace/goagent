@@ -1,4 +1,4 @@
-package grpc
+package server
 
 import (
 	"context"
@@ -10,13 +10,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
-
-// NewUnaryClientInterceptor returns a new unary client interceptor
-func NewUnaryClientInterceptor() grpc.UnaryClientInterceptor {
-	return otel.UnaryClientInterceptor(
-		global.TraceProvider().Tracer("ai.traceable"),
-	)
-}
 
 // NewUnaryServerInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON

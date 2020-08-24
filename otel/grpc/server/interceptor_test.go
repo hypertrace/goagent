@@ -1,4 +1,4 @@
-package grpc
+package server
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
+	otelgrpc "github.com/traceableai/goagent/otel/grpc"
 	"github.com/traceableai/goagent/otel/internal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
@@ -19,14 +20,14 @@ const bufSize = 1024 * 1024
 
 var lis *bufconn.Listener
 
-var _ PersonRegistryServer = server{}
+var _ otelgrpc.PersonRegistryServer = server{}
 
 type server struct {
-	*UnimplementedPersonRegistryServer
+	*otelgrpc.UnimplementedPersonRegistryServer
 }
 
-func (server) Register(_ context.Context, _ *RegisterRequest) (*RegisterReply, error) {
-	return &RegisterReply{Id: 1}, nil
+func (server) Register(_ context.Context, _ *otelgrpc.RegisterRequest) (*otelgrpc.RegisterReply, error) {
+	return &otelgrpc.RegisterReply{Id: 1}, nil
 }
 
 func bufDialer(context.Context, string) (net.Conn, error) {
@@ -40,7 +41,7 @@ func TestRegisterPerson(t *testing.T) {
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(NewUnaryServerInterceptor()),
 	)
-	RegisterPersonRegistryServer(s, &server{})
+	otelgrpc.RegisterPersonRegistryServer(s, &server{})
 	go func() {
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Server exited with error: %v", err)
@@ -54,9 +55,9 @@ func TestRegisterPerson(t *testing.T) {
 	}
 	defer conn.Close()
 
-	client := NewPersonRegistryClient(conn)
+	client := otelgrpc.NewPersonRegistryClient(conn)
 
-	_, err = client.Register(ctx, &RegisterRequest{
+	_, err = client.Register(ctx, &otelgrpc.RegisterRequest{
 		Firstname: "Bugs",
 		Lastname:  "Bunny",
 		Birthdate: &timestamp.Timestamp{Seconds: 1},

@@ -19,9 +19,7 @@ func init() {
 	initTracer()
 	goagent.Instrumentation.HTTPHandler = server.NewHandler
 	goagent.Instrumentation.GRPCInterceptor.UnaryClient = grpc.NewUnaryClientInterceptor
-	goagent.Instrumentation.GRPCInterceptor.StreamClient = grpc.NewStreamClientInterceptor
 	goagent.Instrumentation.GRPCInterceptor.UnaryServer = grpc.NewUnaryServerInterceptor
-	goagent.Instrumentation.GRPCInterceptor.StreamServer = grpc.NewStreamServerInterceptor
 }
 
 func initTracer() {

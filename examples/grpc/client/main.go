@@ -26,7 +26,6 @@ func main() {
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(goagent.Instrumentation.GRPCInterceptor.UnaryClient()),
-		grpc.WithStreamInterceptor(goagent.Instrumentation.GRPCInterceptor.StreamClient()),
 	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)

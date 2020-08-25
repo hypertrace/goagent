@@ -10,21 +10,21 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
-	otelgrpc "github.com/traceableai/goagent/otel/grpc"
+	grpcinternal "github.com/traceableai/goagent/otel/grpc/internal"
 	"github.com/traceableai/goagent/otel/internal"
 	otel "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-var _ otelgrpc.PersonRegistryServer = server{}
+var _ grpcinternal.PersonRegistryServer = server{}
 
 type server struct {
-	*otelgrpc.UnimplementedPersonRegistryServer
+	*grpcinternal.UnimplementedPersonRegistryServer
 }
 
-func (server) Register(_ context.Context, _ *otelgrpc.RegisterRequest) (*otelgrpc.RegisterReply, error) {
-	return &otelgrpc.RegisterReply{Id: 1}, nil
+func (server) Register(_ context.Context, _ *grpcinternal.RegisterRequest) (*grpcinternal.RegisterReply, error) {
+	return &grpcinternal.RegisterReply{Id: 1}, nil
 }
 
 func initListener(s *grpc.Server) func(context.Context, string) (net.Conn, error) {
@@ -52,7 +52,7 @@ func TestRegisterPersonSuccess(t *testing.T) {
 	)
 	defer s.Stop()
 
-	otelgrpc.RegisterPersonRegistryServer(s, &server{})
+	grpcinternal.RegisterPersonRegistryServer(s, &server{})
 
 	dialer := initListener(s)
 
@@ -68,9 +68,9 @@ func TestRegisterPersonSuccess(t *testing.T) {
 	}
 	defer conn.Close()
 
-	client := otelgrpc.NewPersonRegistryClient(conn)
+	client := grpcinternal.NewPersonRegistryClient(conn)
 
-	_, err = client.Register(ctx, &otelgrpc.RegisterRequest{
+	_, err = client.Register(ctx, &grpcinternal.RegisterRequest{
 		Firstname: "Bugs",
 		Lastname:  "Bunny",
 		Birthdate: &timestamp.Timestamp{Seconds: 1},
@@ -140,7 +140,7 @@ func BenchmarkRequestResponseBodyMarshaling(b *testing.B) {
 	)
 	defer s.Stop()
 
-	otelgrpc.RegisterPersonRegistryServer(s, &server{})
+	grpcinternal.RegisterPersonRegistryServer(s, &server{})
 
 	dialer := initListener(s)
 
@@ -156,11 +156,11 @@ func BenchmarkRequestResponseBodyMarshaling(b *testing.B) {
 	}
 	defer conn.Close()
 
-	client := otelgrpc.NewPersonRegistryClient(conn)
+	client := grpcinternal.NewPersonRegistryClient(conn)
 
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		_, err = client.Register(ctx, &otelgrpc.RegisterRequest{
+		_, err = client.Register(ctx, &grpcinternal.RegisterRequest{
 			Firstname: "Bugs",
 			Lastname:  "Bunny",
 			Birthdate: &timestamp.Timestamp{Seconds: int64(n)},
@@ -181,7 +181,7 @@ func BenchmarkRequestDefaultInterceptor(b *testing.B) {
 	)
 	defer s.Stop()
 
-	otelgrpc.RegisterPersonRegistryServer(s, &server{})
+	grpcinternal.RegisterPersonRegistryServer(s, &server{})
 
 	dialer := initListener(s)
 
@@ -197,11 +197,11 @@ func BenchmarkRequestDefaultInterceptor(b *testing.B) {
 	}
 	defer conn.Close()
 
-	client := otelgrpc.NewPersonRegistryClient(conn)
+	client := grpcinternal.NewPersonRegistryClient(conn)
 
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		_, err = client.Register(ctx, &otelgrpc.RegisterRequest{
+		_, err = client.Register(ctx, &grpcinternal.RegisterRequest{
 			Firstname: "Bugs",
 			Lastname:  "Bunny",
 			Birthdate: &timestamp.Timestamp{Seconds: int64(n)},

@@ -5,6 +5,7 @@
 ## Running example
 
 ```bash
-make run-example
-http localhost:8081/foo foo=bar
+make run-http-server-example
 ```
+
+and now you can curl the `localhost:8081/foo`.

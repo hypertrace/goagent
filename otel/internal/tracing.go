@@ -14,7 +14,7 @@ import (
 
 // InitTracer initializes the tracer and returns a flusher of the reported
 // span for further inspection
-func InitTracer() func() []*trace.SpanData {
+func InitTracer() (apitrace.Tracer, func() []*trace.SpanData) {
 	exporter := &Recorder{}
 
 	tp, err := sdktrace.NewProvider(
@@ -30,7 +30,7 @@ func InitTracer() func() []*trace.SpanData {
 		propagation.WithExtractors(apitrace.B3{}),
 	))
 
-	return func() []*trace.SpanData {
+	return tp.Tracer("ai.traceable"), func() []*trace.SpanData {
 		return exporter.Flush()
 	}
 }

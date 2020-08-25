@@ -12,7 +12,7 @@ import (
 )
 
 func TestRequestIsSuccessfullyTraced(t *testing.T) {
-	flusher := internal.InitTracer()
+	_, flusher := internal.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte("test_res"))
@@ -52,7 +52,7 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 }
 
 func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
-	flusher := internal.InitTracer()
+	_, flusher := internal.InitTracer()
 
 	tCases := map[string]struct {
 		requestBody                    string
@@ -129,7 +129,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 }
 
 func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
-	flusher := internal.InitTracer()
+	_, flusher := internal.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
 

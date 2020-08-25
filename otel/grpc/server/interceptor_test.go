@@ -12,13 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	otelgrpc "github.com/traceableai/goagent/otel/grpc"
 	"github.com/traceableai/goagent/otel/internal"
+	otel "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
-
-const bufSize = 1024 * 1024
-
-var lis *bufconn.Listener
 
 var _ otelgrpc.PersonRegistryServer = server{}
 
@@ -30,26 +27,42 @@ func (server) Register(_ context.Context, _ *otelgrpc.RegisterRequest) (*otelgrp
 	return &otelgrpc.RegisterReply{Id: 1}, nil
 }
 
-func bufDialer(context.Context, string) (net.Conn, error) {
-	return lis.Dial()
-}
+func initListener(s *grpc.Server) func(context.Context, string) (net.Conn, error) {
+	const bufSize = 1024 * 1024
 
-func TestRegisterPerson(t *testing.T) {
-	flusher := internal.InitTracer()
+	listener := bufconn.Listen(bufSize)
+	bufDialer := func(context.Context, string) (net.Conn, error) {
+		return listener.Dial()
+	}
 
-	lis = bufconn.Listen(bufSize)
-	s := grpc.NewServer(
-		grpc.UnaryInterceptor(NewUnaryServerInterceptor()),
-	)
-	otelgrpc.RegisterPersonRegistryServer(s, &server{})
 	go func() {
-		if err := s.Serve(lis); err != nil {
+		if err := s.Serve(listener); err != nil {
 			log.Fatalf("Server exited with error: %v", err)
 		}
 	}()
 
+	return bufDialer
+}
+
+func TestRegisterPersonSuccess(t *testing.T) {
+	_, flusher := internal.InitTracer()
+
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(NewUnaryServerInterceptor()),
+	)
+	defer s.Stop()
+
+	otelgrpc.RegisterPersonRegistryServer(s, &server{})
+
+	dialer := initListener(s)
+
 	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(
+		ctx,
+		"bufnet",
+		grpc.WithContextDialer(dialer),
+		grpc.WithInsecure(),
+	)
 	if err != nil {
 		t.Fatalf("Failed to dial bufnet: %v", err)
 	}
@@ -73,7 +86,7 @@ func TestRegisterPerson(t *testing.T) {
 	span := spans[0]
 	assert.Equal(t, "helloworld.PersonRegistry/Register", span.Name)
 
-	expectedAssertions := 5
+	expectedAssertions := 5 // one per each tag
 	for _, kv := range span.Attributes {
 		switch kv.Key {
 		case "rpc.system":
@@ -117,4 +130,86 @@ func jsonEqual(a, b string) (bool, error) {
 		return false, err
 	}
 	return reflect.DeepEqual(j2, j), nil
+}
+
+func BenchmarkRequestResponseBodyMarshaling(b *testing.B) {
+	internal.InitTracer()
+
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(NewUnaryServerInterceptor()),
+	)
+	defer s.Stop()
+
+	otelgrpc.RegisterPersonRegistryServer(s, &server{})
+
+	dialer := initListener(s)
+
+	ctx := context.Background()
+	conn, err := grpc.DialContext(
+		ctx,
+		"bufnet",
+		grpc.WithContextDialer(dialer),
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		b.Fatalf("Failed to dial bufnet: %v", err)
+	}
+	defer conn.Close()
+
+	client := otelgrpc.NewPersonRegistryClient(conn)
+
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		_, err = client.Register(ctx, &otelgrpc.RegisterRequest{
+			Firstname: "Bugs",
+			Lastname:  "Bunny",
+			Birthdate: &timestamp.Timestamp{Seconds: int64(n)},
+			Confirmed: false,
+		})
+
+		if err != nil {
+			b.Fatalf("Registration failed: %v", err)
+		}
+	}
+}
+
+func BenchmarkRequestDefaultInterceptor(b *testing.B) {
+	tracer, _ := internal.InitTracer()
+
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(otel.UnaryServerInterceptor(tracer)),
+	)
+	defer s.Stop()
+
+	otelgrpc.RegisterPersonRegistryServer(s, &server{})
+
+	dialer := initListener(s)
+
+	ctx := context.Background()
+	conn, err := grpc.DialContext(
+		ctx,
+		"bufnet",
+		grpc.WithContextDialer(dialer),
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		b.Fatalf("Failed to dial bufnet: %v", err)
+	}
+	defer conn.Close()
+
+	client := otelgrpc.NewPersonRegistryClient(conn)
+
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		_, err = client.Register(ctx, &otelgrpc.RegisterRequest{
+			Firstname: "Bugs",
+			Lastname:  "Bunny",
+			Birthdate: &timestamp.Timestamp{Seconds: int64(n)},
+			Confirmed: false,
+		})
+
+		if err != nil {
+			b.Fatalf("Registration failed: %v", err)
+		}
+	}
 }

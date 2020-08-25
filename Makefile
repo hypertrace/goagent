@@ -1,6 +1,9 @@
 test:
 	go test -v ./...
 
+bench:
+	go test -run=Bench -bench=. ./...
+
 deps:
 	go get -v -t -d ./...
 

@@ -4,11 +4,30 @@
 
 ## Running example
 
+### HTTP
+
+Run
+
 ```bash
 make run-http-server-example
-
-// now you can curl the service in another terminal
-// curl -i localhost:8081/foo
 ```
 
-and now you can curl the `localhost:8081/foo`.
+once the server is running you can call it using curl:
+
+```bash
+curl -i localhost:8081/foo
+```
+
+### GRPC
+
+In terminal 1 run
+
+```bash
+make run-grpc-server-example
+```
+
+In terminal 2 run
+
+```bash
+make run-grpc-client-example
+```

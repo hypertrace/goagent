@@ -19,8 +19,8 @@ func NewUnaryClientInterceptor() grpc.UnaryClientInterceptor {
 
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		// GRPC interceptors do not support request/response parsing so the only way to
-		// achieve it is by wrapping the handler (where we can still access the current
-		// span). Not ideal but best option.
+		// achieve it is by wrapping the invoker (where we can still access the current
+		// span).
 		wrappedInvoker := func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, opts ...grpc.CallOption) error {
 			span := trace.SpanFromContext(ctx)
 			reqBody, err := internal.MarshalMessageableJSON(req)

@@ -50,8 +50,9 @@ func NewUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 // intesting information.
 var marshaler = protojson.MarshalOptions{EmitUnpopulated: true}
 
-func marshalMessageableJSON(req interface{}) ([]byte, error) {
-	if m, ok := req.(proto.Message); ok {
+// marshalMessageableJSON marshals a value that an be cast as proto.Message into JSON.
+func marshalMessageableJSON(messageable interface{}) ([]byte, error) {
+	if m, ok := messageable.(proto.Message); ok {
 		return marshaler.Marshal(m)
 	}
 

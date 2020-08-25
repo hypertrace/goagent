@@ -35,8 +35,9 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer(
-		grpcintrumentation.NewUnaryServerInterceptor(),
+		grpc.UnaryInterceptor(grpcintrumentation.NewUnaryServerInterceptor()),
 	)
+
 	pb.RegisterGreeterServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/traceableai/goagent"
-	"github.com/traceableai/goagent/otel/http"
+	"github.com/traceableai/goagent/otel/http/server"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/standard"
 	"go.opentelemetry.io/otel/exporters/stdout"
@@ -16,7 +16,7 @@ import (
 // TODO: Define settings for the tracer
 func init() {
 	initTracer()
-	goagent.Instrumentation.HTTPHandler = http.NewHandler
+	goagent.Instrumentation.HTTPHandler = server.NewHandler
 }
 
 func initTracer() {

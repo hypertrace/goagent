@@ -4,5 +4,5 @@ test:
 deps:
 	go get -v -t -d ./...
 
-run-example:
-	go run example/main.go
+run-http-server-example:
+	go run example/http/server/main.go

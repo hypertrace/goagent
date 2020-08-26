@@ -1,59 +1,18 @@
 package server
 
 import (
-	"context"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/propagation"
-	"go.opentelemetry.io/otel/api/standard"
+	"github.com/traceableai/goagent/otel/internal"
 	apitrace "go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/sdk/export/trace"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-type recorder struct {
-	spans []*trace.SpanData
-}
-
-// ExportSpan records a span
-func (r *recorder) ExportSpan(ctx context.Context, s *trace.SpanData) {
-	r.spans = append(r.spans, s)
-}
-
-// Flush returns the current recorded spans and reset the recordings
-func (r *recorder) Flush() []*trace.SpanData {
-	spans := r.spans
-	r.spans = nil
-	return spans
-}
-
-func initTracer() func() []*trace.SpanData {
-	exporter := &recorder{}
-	tp, err := sdktrace.NewProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
-		sdktrace.WithSyncer(exporter),
-		sdktrace.WithResource(resource.New(standard.ServiceNameKey.String("ExampleService"))))
-	if err != nil {
-		log.Fatal(err)
-	}
-	global.SetTraceProvider(tp)
-	global.SetPropagators(propagation.New(
-		propagation.WithExtractors(apitrace.B3{}),
-	))
-	return func() []*trace.SpanData {
-		return exporter.Flush()
-	}
-}
-
 func TestRequestIsSuccessfullyTraced(t *testing.T) {
-	flusher := initTracer()
+	_, flusher := internal.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte("test_res"))
@@ -93,7 +52,7 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 }
 
 func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
-	flusher := initTracer()
+	_, flusher := internal.InitTracer()
 
 	tCases := map[string]struct {
 		requestBody                    string
@@ -170,7 +129,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 }
 
 func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
-	flusher := initTracer()
+	_, flusher := internal.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
 

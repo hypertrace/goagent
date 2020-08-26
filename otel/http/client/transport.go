@@ -16,8 +16,14 @@ type roundTripper struct {
 }
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// notice by the time
 	span := trace.SpanFromContext(req.Context())
+	if s, isNoop := span.(trace.NoopSpan); isNoop {
+		// isNoop means either the span is not sampled or there was no span
+		// in the request context which means this RoundTripper is not used
+		// inside an instrumented transport, hence we just invoke the delegate
+		// round tripper.
+		return rt.delegate.RoundTrip(req)
+	}
 
 	for key, value := range req.Header {
 		span.SetAttribute("http.request.header."+key, value)

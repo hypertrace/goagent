@@ -104,11 +104,8 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 
 			ih.ServeHTTP(w, r)
 
-			spans := flusher()
-			assert.Equal(t, 1, len(spans))
-			assert.Equal(t, "GET", spans[0].Name)
-
-			for _, kv := range spans[0].Attributes {
+			span := flusher()[0]
+			for _, kv := range span.Attributes {
 				switch kv.Key {
 				case "http.request.body":
 					if tCase.shouldHaveRecordedRequestBody {

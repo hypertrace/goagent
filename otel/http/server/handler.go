@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/traceableai/goagent/otel/http/internal"
 	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/kv"
 	"go.opentelemetry.io/otel/api/propagation"
 	"go.opentelemetry.io/otel/api/trace"
 )
@@ -23,31 +23,34 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	ctxWithSpan, span := global.TraceProvider().Tracer("ai.traceable").Start(
 		ctx,
 		r.Method,
-		trace.WithAttributes(
-			kv.String("http.method", r.Method),
-			kv.String("http.url", r.URL.String()),
-		),
 		trace.WithSpanKind(trace.SpanKindServer),
 	)
+
+	// It is better to declare the tags outside the Start function due to breaking
+	// changes introduced in v0.11
+	span.SetAttribute("http.method", r.Method)
+	span.SetAttribute("http.url", r.URL.String())
 
 	// Sets an attribute per each request header.
 	for key, value := range r.Header {
 		span.SetAttribute("http.request.header."+key, value)
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
-	defer r.Body.Close()
+	if internal.IsContentTypeInAllowList(r.Header) {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return
+		}
+		defer r.Body.Close()
 
-	// only records the body if it is not empty and the content type
-	// header is application/json
-	if len(body) > 0 && isContentTypeInAllowList(r.Header) {
-		span.SetAttribute("http.request.body", string(body))
+		// Only records the body if it is not empty and the content type
+		// header is not streamable
+		if len(body) > 0 {
+			span.SetAttribute("http.request.body", string(body))
 
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
 	// create http.ResponseWriter interceptor for tracking response size and
 	// status code.
@@ -58,7 +61,7 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		code := ri.getStatusCode()
 		sCode := strconv.Itoa(code)
 		span.SetAttribute("http.status_code", sCode)
-		if len(ri.body) > 0 && isContentTypeInAllowList(ri.Header()) {
+		if len(ri.body) > 0 && internal.IsContentTypeInAllowList(ri.Header()) {
 			span.SetAttribute("http.response.body", string(ri.body))
 		}
 
@@ -71,23 +74,6 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}()
 
 	h.delegate.ServeHTTP(ri, r.WithContext(ctxWithSpan))
-}
-
-var contentTypeAllowList = []string{
-	"application/json",
-	"application/x-www-form-urlencoded",
-}
-
-func isContentTypeInAllowList(h http.Header) bool {
-	for _, contentType := range contentTypeAllowList {
-		// we look for cases like charset=UTF-8; application/json
-		for _, value := range h.Values("content-type") {
-			if value == contentType {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // NewHandler returns an instrumented handler

@@ -37,6 +37,9 @@ func TestTransportRecordsRequestAndResponseBody(t *testing.T) {
 	req.Header.Set("api_key", "abc123xyz")
 	req.Header.Set("content-type", "application/json")
 	res, err := client.Do(req)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
 	assert.Equal(t, 202, res.StatusCode)
 
@@ -116,6 +119,9 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 			req.Header.Set("request_id", "abc123xyz")
 			req.Header.Set("content-type", tCase.requestContentType)
 			res, err := client.Do(req)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
 
 			assert.Equal(t, 202, res.StatusCode)
 

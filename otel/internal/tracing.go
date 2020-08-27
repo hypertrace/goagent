@@ -13,7 +13,8 @@ import (
 )
 
 // InitTracer initializes the tracer and returns a flusher of the reported
-// span for further inspection
+// span for further inspection. It's main purpose is to declare a tracer
+// for TESTING.
 func InitTracer() (apitrace.Tracer, func() []*trace.SpanData) {
 	exporter := &Recorder{}
 

@@ -1,20 +1,24 @@
 package internal
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 var contentTypeAllowList = []string{
 	"application/json",
 	"application/x-www-form-urlencoded",
 }
 
-// IsContentTypeInAllowList checks if the body is meant
+// ShouldRecordBodyOfContentType checks if the body is meant
 // to be recorded based on the content-type and the fact that body is
 // not streamed.
-func IsContentTypeInAllowList(h http.Header) bool {
+func ShouldRecordBodyOfContentType(h http.Header) bool {
 	for _, contentType := range contentTypeAllowList {
 		// we look for cases like charset=UTF-8; application/json
 		for _, value := range h.Values("content-type") {
-			if value == contentType {
+			// type and subtype are case insensitive
+			if strings.ToLower(value) == strings.ToLower(contentType) {
 				return true
 			}
 		}

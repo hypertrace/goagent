@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	internal "github.com/traceableai/goagent/otel/internal"
+	"github.com/traceableai/goagent/otel/internal"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/propagation"
@@ -20,10 +20,10 @@ func TestTransportRecordsRequestAndResponseBody(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("content-type", "application/json")
+		rw.Header().Set("request_id", "xyz123abc")
 		rw.WriteHeader(202)
 		rw.Write([]byte(`{"id":123}`))
-		rw.Header().Set("content-type", "application/json")
-		rw.Header().Set("response_id", "xyz123abc")
 	}))
 	defer srv.Close()
 
@@ -34,7 +34,7 @@ func TestTransportRecordsRequestAndResponseBody(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("POST", srv.URL, bytes.NewBufferString(`{"name":"Jacinto"}`))
-	req.Header.Set("request_id", "abc123xyz")
+	req.Header.Set("api_key", "abc123xyz")
 	req.Header.Set("content-type", "application/json")
 	res, err := client.Do(req)
 
@@ -50,20 +50,13 @@ func TestTransportRecordsRequestAndResponseBody(t *testing.T) {
 	span := spans[0]
 	assert.Equal(t, span.Name, "POST")
 	assert.Equal(t, span.SpanKind, apitrace.SpanKindClient)
-	for _, kv := range span.Attributes {
-		switch kv.Key {
-		case "http.method":
-			assert.Equal(t, "POST", kv.Value.AsString())
-		case "http.request.header.request_id":
-			assert.Equal(t, "abc123xyz", kv.Value.AsString())
-		case "http.request.header.response_id":
-			assert.Equal(t, "xyz123abc", kv.Value.AsString())
-		case "http.request.body":
-			assert.Equal(t, `{"name":"Jacinto"}`, kv.Value.AsString())
-		case "http.response.body":
-			assert.Equal(t, `{"id":123}`, kv.Value.AsString())
-		}
-	}
+
+	attrs := internal.LookupAttributes(span.Attributes)
+	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
+	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.Api_key").AsString())
+	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
+	assert.Equal(t, "xyz123abc", attrs.Get("http.response.header.Request_id").AsString())
+	assert.Equal(t, `{"id":123}`, attrs.Get("http.response.body").AsString())
 }
 
 func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
@@ -97,7 +90,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
 			requestContentType:             "application/x-www-form-urlencoded",
-			responseContentType:            "Application/JSON; charset=UTF-8",
+			responseContentType:            "Application/JSON",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,
 		},
@@ -106,9 +99,10 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 	for name, tCase := range tCases {
 		t.Run(name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				rw.Header().Add("Content-Type", "charset=UTF-8")
+				rw.Header().Add("Content-Type", tCase.responseContentType)
 				rw.WriteHeader(202)
 				rw.Write([]byte(tCase.responseBody))
-				rw.Header().Add("Content-Type", tCase.responseContentType)
 			}))
 			defer srv.Close()
 
@@ -129,21 +123,18 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 			assert.Nil(t, err)
 
 			span := flusher()[0]
-			for _, kv := range span.Attributes {
-				switch kv.Key {
-				case "http.request.body":
-					if tCase.shouldHaveRecordedRequestBody {
-						assert.Equal(t, tCase.requestBody, kv.Value.AsString())
-					} else {
-						t.Errorf("unexpected request body recording")
-					}
-				case "http.response.body":
-					if tCase.shouldHaveRecordedResponseBody {
-						assert.Equal(t, tCase.responseBody, kv.Value.AsString())
-					} else {
-						t.Errorf("unexpected response body recording")
-					}
-				}
+
+			var attrs internal.LookupAttributes = internal.LookupAttributes(span.Attributes)
+			if tCase.shouldHaveRecordedRequestBody {
+				assert.Equal(t, tCase.requestBody, attrs.Get("http.request.body").AsString())
+			} else {
+				assert.Equal(t, "", attrs.Get("http.request.body").AsString())
+			}
+
+			if tCase.shouldHaveRecordedResponseBody {
+				assert.Equal(t, tCase.responseBody, attrs.Get("http.response.body").AsString())
+			} else {
+				assert.Equal(t, "", attrs.Get("http.response.body").AsString())
 			}
 		})
 	}

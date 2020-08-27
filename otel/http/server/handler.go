@@ -27,16 +27,16 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	)
 
 	// It is better to declare the tags outside the Start function due to breaking
-	// changes introduced in v0.11
+	// changes introduced by OTel in v0.11
 	span.SetAttribute("http.method", r.Method)
 	span.SetAttribute("http.url", r.URL.String())
 
 	// Sets an attribute per each request header.
 	for key, value := range r.Header {
-		span.SetAttribute("http.request.header."+key, value)
+		span.SetAttribute("http.request.header."+key, value[0])
 	}
 
-	if internal.IsContentTypeInAllowList(r.Header) {
+	if internal.ShouldRecordBodyOfContentType(r.Header) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return
@@ -61,13 +61,13 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		code := ri.getStatusCode()
 		sCode := strconv.Itoa(code)
 		span.SetAttribute("http.status_code", sCode)
-		if len(ri.body) > 0 && internal.IsContentTypeInAllowList(ri.Header()) {
+		if len(ri.body) > 0 && internal.ShouldRecordBodyOfContentType(ri.Header()) {
 			span.SetAttribute("http.response.body", string(ri.body))
 		}
 
 		// Sets an attribute per each response header.
 		for key, value := range ri.Header() {
-			span.SetAttribute("http.response.header."+key, value)
+			span.SetAttribute("http.response.header."+key, value[0])
 		}
 
 		span.End()

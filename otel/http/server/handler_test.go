@@ -15,10 +15,10 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write([]byte("test_res"))
-		rw.Write([]byte("ponse_body"))
 		rw.Header().Add("request_id", "abc123xyz")
 		rw.WriteHeader(202)
+		rw.Write([]byte("test_res"))
+		rw.Write([]byte("ponse_body"))
 	})
 
 	ih := NewHandler(h)
@@ -32,23 +32,16 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 
 	spans := flusher()
 	assert.Equal(t, 1, len(spans))
+
 	assert.Equal(t, "GET", spans[0].Name)
 	assert.Equal(t, apitrace.SpanKindServer, spans[0].SpanKind)
 
-	for _, kv := range spans[0].Attributes {
-		switch kv.Key {
-		case "http.status_code":
-			assert.Equal(t, "202", kv.Value.AsString())
-		case "http.method":
-			assert.Equal(t, "GET", kv.Value.AsString())
-		case "http.url":
-			assert.Equal(t, "http://traceable.ai/foo?user_id=1", kv.Value.AsString())
-		case "http.request.header.request_id":
-			assert.Equal(t, "abc123xyz", kv.Value.AsString())
-		case "http.response.header.api_key":
-			assert.Equal(t, "xyz123abc", kv.Value.AsString())
-		}
-	}
+	attrs := internal.LookupAttributes(spans[0].Attributes)
+	assert.Equal(t, "202", attrs.Get("http.status_code").AsString())
+	assert.Equal(t, "GET", attrs.Get("http.method").AsString())
+	assert.Equal(t, "http://traceable.ai/foo?user_id=1", attrs.Get("http.url").AsString())
+	assert.Equal(t, "xyz123abc", attrs.Get("http.request.header.Api_key").AsString())
+	assert.Equal(t, "abc123xyz", attrs.Get("http.response.header.Request_id").AsString())
 }
 
 func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
@@ -82,7 +75,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
 			requestContentType:             "application/x-www-form-urlencoded",
-			responseContentType:            "Application/JSON; charset=UTF-8",
+			responseContentType:            "Application/JSON",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,
 		},
@@ -91,8 +84,9 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 	for name, tCase := range tCases {
 		t.Run(name, func(t *testing.T) {
 			h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				rw.Write([]byte(tCase.responseBody))
+				rw.Header().Add("Content-Type", "charset=UTF-8")
 				rw.Header().Add("Content-Type", tCase.responseContentType)
+				rw.Write([]byte(tCase.responseBody))
 			})
 
 			ih := NewHandler(h)
@@ -105,21 +99,14 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 			ih.ServeHTTP(w, r)
 
 			span := flusher()[0]
-			for _, kv := range span.Attributes {
-				switch kv.Key {
-				case "http.request.body":
-					if tCase.shouldHaveRecordedRequestBody {
-						assert.Equal(t, tCase.requestBody, kv.Value.AsString())
-					} else {
-						t.Errorf("unexpected request body recording")
-					}
-				case "http.response.body":
-					if tCase.shouldHaveRecordedResponseBody {
-						assert.Equal(t, tCase.responseBody, kv.Value.AsString())
-					} else {
-						t.Errorf("unexpected response body recording")
-					}
-				}
+			attrs := internal.LookupAttributes(span.Attributes)
+
+			if tCase.shouldHaveRecordedRequestBody {
+				assert.Equal(t, tCase.requestBody, attrs.Get("http.request.body").AsString())
+			}
+
+			if tCase.shouldHaveRecordedResponseBody {
+				assert.Equal(t, tCase.responseBody, attrs.Get("http.response.body").AsString())
 			}
 		})
 	}

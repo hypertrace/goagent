@@ -32,3 +32,9 @@ run-grpc-client-example:
 
 run-grpc-server-example:
 	go run examples/grpc/server/main.go
+
+build-examples:
+	go build -o ./examples/output/http_client examples/http/client/main.go
+	go build -o ./examples/output/http_server examples/http/server/main.go
+	go build -o ./examples/output/grpc_client examples/grpc/client/main.go
+	go build -o ./examples/output/grpc_server examples/grpc/server/main.go

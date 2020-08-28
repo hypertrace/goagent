@@ -20,6 +20,7 @@ jobs:
       - run: CGO_ENABLED=0 go test -coverprofile=coverage.txt -v ./...
       - codecov/upload:
           file: ./coverage.txt
+      - run: make build-examples
 
 workflows:
   version: 2

@@ -1,11 +1,25 @@
+.DEFAULT_GOAL := test
+
+.PHONY: test
 test:
-	go test -v ./...
+	go test -v -race -cover ./...
 
+.PHONY: bench
 bench:
-	go test -run=Bench -bench=. ./...
+	go test -v -run - -bench . -benchmem ./...
 
+.PHONY: lint
+lint:
+	@echo "Running linters..."
+	@golangci-lint run ./... && echo "Done."
+
+.PHONY: deps
 deps:
-	go get -v -t -d ./...
+	@go get -v -t -d ./...
+
+.PHONY: ci-deps
+ci-deps:
+	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 run-http-server-example:
 	go run example/http/server/main.go

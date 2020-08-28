@@ -1,21 +1,21 @@
 # goagent
 
-`goagent` provides a set of features that allows the user to instrument applications.
+`goagent` provides a set of complementary features that improves OpenTelemetry instrumentation and data collection.
 
 ## Running example
 
 ### HTTP
 
-Run
+In terminal 1 run
 
 ```bash
 make run-http-server-example
 ```
 
-once the server is running you can call it using curl:
+In terminal 2 run
 
 ```bash
-curl -i localhost:8081/foo
+make run-http-client-example
 ```
 
 ### GRPC

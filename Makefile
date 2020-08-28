@@ -21,8 +21,11 @@ deps:
 ci-deps:
 	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
+run-http-client-example:
+	go run examples/http/client/main.go
+
 run-http-server-example:
-	go run example/http/server/main.go
+	go run examples/http/server/main.go
 
 run-grpc-client-example:
 	go run examples/grpc/client/main.go

@@ -3,9 +3,6 @@ package otel
 import (
 	"log"
 
-	"github.com/traceableai/goagent"
-	grpcserver "github.com/traceableai/goagent/otel/grpc/server"
-	httpserver "github.com/traceableai/goagent/otel/http/server"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/exporters/stdout"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -13,14 +10,7 @@ import (
 	"go.opentelemetry.io/otel/semconv"
 )
 
-// init loads implicitly the instrumentation elements and initializes the tracer
-// TODO: Define settings for the tracer
-func init() {
-	initTracer()
-	goagent.Instrumentation.HTTPHandler = httpserver.NewHandler
-	goagent.Instrumentation.GRPCInterceptor.UnaryServer = grpcserver.NewUnaryServerInterceptor
-}
-
+// TODO: remove it
 func initTracer() {
 	// Create stdout exporter to be able to retrieve
 	// the collected spans.

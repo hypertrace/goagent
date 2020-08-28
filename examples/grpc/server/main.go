@@ -9,8 +9,7 @@ import (
 	"net"
 
 	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
-	_ "github.com/traceableai/goagent/otel"
-	grpcintrumentation "github.com/traceableai/goagent/otel/grpc/server"
+	traceablegrpc "github.com/traceableai/goagent/otel/grpc"
 	"google.golang.org/grpc"
 )
 
@@ -35,7 +34,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(grpcintrumentation.NewUnaryServerInterceptor()),
+		grpc.UnaryInterceptor(traceablegrpc.NewUnaryServerInterceptor()),
 	)
 
 	pb.RegisterGreeterServer(s, &server{})

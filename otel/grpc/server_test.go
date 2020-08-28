@@ -1,11 +1,7 @@
-package server
+package grpc
 
 import (
 	"context"
-	"encoding/json"
-	"log"
-	"net"
-	reflect "reflect"
 	"testing"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -14,37 +10,9 @@ import (
 	"github.com/traceableai/goagent/otel/internal"
 	otel "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
 )
 
-var _ grpcinternal.PersonRegistryServer = server{}
-
-type server struct {
-	*grpcinternal.UnimplementedPersonRegistryServer
-}
-
-func (server) Register(_ context.Context, _ *grpcinternal.RegisterRequest) (*grpcinternal.RegisterReply, error) {
-	return &grpcinternal.RegisterReply{Id: 1}, nil
-}
-
-func initListener(s *grpc.Server) func(context.Context, string) (net.Conn, error) {
-	const bufSize = 1024 * 1024
-
-	listener := bufconn.Listen(bufSize)
-	bufDialer := func(context.Context, string) (net.Conn, error) {
-		return listener.Dial()
-	}
-
-	go func() {
-		if err := s.Serve(listener); err != nil {
-			log.Fatalf("Server exited with error: %v", err)
-		}
-	}()
-
-	return bufDialer
-}
-
-func TestRegisterPersonSuccess(t *testing.T) {
+func TestServerRegisterPersonSuccess(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	s := grpc.NewServer(
@@ -54,7 +22,7 @@ func TestRegisterPersonSuccess(t *testing.T) {
 
 	grpcinternal.RegisterPersonRegistryServer(s, &server{})
 
-	dialer := initListener(s)
+	dialer := createDialer(s)
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(
@@ -120,19 +88,7 @@ func TestRegisterPersonSuccess(t *testing.T) {
 	}
 }
 
-// jsonEqual compares the JSON from two strings.
-func jsonEqual(a, b string) (bool, error) {
-	var j, j2 interface{}
-	if err := json.Unmarshal([]byte(a), &j); err != nil {
-		return false, err
-	}
-	if err := json.Unmarshal([]byte(b), &j2); err != nil {
-		return false, err
-	}
-	return reflect.DeepEqual(j2, j), nil
-}
-
-func BenchmarkRequestResponseBodyMarshaling(b *testing.B) {
+func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 	internal.InitTracer()
 
 	s := grpc.NewServer(
@@ -142,7 +98,7 @@ func BenchmarkRequestResponseBodyMarshaling(b *testing.B) {
 
 	grpcinternal.RegisterPersonRegistryServer(s, &server{})
 
-	dialer := initListener(s)
+	dialer := createDialer(s)
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(
@@ -173,7 +129,7 @@ func BenchmarkRequestResponseBodyMarshaling(b *testing.B) {
 	}
 }
 
-func BenchmarkRequestDefaultInterceptor(b *testing.B) {
+func BenchmarkServerRequestDefaultInterceptor(b *testing.B) {
 	tracer, _ := internal.InitTracer()
 
 	s := grpc.NewServer(
@@ -183,7 +139,7 @@ func BenchmarkRequestDefaultInterceptor(b *testing.B) {
 
 	grpcinternal.RegisterPersonRegistryServer(s, &server{})
 
-	dialer := initListener(s)
+	dialer := createDialer(s)
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(

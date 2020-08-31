@@ -17,6 +17,13 @@ lint:
 deps:
 	@go get -v -t -d ./...
 
+config-deps:
+	@go get github.com/atombender/go-jsonschema/...
+	@go install github.com/atombender/go-jsonschema/cmd/gojsonschema
+
+generate-config:
+	@gojsonschema -p config config/schemas/agent-config.json > config/config.go
+
 .PHONY: ci-deps
 ci-deps:
 	@go get github.com/golangci/golangci-lint/cmd/golangci-lint

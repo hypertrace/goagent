@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Traceable/agent-config/schema/traceable-config.json",
+  "definitions": {
+    "traceable": {
+      "type": "object",
+      "properties": {
+        "sidecar_injector": {
+          "$ref": "./sidecar-injector-config.json"
+        },
+        "k8s_watcher": {
+          "$ref": "./k8s-watcher-config.json"
+        },
+        "agent_attacher": {
+          "$ref": "./agent-attacher-config.json"
+        },
+        "instrumentation_agent": {
+          "$ref": "./instrumentation-agent-config.json"
+        }
+      }
+    }
+  }
+}

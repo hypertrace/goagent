@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Traceable/agent-config/schema/agent-attacher-config.json",
+  "type": "object",
+  "required": [
+    "reporting"
+  ],
+  "properties": {
+    "logging": {
+      "$ref": "./agent-config.json#/definitions/logging",
+      "type": "object"
+    },
+    "reporting": {
+      "$ref": "./agent-config.json#/definitions/reporting",
+      "type": "object"
+    },
+    "agents_path": {
+      "type": "string"
+    },
+    "instrumentation_agent": {
+      "$ref": "./instrumentation-agent-config.json"
+    },
+    "kubernetes": {
+      "type": "object",
+      "properties": {
+        "in_cluster": {
+          "type": "boolean",
+          "default": true
+        },
+        "auto_instrument_services": {
+          "type": "boolean",
+          "default": true
+        },
+        "instrumentation_agent": {
+          "$ref": "./instrumentation-agent-config.json"
+        },
+        "namespaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/container_config"
+          }
+        },
+        "pods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/container_config"
+          }
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/container_config"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "container_config": {
+      "type": "object",
+      "properties": {
+        "label_selector": {
+          "type": "string"
+        },
+        "field_selector": {
+          "type": "string"
+        },
+        "instrumentation_agent": {
+          "$ref": "./instrumentation-agent-config.json"
+        }
+      }
+    }
+  }
+}

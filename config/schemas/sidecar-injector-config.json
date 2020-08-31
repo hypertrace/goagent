@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Traceable/agent-config/schema/sidecar-injector-config.json",
+  "type": "object",
+  "properties": {
+    "logging": {
+      "$ref": "./agent-config.json#/definitions/logging",
+      "type": "object"
+    },
+    "port": {
+      "type": "integer",
+      "default": 443
+    },
+    "cert_file": {
+      "type": "string",
+      "default": "/certs/tls.crt"
+    },
+    "key_file": {
+      "type": "string",
+      "default": "/certs/tls.key"
+    },
+    "container_init_template": {
+      "type": "string",
+      "default": "/etc/traceable/sidecar-init-container.tmpl.yaml"
+    },
+    "container_template": {
+      "type": "string",
+      "default": "/etc/traceable/sidecar-container.tmpl.yaml"
+    },
+    "regcred_template": {
+      "type": "string",
+      "default": "/etc/traceable/regcred-secrets.tmpl.yaml"
+    },
+    "image_pull_secrets": {
+      "type": "string"
+    },
+    "proxy": {
+      "type": "object",
+      "properties": {
+        "envoy_path": {
+          "type": "string",
+          "default": "/usr/local/bin/envoy"
+        },
+        "envoy_template": {
+          "type": "string",
+          "default": "/etc/traceable/envoy.tmpl.yaml"
+        },
+        "collector_address": {
+          "type": "string",
+          "default": "collector.traceableai:55678"
+        },
+        "port": {
+          "type": "integer",
+          "default": 15020
+        },
+        "admin_port": {
+          "type": "integer",
+          "default": 15000
+        },
+        "inbound_interception_mode": {
+          "type": "string",
+          "default": "TPROXY"
+        },
+        "inbound_capture_port": {
+          "type": "integer",
+          "default": 15006
+        },
+        "outbound_capture_port": {
+          "type": "integer",
+          "default": 15001
+        },
+        "inbound_exclude_ports": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "outbound_exclude_ports": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "trace_context": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "monitoring": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  }
+}

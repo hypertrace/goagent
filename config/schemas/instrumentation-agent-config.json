@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Traceable/agent-config/schema/instrumentation-agent-config.json",
+  "type": "object",
+  "properties": {
+    "logging": {
+      "$ref": "./agent-config.json#/definitions/logging",
+      "type": "object"
+    },
+    "reporting": {
+      "$ref": "./agent-config.json#/definitions/reporting",
+      "type": "object"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "service_name": {
+      "type": "string"
+    },
+    "disable_capture_of_attributes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "additional_span_attributes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "java_agent": {
+      "type": "object",
+      "properties": {
+        "jattach": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "opa": {
+      "$ref": "./agent-config.json#/definitions/opa",
+      "type": "object"
+    }
+  }
+}

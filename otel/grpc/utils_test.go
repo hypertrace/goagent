@@ -15,11 +15,17 @@ import (
 var _ internal.PersonRegistryServer = server{}
 
 type server struct {
+	reply *internal.RegisterReply
+	err   error
 	*internal.UnimplementedPersonRegistryServer
 }
 
-func (server) Register(_ context.Context, _ *internal.RegisterRequest) (*internal.RegisterReply, error) {
-	return &internal.RegisterReply{Id: 1}, nil
+func (s server) Register(_ context.Context, _ *internal.RegisterRequest) (*internal.RegisterReply, error) {
+	if s.reply == nil && s.err == nil {
+		log.Fatal("missing reply or error in server")
+	}
+
+	return s.reply, s.err
 }
 
 // createDialer creates a connection to be used as context dialer in GRPC

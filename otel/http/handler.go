@@ -1,15 +1,11 @@
-package server
+package http
 
 import (
 	"bytes"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
-	"github.com/traceableai/goagent/otel/http/internal"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/propagation"
 	"go.opentelemetry.io/otel/api/trace"
 )
 
@@ -17,26 +13,24 @@ type handler struct {
 	delegate http.Handler
 }
 
-func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	ctx := propagation.ExtractHTTP(r.Context(), global.Propagators(), r.Header)
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	span := trace.SpanFromContext(r.Context())
+	if _, isNoop := span.(trace.NoopSpan); isNoop {
+		// isNoop means either the span is not sampled or there was no span
+		// in the request context which means this Handler is not used
+		// inside an instrumented Handler, hence we just invoke the delegate
+		// round tripper.
+		h.delegate.ServeHTTP(w, r)
+		return
+	}
 
-	ctxWithSpan, span := global.TraceProvider().Tracer("ai.traceable").Start(
-		ctx,
-		r.Method,
-		trace.WithSpanKind(trace.SpanKindServer),
-	)
-
-	// It is better to declare the tags outside the Start function due to breaking
-	// changes introduced by OTel in v0.11
-	span.SetAttribute("http.method", r.Method)
 	span.SetAttribute("http.url", r.URL.String())
-
 	// Sets an attribute per each request header.
 	for key, value := range r.Header {
 		span.SetAttribute("http.request.header."+key, value[0])
 	}
 
-	if internal.ShouldRecordBodyOfContentType(r.Header) {
+	if shouldRecordBodyOfContentType(r.Header) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return
@@ -54,31 +48,29 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// create http.ResponseWriter interceptor for tracking response size and
 	// status code.
-	ri := &rwInterceptor{w: rw, statusCode: 200}
+	wi := &rwInterceptor{w: w, statusCode: 200}
 
 	// tag found response size and status code on exit
 	defer func() {
-		code := ri.getStatusCode()
-		sCode := strconv.Itoa(code)
-		span.SetAttribute("http.status_code", sCode)
-		if len(ri.body) > 0 && internal.ShouldRecordBodyOfContentType(ri.Header()) {
-			span.SetAttribute("http.response.body", string(ri.body))
+		if len(wi.body) > 0 && shouldRecordBodyOfContentType(wi.Header()) {
+			span.SetAttribute("http.response.body", string(wi.body))
 		}
 
 		// Sets an attribute per each response header.
-		for key, value := range ri.Header() {
+		for key, value := range wi.Header() {
 			span.SetAttribute("http.response.header."+key, value[0])
 		}
 
 		span.End()
 	}()
 
-	h.delegate.ServeHTTP(ri, r.WithContext(ctxWithSpan))
+	h.delegate.ServeHTTP(wi, r)
 }
 
-// NewHandler returns an instrumented handler
-func NewHandler(h http.Handler) http.Handler {
-	return &handler{delegate: h}
+// WrapHandler returns a new round tripper instrumented that relies on the
+// needs to be used with OTel instrumentation.
+func WrapHandler(delegate http.Handler) http.Handler {
+	return &handler{delegate}
 }
 
 // Copied from Zipkin Go

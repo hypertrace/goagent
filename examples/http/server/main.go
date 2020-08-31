@@ -10,14 +10,17 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/traceableai/goagent"
-	_ "github.com/traceableai/goagent/otel"
+	traceablehttp "github.com/traceableai/goagent/otel/http"
+	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
 func main() {
 	r := mux.NewRouter()
-	r.Handle("/foo", goagent.Instrumentation.HTTPHandler(
-		http.HandlerFunc(FooHandler),
+	r.Handle("/foo", otelhttp.NewHandler(
+		traceablehttp.WrapHandler(
+			http.HandlerFunc(fooHandler),
+		),
+		"/foo",
 	))
 	log.Fatal(http.ListenAndServe(":8081", r))
 }
@@ -26,7 +29,7 @@ type person struct {
 	Name string `json:"name"`
 }
 
-func FooHandler(w http.ResponseWriter, r *http.Request) {
+func fooHandler(w http.ResponseWriter, r *http.Request) {
 	sBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

@@ -10,7 +10,7 @@ import (
 	"log"
 	"net/http"
 
-	traceablehttp "github.com/traceableai/goagent/otel/http/client"
+	traceablehttp "github.com/traceableai/goagent/otel/http"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
@@ -21,7 +21,7 @@ type message struct {
 func main() {
 	client := http.Client{
 		Transport: otelhttp.NewTransport(
-			traceablehttp.Wrap(http.DefaultTransport),
+			traceablehttp.WrapTransport(http.DefaultTransport),
 		),
 	}
 

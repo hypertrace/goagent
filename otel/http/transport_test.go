@@ -1,9 +1,11 @@
-package client
+package http
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +18,7 @@ import (
 	apitrace "go.opentelemetry.io/otel/api/trace"
 )
 
-func TestTransportRecordsRequestAndResponseBody(t *testing.T) {
+func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -29,7 +31,7 @@ func TestTransportRecordsRequestAndResponseBody(t *testing.T) {
 
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(
-			Wrap(http.DefaultTransport),
+			WrapTransport(http.DefaultTransport),
 		),
 	}
 
@@ -62,7 +64,35 @@ func TestTransportRecordsRequestAndResponseBody(t *testing.T) {
 	assert.Equal(t, `{"id":123}`, attrs.Get("http.response.body").AsString())
 }
 
-func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
+type failingTransport struct {
+	err error
+}
+
+func (t failingTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	if t.err == nil {
+		log.Fatal("missing error in failing transport")
+	}
+	return nil, t.err
+}
+
+func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
+	internal.InitTracer()
+
+	expectedErr := errors.New("roundtrip error")
+	client := &http.Client{
+		Transport: otelhttp.NewTransport(
+			WrapTransport(failingTransport{expectedErr}),
+		),
+	}
+
+	req, _ := http.NewRequest("POST", "http://test.com", nil)
+	_, err := client.Do(req)
+	if err == nil {
+		t.Errorf("expected error: %v", expectedErr)
+	}
+}
+
+func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	tCases := map[string]struct {
@@ -111,7 +141,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 
 			client := &http.Client{
 				Transport: otelhttp.NewTransport(
-					Wrap(http.DefaultTransport),
+					WrapTransport(http.DefaultTransport),
 				),
 			}
 
@@ -146,7 +176,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 	}
 }
 
-func TestRequestInjectsHeadersSuccessfully(t *testing.T) {
+func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
 	tracer, _ := internal.InitTracer()
 
 	ctx, span := tracer.Start(context.Background(), "test")
@@ -162,7 +192,7 @@ func TestRequestInjectsHeadersSuccessfully(t *testing.T) {
 
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(
-			Wrap(http.DefaultTransport),
+			WrapTransport(http.DefaultTransport),
 		),
 	}
 

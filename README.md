@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/Traceableai/goagent/branch/master/graph/badge.svg?token=MM5BVNGPKE)](https://codecov.io/gh/Traceableai/goagent)
+
 # goagent
 
 `goagent` provides a set of complementary features that improves OpenTelemetry instrumentation and data collection.

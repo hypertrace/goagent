@@ -1,4 +1,4 @@
-package internal
+package http
 
 import (
 	"net/http"
@@ -20,6 +20,6 @@ func TestKeyLookupSuccess(t *testing.T) {
 	for _, tCase := range tCases {
 		h := http.Header{}
 		h.Add("Content-Type", tCase.contentType)
-		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(h))
+		assert.Equal(t, tCase.shouldRecord, shouldRecordBodyOfContentType(h))
 	}
 }

@@ -1,4 +1,4 @@
-package server
+package http
 
 import (
 	"net/http"
@@ -8,10 +8,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/traceableai/goagent/otel/internal"
+	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 	apitrace "go.opentelemetry.io/otel/api/trace"
 )
 
-func TestRequestIsSuccessfullyTraced(t *testing.T) {
+func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -21,7 +22,7 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	ih := NewHandler(h)
+	ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("api_key", "xyz123abc")
@@ -33,18 +34,16 @@ func TestRequestIsSuccessfullyTraced(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 1, len(spans))
 
-	assert.Equal(t, "GET", spans[0].Name)
+	assert.Equal(t, "test_name", spans[0].Name)
 	assert.Equal(t, apitrace.SpanKindServer, spans[0].SpanKind)
 
 	attrs := internal.LookupAttributes(spans[0].Attributes)
-	assert.Equal(t, "202", attrs.Get("http.status_code").AsString())
-	assert.Equal(t, "GET", attrs.Get("http.method").AsString())
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", attrs.Get("http.url").AsString())
 	assert.Equal(t, "xyz123abc", attrs.Get("http.request.header.Api_key").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.response.header.Request_id").AsString())
 }
 
-func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
+func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	tCases := map[string]struct {
@@ -89,7 +88,7 @@ func TestRequestAndResponseBodyAreRecordedAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			ih := NewHandler(h)
+			ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
 
 			r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader(tCase.requestBody))
 			r.Header.Add("content-type", tCase.requestContentType)
@@ -117,7 +116,7 @@ func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
 
-	ih := NewHandler(h)
+	ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("X-B3-TraceId", "1f46165474d11ee5836777d85df2cdab")

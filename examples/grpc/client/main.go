@@ -9,7 +9,6 @@ import (
 	"time"
 
 	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
-	_ "github.com/traceableai/goagent/otel"
 	"google.golang.org/grpc"
 )
 

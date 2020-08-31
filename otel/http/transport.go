@@ -1,11 +1,10 @@
-package client
+package http
 
 import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/traceableai/goagent/otel/http/internal"
 	"go.opentelemetry.io/otel/api/trace"
 )
 
@@ -33,7 +32,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// is in the recording accept list. Notice in here we rely on the fact that
 	// the content type is not streamable, otherwise we could end up in a very
 	// expensive parsing of a big body in memory.
-	if internal.ShouldRecordBodyOfContentType(req.Header) {
+	if shouldRecordBodyOfContentType(req.Header) {
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			return rt.delegate.RoundTrip(req)
@@ -53,7 +52,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Notice, parsing a streamed content in memory can be expensive.
-	if internal.ShouldRecordBodyOfContentType(res.Header) {
+	if shouldRecordBodyOfContentType(res.Header) {
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return res, nil
@@ -75,8 +74,8 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return res, err
 }
 
-// Wrap returns a new round tripper instrumented that relies on the
+// WrapTransport returns a new round tripper instrumented that relies on the
 // needs to be used with OTel instrumentation.
-func Wrap(delegate http.RoundTripper) http.RoundTripper {
+func WrapTransport(delegate http.RoundTripper) http.RoundTripper {
 	return &roundTripper{delegate}
 }

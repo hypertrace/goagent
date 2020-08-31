@@ -1,4 +1,4 @@
-package internal
+package http
 
 import (
 	"net/http"
@@ -10,10 +10,10 @@ var contentTypeAllowList = []string{
 	"application/x-www-form-urlencoded",
 }
 
-// ShouldRecordBodyOfContentType checks if the body is meant
+// shouldRecordBodyOfContentType checks if the body is meant
 // to be recorded based on the content-type and the fact that body is
 // not streamed.
-func ShouldRecordBodyOfContentType(h http.Header) bool {
+func shouldRecordBodyOfContentType(h http.Header) bool {
 	for _, contentType := range contentTypeAllowList {
 		// we look for cases like charset=UTF-8; application/json
 		for _, value := range h.Values("content-type") {

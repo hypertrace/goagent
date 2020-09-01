@@ -2,10 +2,12 @@ package grpc
 
 import (
 	"context"
+	"strings"
 
 	"github.com/traceableai/goagent/internal"
 	"go.opentelemetry.io/otel/api/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -34,6 +36,12 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 			reqBody, err := marshalMessageableJSON(req)
 			if len(reqBody) > 0 && err == nil {
 				span.SetAttribute("grpc.request.body", string(reqBody))
+			}
+
+			if md, ok := metadata.FromIncomingContext(ctx); ok {
+				for key, values := range md {
+					span.SetAttribute("grpc.request.metadata."+key, strings.Join(values, ", "))
+				}
 			}
 
 			res, err := handler(ctx, req)

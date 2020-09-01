@@ -67,6 +67,7 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 	assert.Equal(t, "grpc", attrs.Get("rpc.system").AsString())
 	assert.Equal(t, "helloworld.PersonRegistry", attrs.Get("rpc.service").AsString())
 	assert.Equal(t, "Register", attrs.Get("rpc.method").AsString())
+	assert.Equal(t, "test_value", attrs.Get("grpc.request.metadata.test_key").AsString())
 
 	expectedBody := "{\"firstname\":\"Bugs\",\"lastname\":\"Bunny\",\"birthdate\":\"1970-01-01T00:00:01Z\",\"confirmed\":false}"
 	if ok, err := jsonEqual(expectedBody, attrs.Get("grpc.request.body").AsString()); err == nil {

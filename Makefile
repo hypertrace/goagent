@@ -3,6 +3,11 @@
 .PHONY: test
 test:
 	go test -v -race -cover ./...
+	make test-docker
+
+.PHONY: docker-test
+test-docker:
+	@./tests/docker/test.sh
 
 .PHONY: bench
 bench:

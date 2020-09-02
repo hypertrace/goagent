@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 
+	"github.com/traceableai/goagent/internal"
 	otel "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
@@ -24,6 +25,11 @@ func NewUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		// span).
 		wrappedHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			span := trace.SpanFromContext(ctx)
+
+			if containerID, err := internal.GetContainerID(); err != nil {
+				span.SetAttribute("container_id", containerID)
+			}
+
 			reqBody, err := marshalMessageableJSON(req)
 			if len(reqBody) > 0 && err == nil {
 				span.SetAttribute("grpc.request.body", string(reqBody))

@@ -1,9 +1,11 @@
 .DEFAULT_GOAL := test
 
 .PHONY: test
-test:
-	go test -v -race -cover ./...
-	make test-docker
+test: test-unit test-docker
+
+.PHONY: test-unit
+test-unit:
+	@go test -v -race -cover ./...
 
 .PHONY: docker-test
 test-docker:

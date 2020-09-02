@@ -5,7 +5,7 @@ test: test-unit test-docker
 
 .PHONY: test-unit
 test-unit:
-	@go test -v -race -cover ./...
+	@go test -count=1 -v -race -cover ./...
 
 .PHONY: docker-test
 test-docker:

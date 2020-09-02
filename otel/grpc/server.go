@@ -4,27 +4,28 @@ import (
 	"context"
 
 	"github.com/traceableai/goagent/internal"
-	otel "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
-	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
-// NewUnaryServerInterceptor returns an interceptor that records the request and response message's body
+// WrapUnaryServerInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON
-func NewUnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	delegateInterceptor := otel.UnaryServerInterceptor(
-		global.TraceProvider().Tracer("ai.traceable"),
-	)
-
+func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		// GRPC interceptors do not support request/response parsing so the only way to
 		// achieve it is by wrapping the handler (where we can still access the current
 		// span).
 		wrappedHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			span := trace.SpanFromContext(ctx)
+			if _, isNoop := span.(trace.NoopSpan); isNoop {
+				// isNoop means either the span is not sampled or there was no span
+				// in the request context which means this Handler is not used
+				// inside an instrumented Handler, hence we just invoke the delegate
+				// round tripper.
+				return handler(ctx, req)
+			}
 
 			if containerID, err := internal.GetContainerID(); err != nil {
 				span.SetAttribute("container_id", containerID)

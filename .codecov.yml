@@ -3,3 +3,4 @@ codecov:
 
   ignore:
     - "examples"
+    - "tests"

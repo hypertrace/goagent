@@ -9,6 +9,7 @@ import (
 	grpcinternal "github.com/traceableai/goagent/otel/grpc/internal"
 	"github.com/traceableai/goagent/otel/internal"
 	otel "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
+	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,7 +19,11 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(NewUnaryServerInterceptor()),
+		grpc.UnaryInterceptor(
+			WrapUnaryServerInterceptor(
+				otel.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+			),
+		),
 	)
 	defer s.Stop()
 
@@ -82,7 +87,11 @@ func TestServerRegisterPersonFails(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(NewUnaryServerInterceptor()),
+		grpc.UnaryInterceptor(
+			WrapUnaryServerInterceptor(
+				otel.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+			),
+		),
 	)
 	defer s.Stop()
 
@@ -129,7 +138,11 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 	internal.InitTracer()
 
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(NewUnaryServerInterceptor()),
+		grpc.UnaryInterceptor(
+			WrapUnaryServerInterceptor(
+				otel.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+			),
+		),
 	)
 	defer s.Stop()
 

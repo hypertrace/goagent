@@ -9,6 +9,10 @@ import (
 	"time"
 
 	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
+	"github.com/traceableai/goagent/examples/internal"
+	traceablegrpc "github.com/traceableai/goagent/otel/grpc"
+	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
+	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
 )
 
@@ -18,11 +22,18 @@ const (
 )
 
 func main() {
+	internal.InitTracer("grpc-client")
+
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(
 		address,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
+		grpc.WithUnaryInterceptor(
+			traceablegrpc.WrapUnaryClientInterceptor(
+				otelgrpc.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+			),
+		),
 	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)

@@ -9,6 +9,7 @@ import (
 	grpcinternal "github.com/traceableai/goagent/otel/grpc/internal"
 	"github.com/traceableai/goagent/otel/internal"
 	otel "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
+	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -32,7 +33,11 @@ func TestClientRegisterPersonSuccess(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(NewUnaryClientInterceptor()),
+		grpc.WithUnaryInterceptor(
+			WrapUnaryClientInterceptor(
+				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+			),
+		),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -96,7 +101,11 @@ func TestClientRegisterPersonFails(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(NewUnaryClientInterceptor()),
+		grpc.WithUnaryInterceptor(
+			WrapUnaryClientInterceptor(
+				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+			),
+		),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -141,7 +150,11 @@ func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(NewUnaryClientInterceptor()),
+		grpc.WithUnaryInterceptor(
+			WrapUnaryClientInterceptor(
+				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+			),
+		),
 	)
 	if err != nil {
 		b.Fatalf("failed to dial bufnet: %v", err)

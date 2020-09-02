@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/traceableai/goagent/internal"
 	"go.opentelemetry.io/otel/api/trace"
 )
 
@@ -22,6 +23,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// round tripper.
 		h.delegate.ServeHTTP(w, r)
 		return
+	}
+
+	if containerID, err := internal.GetContainerID(); err != nil {
+		span.SetAttribute("container_id", containerID)
 	}
 
 	span.SetAttribute("http.url", r.URL.String())

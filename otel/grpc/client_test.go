@@ -47,13 +47,16 @@ func TestClientRegisterPersonSuccess(t *testing.T) {
 
 	client := grpcinternal.NewPersonRegistryClient(conn)
 
-	ctx = metadata.NewIncomingContext(ctx, metadata.Pairs("test_key", "test_value"))
-	_, err = client.Register(ctx, &grpcinternal.RegisterRequest{
-		Firstname: "Bugs",
-		Lastname:  "Bunny",
-		Birthdate: &timestamp.Timestamp{Seconds: 1},
-		Confirmed: false,
-	})
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key_1", "test_value_1"))
+	_, err = client.Register(
+		ctx,
+		&grpcinternal.RegisterRequest{
+			Firstname: "Bugs",
+			Lastname:  "Bunny",
+			Birthdate: &timestamp.Timestamp{Seconds: 1},
+			Confirmed: false,
+		},
+	)
 	if err != nil {
 		t.Fatalf("call to Register failed: %v", err)
 	}
@@ -68,7 +71,7 @@ func TestClientRegisterPersonSuccess(t *testing.T) {
 	assert.Equal(t, "grpc", attrs.Get("rpc.system").AsString())
 	assert.Equal(t, "helloworld.PersonRegistry", attrs.Get("rpc.service").AsString())
 	assert.Equal(t, "Register", attrs.Get("rpc.method").AsString())
-	assert.Equal(t, "test_value", attrs.Get("grpc.request.metadata.test_key").AsString())
+	assert.Equal(t, "test_value_1", attrs.Get("grpc.request.metadata.test_key_1").AsString())
 
 	expectedBody := "{\"firstname\":\"Bugs\",\"lastname\":\"Bunny\",\"birthdate\":\"1970-01-01T00:00:01Z\",\"confirmed\":false}"
 	if ok, err := jsonEqual(expectedBody, attrs.Get("grpc.request.body").AsString()); err == nil {

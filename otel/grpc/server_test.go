@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -47,6 +48,7 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 
 	client := grpcinternal.NewPersonRegistryClient(conn)
 
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
 	_, err = client.Register(ctx, &grpcinternal.RegisterRequest{
 		Firstname: "Bugs",
 		Lastname:  "Bunny",

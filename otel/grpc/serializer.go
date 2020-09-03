@@ -1,4 +1,4 @@
-package internal
+package grpc
 
 import (
 	"google.golang.org/protobuf/encoding/protojson"
@@ -10,7 +10,7 @@ import (
 var marshaler = protojson.MarshalOptions{EmitUnpopulated: true}
 
 // MarshalMessageableJSON marshals a value that an be cast as proto.Message into JSON.
-func MarshalMessageableJSON(messageable interface{}) ([]byte, error) {
+func marshalMessageableJSON(messageable interface{}) ([]byte, error) {
 	if m, ok := messageable.(proto.Message); ok {
 		return marshaler.Marshal(m)
 	}

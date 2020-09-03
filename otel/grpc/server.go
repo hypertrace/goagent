@@ -6,8 +6,6 @@ import (
 	"github.com/traceableai/goagent/internal"
 	"go.opentelemetry.io/otel/api/trace"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
 // WrapUnaryServerInterceptor returns an interceptor that records the request and response message's body
@@ -36,6 +34,8 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 				span.SetAttribute("grpc.request.body", string(reqBody))
 			}
 
+			setAttributesFromIncomingMetadata(ctx, span)
+
 			res, err := handler(ctx, req)
 			if err != nil {
 				return res, err
@@ -51,17 +51,4 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 
 		return delegateInterceptor(ctx, req, info, wrappedHandler)
 	}
-}
-
-// We need a marshaller that does not omit the zero (e.g. 0 or false) to not to lose pontetially
-// intesting information.
-var marshaler = protojson.MarshalOptions{EmitUnpopulated: true}
-
-// marshalMessageableJSON marshals a value that an be cast as proto.Message into JSON.
-func marshalMessageableJSON(messageable interface{}) ([]byte, error) {
-	if m, ok := messageable.(proto.Message); ok {
-		return marshaler.Marshal(m)
-	}
-
-	return nil, nil
 }

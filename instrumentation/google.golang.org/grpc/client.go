@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 
+	"github.com/traceableai/goagent/instrumentation/internal"
 	"go.opentelemetry.io/otel/api/trace"
 	"google.golang.org/grpc"
 )
@@ -22,6 +23,10 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor)
 				// inside an instrumented invoker, hence we just invoke the delegate
 				// round tripper.
 				return invoker(ctx, method, req, reply, cc, opts...)
+			}
+
+			if containerID, err := internal.GetContainerID(); err == nil {
+				span.SetAttribute("container_id", containerID)
 			}
 
 			reqBody, err := marshalMessageableJSON(req)

@@ -25,7 +25,7 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 				return handler(ctx, req)
 			}
 
-			if containerID, err := internal.GetContainerID(); err != nil {
+			if containerID, err := internal.GetContainerID(); err == nil {
 				span.SetAttribute("container_id", containerID)
 			}
 

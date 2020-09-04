@@ -11,6 +11,8 @@ import (
 // WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON
 func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
+	containerID := internal.GetContainerID()
+
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		// GRPC interceptors do not support request/response parsing so the only way to
 		// achieve it is by wrapping the invoker (where we can still access the current
@@ -25,8 +27,8 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor)
 				return invoker(ctx, method, req, reply, cc, opts...)
 			}
 
-			if containerID, err := internal.GetContainerID(); err == nil {
-				span.SetAttribute("container_id", containerID)
+			if containerID != nil {
+				span.SetAttribute("container_id", *containerID)
 			}
 
 			reqBody, err := marshalMessageableJSON(req)

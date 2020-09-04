@@ -12,6 +12,8 @@ import (
 // and serialize it as JSON
 func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		containerID := internal.GetContainerID()
+
 		// GRPC interceptors do not support request/response parsing so the only way to
 		// achieve it is by wrapping the handler (where we can still access the current
 		// span).
@@ -25,8 +27,8 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 				return handler(ctx, req)
 			}
 
-			if containerID, err := internal.GetContainerID(); err == nil {
-				span.SetAttribute("container_id", containerID)
+			if containerID != nil {
+				span.SetAttribute("container_id", *containerID)
 			}
 
 			reqBody, err := marshalMessageableJSON(req)

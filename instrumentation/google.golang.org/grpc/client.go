@@ -8,7 +8,7 @@ import (
 )
 
 // WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
-// and serialize it as JSON
+// and serialize it as JSON.
 func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		// GRPC interceptors do not support request/response parsing so the only way to

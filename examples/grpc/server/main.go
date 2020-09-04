@@ -10,7 +10,7 @@ import (
 
 	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
 	"github.com/traceableai/goagent/examples/internal"
-	traceablegrpc "github.com/traceableai/goagent/otel/grpc"
+	traceablegrpc "github.com/traceableai/goagent/instrumentation/google.golang.org/grpc"
 	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"

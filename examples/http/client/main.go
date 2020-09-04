@@ -11,7 +11,7 @@ import (
 	"net/http"
 
 	"github.com/traceableai/goagent/examples/internal"
-	traceablehttp "github.com/traceableai/goagent/otel/http"
+	traceablehttp "github.com/traceableai/goagent/instrumentation/net/http"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 

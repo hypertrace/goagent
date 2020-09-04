@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/traceableai/goagent/otel/grpc/internal";
+option go_package = "github.com/traceableai/goagent/instrumentation/google.golang.org/grpc/internal";
 
 package helloworld;
 

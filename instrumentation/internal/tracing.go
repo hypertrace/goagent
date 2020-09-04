@@ -13,7 +13,7 @@ import (
 )
 
 // InitTracer initializes the tracer and returns a flusher of the reported
-// span for further inspection. It's main purpose is to declare a tracer
+// spans for further inspection. Its main purpose is to declare a tracer
 // for TESTING.
 func InitTracer() (apitrace.Tracer, func() []*trace.SpanData) {
 	exporter := &Recorder{}
@@ -21,7 +21,7 @@ func InitTracer() (apitrace.Tracer, func() []*trace.SpanData) {
 	tp, err := sdktrace.NewProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
 		sdktrace.WithSyncer(exporter),
-		sdktrace.WithResource(resource.New(semconv.ServiceNameKey.String("ExampleService"))))
+		sdktrace.WithResource(resource.New(semconv.ServiceNameKey.String("TestService"))))
 	if err != nil {
 		log.Fatal(err)
 	}

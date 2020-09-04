@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	"github.com/traceableai/goagent/internal"
+	"github.com/traceableai/goagent/instrumentation/internal"
 	"go.opentelemetry.io/otel/api/trace"
 	"google.golang.org/grpc"
 )

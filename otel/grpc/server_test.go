@@ -2,6 +2,10 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
+	"log"
+	"net"
+	reflect "reflect"
 	"testing"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -14,7 +18,55 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/test/bufconn"
 )
+
+var _ grpcinternal.PersonRegistryServer = server{}
+
+type server struct {
+	reply *grpcinternal.RegisterReply
+	err   error
+	*grpcinternal.UnimplementedPersonRegistryServer
+}
+
+func (s server) Register(_ context.Context, _ *grpcinternal.RegisterRequest) (*grpcinternal.RegisterReply, error) {
+	if s.reply == nil && s.err == nil {
+		log.Fatal("missing reply or error in server")
+	}
+
+	return s.reply, s.err
+}
+
+// createDialer creates a connection to be used as context dialer in GRPC
+// communication.
+func createDialer(s *grpc.Server) func(context.Context, string) (net.Conn, error) {
+	const bufSize = 1024 * 1024
+
+	listener := bufconn.Listen(bufSize)
+	conn := func(context.Context, string) (net.Conn, error) {
+		return listener.Dial()
+	}
+
+	go func() {
+		if err := s.Serve(listener); err != nil {
+			log.Fatalf("Server exited with error: %v", err)
+		}
+	}()
+
+	return conn
+}
+
+// jsonEqual compares the JSON from two strings.
+func jsonEqual(a, b string) (bool, error) {
+	var j, j2 interface{}
+	if err := json.Unmarshal([]byte(a), &j); err != nil {
+		return false, err
+	}
+	if err := json.Unmarshal([]byte(b), &j2); err != nil {
+		return false, err
+	}
+	return reflect.DeepEqual(j2, j), nil
+}
 
 func TestServerRegisterPersonSuccess(t *testing.T) {
 	_, flusher := internal.InitTracer()

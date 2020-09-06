@@ -37,16 +37,12 @@ func getContainerIDFromReader(f io.Reader) (string, error) {
 }
 
 // GetContainerID returns the container ID when in a containerized environment.
-func GetContainerID() *string {
+func GetContainerID() (string, error) {
 	f, err := os.Open("/proc/self/cgroup")
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 
-	if containerID, err := getContainerIDFromReader(f); err == nil {
-		return &containerID
-	}
-
-	return null
+	return getContainerIDFromReader(f)
 }

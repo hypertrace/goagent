@@ -5,13 +5,17 @@ import (
 
 	"github.com/traceableai/goagent/instrumentation/internal"
 	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"google.golang.org/grpc"
 )
 
 // WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON
 func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
-	containerID := internal.GetContainerID()
+	var defaultAttributes []label.KeyValue
+	if containerID, err := internal.GetContainerID(); err != nil {
+		defaultAttributes = append(defaultAttributes, label.String("container_id", containerID))
+	}
 
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		// GRPC interceptors do not support request/response parsing so the only way to
@@ -26,10 +30,7 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor)
 				// round tripper.
 				return invoker(ctx, method, req, reply, cc, opts...)
 			}
-
-			if containerID != nil {
-				span.SetAttribute("container_id", *containerID)
-			}
+			span.SetAttributes(defaultAttributes...)
 
 			reqBody, err := marshalMessageableJSON(req)
 			if len(reqBody) > 0 && err == nil {

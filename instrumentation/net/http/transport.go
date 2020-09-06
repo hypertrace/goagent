@@ -5,13 +5,16 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/traceableai/goagent/instrumentation/internal"
 	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 )
 
 var _ http.RoundTripper = &roundTripper{}
 
 type roundTripper struct {
-	delegate http.RoundTripper
+	delegate          http.RoundTripper
+	defaultAttributes []label.KeyValue
 }
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -23,6 +26,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		// round tripper.
 		return rt.delegate.RoundTrip(req)
 	}
+	span.SetAttributes(rt.defaultAttributes...)
 
 	for key, value := range req.Header {
 		span.SetAttribute("http.request.header."+key, value[0])
@@ -77,5 +81,10 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 // WrapTransport returns a new round tripper instrumented that relies on the
 // needs to be used with OTel instrumentation.
 func WrapTransport(delegate http.RoundTripper) http.RoundTripper {
-	return &roundTripper{delegate}
+	var defaultAttributes []label.KeyValue
+	if containerID, err := internal.GetContainerID(); err != nil {
+		defaultAttributes = append(defaultAttributes, label.String("container_id", containerID))
+	}
+
+	return &roundTripper{delegate, defaultAttributes}
 }

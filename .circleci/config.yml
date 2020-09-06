@@ -15,7 +15,7 @@ jobs:
       - run: git config --global url."git@github.com:".insteadOf "https://github.com/"
       - run: go env -w GOPRIVATE="github.com/Traceableai/*"
       - run: make deps
-      - run: make ci-deps
+      - run: make deps-ci
       - run: make lint
       - run: CGO_ENABLED=0 go test -coverprofile=coverage.txt -v ./...
       - codecov/upload:

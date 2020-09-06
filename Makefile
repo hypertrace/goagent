@@ -25,7 +25,7 @@ deps:
 	@go get -v -t -d ./...
 
 .PHONY: ci-deps
-ci-deps:
+deps-ci:
 	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 run-http-client-example:

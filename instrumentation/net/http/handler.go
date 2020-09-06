@@ -8,10 +8,12 @@ import (
 
 	"github.com/traceableai/goagent/instrumentation/internal"
 	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 )
 
 type handler struct {
-	delegate http.Handler
+	delegate          http.Handler
+	defaultAttributes []label.KeyValue
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -24,10 +26,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.delegate.ServeHTTP(w, r)
 		return
 	}
-
-	if containerID, err := internal.GetContainerID(); err != nil {
-		span.SetAttribute("container_id", containerID)
-	}
+	span.SetAttributes(h.defaultAttributes...)
 
 	span.SetAttribute("http.url", r.URL.String())
 	// Sets an attribute per each request header.
@@ -75,7 +74,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // WrapHandler returns a new round tripper instrumented that relies on the
 // needs to be used with OTel instrumentation.
 func WrapHandler(delegate http.Handler) http.Handler {
-	return &handler{delegate}
+	var defaultAttributes []label.KeyValue
+	if containerID, err := internal.GetContainerID(); err != nil {
+		defaultAttributes = append(defaultAttributes, label.String("container_id", containerID))
+	}
+
+	return &handler{delegate, defaultAttributes}
 }
 
 // Copied from Zipkin Go

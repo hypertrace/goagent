@@ -2,34 +2,27 @@
 
 # goagent
 
-`goagent` provides a set of complementary features that improves OpenTelemetry instrumentation and data collection.
+`goagent` provides a set of complementary instrumentation features for collecting relevant data to be processed by Hypertrace.
 
-## Running example
+## Getting started
 
-### HTTP
+`goagent` does not require any particular setup for OpenTelemetry but it does need to be declared along with OpenTelemetry standard instrumentation, mostly relying on the span being created by OpenTelemetry instrumentation.
 
-In terminal 1 run
+- [Getting started with net/http](instrumentation/net/http/README.md#getting-started)
+- [Getting started with golang.google.org/grpc](instrumentation/google.golang.org/grpc/README.md#getting-started)
+
+## Contributing
+
+### Running tests
+
+Tests can be run by
 
 ```bash
-make run-http-server-example
+make test
 ```
 
-In terminal 2 run
+for unit tests only
 
 ```bash
-make run-http-client-example
-```
-
-### GRPC
-
-In terminal 1 run
-
-```bash
-make run-grpc-server-example
-```
-
-In terminal 2 run
-
-```bash
-make run-grpc-client-example
+make test-unit
 ```

@@ -27,10 +27,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return rt.delegate.RoundTrip(req)
 	}
 	span.SetAttributes(rt.defaultAttributes...)
-
-	for key, value := range req.Header {
-		span.SetAttribute("http.request.header."+key, value[0])
-	}
+	setAttributesFromHeaders("request", req.Header, span)
 
 	// Only records the body if it is not empty and the content type header
 	// is in the recording accept list. Notice in here we rely on the fact that
@@ -71,9 +68,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Sets an attribute per each response header.
-	for key, value := range res.Header {
-		span.SetAttribute("http.response.header."+key, value[0])
-	}
+	setAttributesFromHeaders("response", res.Header, span)
 
 	return res, err
 }

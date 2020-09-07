@@ -58,9 +58,9 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
-	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.Api_key").AsString())
+	assert.Equal(t, "abc123xyz", attrs.Get("http.request.headers.Api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
-	assert.Equal(t, "xyz123abc", attrs.Get("http.response.header.Request_id").AsString())
+	assert.Equal(t, "xyz123abc", attrs.Get("http.response.headers.Request_id").AsString())
 	assert.Equal(t, `{"id":123}`, attrs.Get("http.response.body").AsString())
 }
 

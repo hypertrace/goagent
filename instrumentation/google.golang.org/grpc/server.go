@@ -35,7 +35,7 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 
 			reqBody, err := marshalMessageableJSON(req)
 			if len(reqBody) > 0 && err == nil {
-				span.SetAttribute("grpc.request.body", string(reqBody))
+				span.SetAttribute("rpc.request.body", string(reqBody))
 			}
 
 			setAttributesFromIncomingMetadata(ctx, span)
@@ -47,7 +47,7 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 
 			resBody, err := marshalMessageableJSON(res)
 			if len(resBody) > 0 && err == nil {
-				span.SetAttribute("grpc.response.body", string(resBody))
+				span.SetAttribute("rpc.response.body", string(resBody))
 			}
 
 			return res, err

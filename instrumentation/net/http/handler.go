@@ -27,12 +27,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	span.SetAttributes(h.defaultAttributes...)
-
 	span.SetAttribute("http.url", r.URL.String())
 	// Sets an attribute per each request header.
-	for key, value := range r.Header {
-		span.SetAttribute("http.request.header."+key, value[0])
-	}
+	setAttributesFromHeaders("request", r.Header, span)
 
 	if shouldRecordBodyOfContentType(r.Header) {
 		body, err := ioutil.ReadAll(r.Body)
@@ -61,9 +58,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Sets an attribute per each response header.
-		for key, value := range wi.Header() {
-			span.SetAttribute("http.response.header."+key, value[0])
-		}
+		setAttributesFromHeaders("response", wi.Header(), span)
 
 		span.End()
 	}()

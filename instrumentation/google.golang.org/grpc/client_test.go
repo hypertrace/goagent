@@ -23,7 +23,9 @@ func TestClientRegisterPersonSuccess(t *testing.T) {
 	defer s.Stop()
 
 	grpcinternal.RegisterPersonRegistryServer(s, &server{
-		reply: &grpcinternal.RegisterReply{Id: 1},
+		reply:        &grpcinternal.RegisterReply{Id: 1},
+		replyHeader:  metadata.Pairs("test_header_key", "test_header_value"),
+		replyTrailer: metadata.Pairs("test_trailer_key", "test_trailer_value"),
 	})
 
 	dialer := createDialer(s)
@@ -72,6 +74,8 @@ func TestClientRegisterPersonSuccess(t *testing.T) {
 	assert.Equal(t, "helloworld.PersonRegistry", attrs.Get("rpc.service").AsString())
 	assert.Equal(t, "Register", attrs.Get("rpc.method").AsString())
 	assert.Equal(t, "test_value_1", attrs.Get("rpc.request.metadata.test_key_1").AsString())
+	assert.Equal(t, "test_header_value", attrs.Get("rpc.response.metadata.test_header_key").AsString())
+	assert.Equal(t, "test_trailer_value", attrs.Get("rpc.response.metadata.test_trailer_key").AsString())
 
 	expectedBody := "{\"firstname\":\"Bugs\",\"lastname\":\"Bunny\",\"birthdate\":\"1970-01-01T00:00:01Z\",\"confirmed\":false}"
 	if ok, err := jsonEqual(expectedBody, attrs.Get("rpc.request.body").AsString()); err == nil {

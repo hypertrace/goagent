@@ -18,7 +18,6 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 	}
 
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-
 		// GRPC interceptors do not support request/response parsing so the only way to
 		// achieve it is by wrapping the handler (where we can still access the current
 		// span).
@@ -38,7 +37,7 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 				span.SetAttribute("rpc.request.body", string(reqBody))
 			}
 
-			setAttributesFromIncomingMetadata(ctx, span)
+			setAttributesFromRequestIncomingMetadata(ctx, span)
 
 			res, err := handler(ctx, req)
 			if err != nil {

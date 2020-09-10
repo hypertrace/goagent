@@ -15,7 +15,7 @@ func TestSetScalarAttributeSuccess(t *testing.T) {
 
 	md := metadata.Pairs("key_1", "value_1")
 	_, span := global.TraceProvider().Tracer("ai.traceable").Start(context.Background(), "")
-	setAttributesFromMetadata(md, span)
+	setAttributesFromMetadata("request", md, span)
 	span.End()
 
 	readbackSpan := flusher()[0]
@@ -28,7 +28,7 @@ func TestSetMultivalueAttributeSuccess(t *testing.T) {
 
 	md := metadata.Pairs("key_1", "value_1", "key_1", "value_2")
 	_, span := global.TraceProvider().Tracer("ai.traceable").Start(context.Background(), "")
-	setAttributesFromMetadata(md, span)
+	setAttributesFromMetadata("request", md, span)
 	span.End()
 
 	readbackSpan := flusher()[0]

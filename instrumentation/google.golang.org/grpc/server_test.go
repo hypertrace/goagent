@@ -24,14 +24,24 @@ import (
 var _ grpcinternal.PersonRegistryServer = server{}
 
 type server struct {
-	reply *grpcinternal.RegisterReply
-	err   error
+	reply        *grpcinternal.RegisterReply
+	err          error
+	replyHeader  metadata.MD
+	replyTrailer metadata.MD
 	*grpcinternal.UnimplementedPersonRegistryServer
 }
 
-func (s server) Register(_ context.Context, _ *grpcinternal.RegisterRequest) (*grpcinternal.RegisterReply, error) {
+func (s server) Register(ctx context.Context, _ *grpcinternal.RegisterRequest) (*grpcinternal.RegisterReply, error) {
 	if s.reply == nil && s.err == nil {
 		log.Fatal("missing reply or error in server")
+	}
+
+	if err := grpc.SetTrailer(ctx, s.replyTrailer); err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to send reply trailer")
+	}
+
+	if err := grpc.SendHeader(ctx, s.replyHeader); err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to send reply headers")
 	}
 
 	return s.reply, s.err

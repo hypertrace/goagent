@@ -21,7 +21,7 @@ func TestSetScalarAttributeSuccess(t *testing.T) {
 
 	readbackSpan := flusher()[0]
 	attrs := internal.LookupAttributes(readbackSpan.Attributes)
-	assert.Equal(t, "value_1", attrs.Get("http.request.headers.Key_1").AsString())
+	assert.Equal(t, "value_1", attrs.Get("http.request.header.Key_1").AsString())
 }
 
 func TestSetMultivalueAttributeSuccess(t *testing.T) {
@@ -37,6 +37,6 @@ func TestSetMultivalueAttributeSuccess(t *testing.T) {
 
 	readbackSpan := flusher()[0]
 	attrs := internal.LookupAttributes(readbackSpan.Attributes)
-	assert.Equal(t, "value_1", attrs.Get("http.response.headers.Key_1[0]").AsString())
-	assert.Equal(t, "value_2", attrs.Get("http.response.headers.Key_1[1]").AsString())
+	assert.Equal(t, "value_1", attrs.Get("http.response.header.Key_1[0]").AsString())
+	assert.Equal(t, "value_2", attrs.Get("http.response.header.Key_1[1]").AsString())
 }

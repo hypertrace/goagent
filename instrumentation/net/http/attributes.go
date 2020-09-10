@@ -7,11 +7,11 @@ import (
 	"go.opentelemetry.io/otel/api/trace"
 )
 
-func setAttributesFromHeaders(t string, headers http.Header, span trace.Span) {
+func setAttributesFromHeaders(_type string, headers http.Header, span trace.Span) {
 	for key, values := range headers {
 		if len(values) == 1 {
 			span.SetAttribute(
-				fmt.Sprintf("http.%s.headers.%s", t, key),
+				fmt.Sprintf("http.%s.header.%s", _type, key),
 				values[0],
 			)
 			continue
@@ -19,7 +19,7 @@ func setAttributesFromHeaders(t string, headers http.Header, span trace.Span) {
 
 		for index, value := range values {
 			span.SetAttribute(
-				fmt.Sprintf("http.%s.headers.%s[%d]", t, key, index),
+				fmt.Sprintf("http.%s.header.%s[%d]", _type, key, index),
 				value,
 			)
 		}

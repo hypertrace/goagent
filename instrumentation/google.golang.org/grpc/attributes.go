@@ -8,30 +8,33 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func setAttributes(md metadata.MD, span trace.Span) {
+func setAttributesFromMetadata(_type string, md metadata.MD, span trace.Span) {
 	for key, values := range md {
 		if len(values) == 1 {
-			span.SetAttribute("grpc.request.metadata."+key, values[0])
+			span.SetAttribute(
+				fmt.Sprintf("rpc.%s.metadata.%s", _type, key),
+				values[0],
+			)
 			continue
 		}
 
 		for index, value := range values {
 			span.SetAttribute(
-				fmt.Sprintf("grpc.request.metadata.%s[%d]", key, index),
+				fmt.Sprintf("rpc.%s.metadata.%s[%d]", _type, key, index),
 				value,
 			)
 		}
 	}
 }
 
-func setAttributesFromOutgoingMetadata(ctx context.Context, span trace.Span) {
+func setAttributesFromRequestOutgoingMetadata(ctx context.Context, span trace.Span) {
 	if md, ok := metadata.FromOutgoingContext(ctx); ok {
-		setAttributes(md, span)
+		setAttributesFromMetadata("request", md, span)
 	}
 }
 
-func setAttributesFromIncomingMetadata(ctx context.Context, span trace.Span) {
+func setAttributesFromRequestIncomingMetadata(ctx context.Context, span trace.Span) {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		setAttributes(md, span)
+		setAttributesFromMetadata("request", md, span)
 	}
 }

@@ -18,7 +18,6 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 	}
 
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-
 		// GRPC interceptors do not support request/response parsing so the only way to
 		// achieve it is by wrapping the handler (where we can still access the current
 		// span).
@@ -35,10 +34,10 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 
 			reqBody, err := marshalMessageableJSON(req)
 			if len(reqBody) > 0 && err == nil {
-				span.SetAttribute("grpc.request.body", string(reqBody))
+				span.SetAttribute("rpc.request.body", string(reqBody))
 			}
 
-			setAttributesFromIncomingMetadata(ctx, span)
+			setAttributesFromRequestIncomingMetadata(ctx, span)
 
 			res, err := handler(ctx, req)
 			if err != nil {
@@ -47,7 +46,7 @@ func WrapUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor)
 
 			resBody, err := marshalMessageableJSON(res)
 			if len(resBody) > 0 && err == nil {
-				span.SetAttribute("grpc.response.body", string(resBody))
+				span.SetAttribute("rpc.response.body", string(resBody))
 			}
 
 			return res, err

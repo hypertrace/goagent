@@ -32,7 +32,6 @@ func getContainerIDFromReader(f io.Reader) (string, error) {
 			return group[len(kubepodsPrefix):], nil
 		}
 	}
-
 	return "", ErrNotInContainerEnv
 }
 

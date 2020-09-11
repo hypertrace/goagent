@@ -14,7 +14,7 @@ import (
 // and serialize it as JSON.
 func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
 	var defaultAttributes []label.KeyValue
-	if containerID, err := internal.GetContainerID(); err != nil {
+	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes = append(defaultAttributes, label.String("container_id", containerID))
 	}
 

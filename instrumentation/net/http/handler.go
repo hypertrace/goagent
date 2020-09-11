@@ -70,7 +70,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // needs to be used with OTel instrumentation.
 func WrapHandler(delegate http.Handler) http.Handler {
 	var defaultAttributes []label.KeyValue
-	if containerID, err := internal.GetContainerID(); err != nil {
+	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes = append(defaultAttributes, label.String("container_id", containerID))
 	}
 

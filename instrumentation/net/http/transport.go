@@ -77,7 +77,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 // needs to be used with OTel instrumentation.
 func WrapTransport(delegate http.RoundTripper) http.RoundTripper {
 	var defaultAttributes []label.KeyValue
-	if containerID, err := internal.GetContainerID(); err != nil {
+	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes = append(defaultAttributes, label.String("container_id", containerID))
 	}
 

@@ -132,8 +132,8 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 	for name, tCase := range tCases {
 		t.Run(name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				rw.Header().Add("Content-Type", "charset=UTF-8")
 				rw.Header().Add("Content-Type", tCase.responseContentType)
+				rw.Header().Add("Content-Type", "charset=UTF-8")
 				rw.WriteHeader(202)
 				rw.Write([]byte(tCase.responseBody))
 			}))

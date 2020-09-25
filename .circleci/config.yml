@@ -3,13 +3,13 @@ version: 2.1
 orbs:
   codecov: codecov/codecov@1
 
-executors:
-  golang_docker:
-    docker:
-      - image: cimg/go:1.14
 jobs:
-  build:
-    executor: golang_docker
+  build-and-test:
+    parameters:
+      go-version:
+        type: string
+    docker:
+      - image: cimg/go:<< parameters.go-version >>
     steps:
       - checkout
       - run: git config --global url."git@github.com:".insteadOf "https://github.com/"
@@ -24,6 +24,9 @@ jobs:
 
 workflows:
   version: 2
-  build:
+  build-and-test:
     jobs:
-      - build
+      - build-and-test:
+          matrix:
+            parameters:
+              go-version: ["1.13", "1.14", "1.15"]

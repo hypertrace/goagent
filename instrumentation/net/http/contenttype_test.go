@@ -14,6 +14,7 @@ func TestKeyLookupSuccess(t *testing.T) {
 	}{
 		{"text/plain", false},
 		{"application/json", true},
+		{"Application/JSON", true},
 		{"application/x-www-form-urlencoded", true},
 	}
 

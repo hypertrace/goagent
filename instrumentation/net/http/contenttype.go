@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// contentTypeAllowList is the list of allowed content types in lowercase
 var contentTypeAllowList = []string{
 	"application/json",
 	"application/x-www-form-urlencoded",
@@ -15,12 +16,8 @@ var contentTypeAllowList = []string{
 // not streamed.
 func shouldRecordBodyOfContentType(h http.Header) bool {
 	for _, contentType := range contentTypeAllowList {
-		// we look for cases like charset=UTF-8; application/json
-		for _, value := range h.Values("content-type") {
-			// type and subtype are case insensitive
-			if strings.ToLower(value) == strings.ToLower(contentType) {
-				return true
-			}
+		if strings.ToLower(h.Get("content-type")) == contentType {
+			return true
 		}
 	}
 	return false

@@ -29,7 +29,7 @@ ACTUAL_SHORTEN_CONTAINER_ID="${ACTUAL_CONTAINER_ID:0:$SHORTEN_LENGTH}"
 
 echo ""
 if [[ "$EXPECTED_SHORTEN_CONTAINER_ID" == "$ACTUAL_SHORTEN_CONTAINER_ID" ]]; then
-    echo "Container ID successfully obtained."
+    echo "Container ID successfully obtained \"$EXPECTED_SHORTEN_CONTAINER_ID\"."
     exit 0
 else 
     echo -n "Failed to obtain the container ID, expected something starting"

@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
-	"github.com/traceableai/goagent/examples/internal"
-	traceablegrpc "github.com/traceableai/goagent/instrumentation/google.golang.org/grpc"
+	traceablegrpc "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
+	"github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
+	pb "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples/helloworld"
 	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
@@ -22,7 +22,7 @@ const (
 )
 
 func main() {
-	internal.InitTracer("grpc-client")
+	examples.InitTracer("grpc-client")
 
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(
@@ -30,7 +30,7 @@ func main() {
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(
-			traceablegrpc.WrapUnaryClientInterceptor(
+			traceablegrpc.EnrichUnaryClientInterceptor(
 				otelgrpc.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),

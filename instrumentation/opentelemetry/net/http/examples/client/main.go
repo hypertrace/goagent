@@ -10,7 +10,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/traceableai/goagent/examples/internal"
+	"github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
 	traceablehttp "github.com/traceableai/goagent/instrumentation/opentelemetry/net/http"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
@@ -20,11 +20,11 @@ type message struct {
 }
 
 func main() {
-	internal.InitTracer("http-client")
+	examples.InitTracer("http-client")
 
 	client := http.Client{
 		Transport: otelhttp.NewTransport(
-			traceablehttp.WrapTransport(http.DefaultTransport),
+			traceablehttp.EnrichTransport(http.DefaultTransport),
 		),
 	}
 

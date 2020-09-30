@@ -8,9 +8,9 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/traceableai/goagent/examples/grpc/helloworld"
-	"github.com/traceableai/goagent/examples/internal"
-	traceablegrpc "github.com/traceableai/goagent/instrumentation/google.golang.org/grpc"
+	traceablegrpc "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
+	"github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
+	pb "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples/helloworld"
 	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
@@ -32,7 +32,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 }
 
 func main() {
-	internal.InitTracer("grpc-server")
+	examples.InitTracer("grpc-server")
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
@@ -40,7 +40,7 @@ func main() {
 	}
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			traceablegrpc.WrapUnaryServerInterceptor(
+			traceablegrpc.EnrichUnaryServerInterceptor(
 				otelgrpc.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),

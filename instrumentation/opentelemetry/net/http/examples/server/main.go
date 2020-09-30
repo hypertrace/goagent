@@ -10,17 +10,17 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/traceableai/goagent/examples/internal"
+	"github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
 	traceablehttp "github.com/traceableai/goagent/instrumentation/opentelemetry/net/http"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
 func main() {
-	internal.InitTracer("http-server")
+	examples.InitTracer("http-server")
 
 	r := mux.NewRouter()
 	r.Handle("/foo", otelhttp.NewHandler(
-		traceablehttp.WrapHandler(
+		traceablehttp.EnrichHandler(
 			http.HandlerFunc(fooHandler),
 		),
 		"/foo",

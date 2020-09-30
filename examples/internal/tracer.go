@@ -5,6 +5,7 @@ import (
 
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/exporters/stdout"
+	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
@@ -14,7 +15,14 @@ import (
 func InitTracer(serviceName string) {
 	// Create stdout exporter to be able to retrieve
 	// the collected spans.
-	exporter, err := stdout.NewExporter(stdout.WithPrettyPrint())
+	stdoutExporter, err := stdout.NewExporter(stdout.WithPrettyPrint())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Creates a zipkin exporter that can be plugged into a hypertrace
+	// ingester (see https://raw.githubusercontent.com/hypertrace/hypertrace/main/docker/docker-compose.yml)
+	zipkinBatchExporter, err := zipkin.NewRawExporter("http://localhost:9411/api/v2/spans", serviceName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -23,7 +31,8 @@ func InitTracer(serviceName string) {
 	// In a production application, use sdktrace.ProbabilitySampler with a desired probability.
 	tp, err := sdktrace.NewProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
-		sdktrace.WithSyncer(exporter),
+		sdktrace.WithSyncer(stdoutExporter),
+		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithMaxExportBatchSize(1)),
 		sdktrace.WithResource(resource.New(semconv.ServiceNameKey.String(serviceName))))
 	if err != nil {
 		log.Fatal(err)

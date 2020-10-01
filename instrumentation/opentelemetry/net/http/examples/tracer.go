@@ -1,9 +1,11 @@
-package internal
+package examples
 
 import (
 	"log"
 
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/propagation"
+	apitrace "go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/exporters/stdout"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -38,5 +40,9 @@ func InitTracer(serviceName string) {
 		log.Fatal(err)
 	}
 
+	global.SetPropagators(propagation.New(
+		propagation.WithExtractors(apitrace.B3{}),
+		propagation.WithInjectors(apitrace.B3{}),
+	))
 	global.SetTraceProvider(tp)
 }

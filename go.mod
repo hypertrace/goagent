@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/golang/protobuf v1.4.2
 	github.com/stretchr/testify v1.6.1
+	go.opencensus.io v0.22.4
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc v0.11.0
 	go.opentelemetry.io/contrib/instrumentation/net/http v0.11.0
 	go.opentelemetry.io/otel v0.11.0

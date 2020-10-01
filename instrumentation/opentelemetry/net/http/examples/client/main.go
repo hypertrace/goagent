@@ -10,8 +10,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
 	traceablehttp "github.com/traceableai/goagent/instrumentation/opentelemetry/net/http"
+	"github.com/traceableai/goagent/instrumentation/opentelemetry/net/http/examples"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 

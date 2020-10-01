@@ -11,7 +11,7 @@ import (
 // EnrichUnaryServerInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON
 func EnrichUnaryServerInterceptor(delegateInterceptor grpc.UnaryServerInterceptor, spanFromContext sdk.SpanFromContext) grpc.UnaryServerInterceptor {
-	var defaultAttributes map[string]string
+	defaultAttributes := make(map[string]string)
 	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}

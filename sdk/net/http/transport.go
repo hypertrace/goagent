@@ -80,7 +80,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 // EnrichTransport returns a new round tripper instrumented that relies on the
 // needs to be used with OTel instrumentation.
 func EnrichTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext) http.RoundTripper {
-	var defaultAttributes map[string]string
+	defaultAttributes := make(map[string]string)
 	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}

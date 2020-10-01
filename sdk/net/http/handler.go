@@ -12,12 +12,12 @@ import (
 
 type handler struct {
 	delegate                 http.Handler
-	defaultAttributes        map[string]interface{}
+	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
 }
 
 func EnrichHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext) http.Handler {
-	var defaultAttributes map[string]interface{}
+	defaultAttributes := make(map[string]string)
 	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}

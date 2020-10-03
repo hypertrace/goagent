@@ -8,7 +8,7 @@ import (
 )
 
 // EnrichHandler returns a new round tripper instrumented that relies on the
-// needs to be used with OTel instrumentation.
+// needs to be used with OpenCensus instrumentation.
 func EnrichHandler(delegate http.Handler) http.Handler {
 	return traceablehttp.EnrichHandler(delegate, opencensus.SpanFromContext)
 }

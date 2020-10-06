@@ -6,7 +6,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// EnrichUnaryServerInterceptor returns a new unary server interceptor tthat will
+// EnrichUnaryServerInterceptor returns a new unary server interceptor that will
 // complement existing OpenTelemetry instrumentation
 func EnrichUnaryServerInterceptor(delegate grpc.UnaryServerInterceptor) grpc.UnaryServerInterceptor {
 	return traceablegrpc.EnrichUnaryServerInterceptor(delegate, opentelemetry.SpanFromContext)

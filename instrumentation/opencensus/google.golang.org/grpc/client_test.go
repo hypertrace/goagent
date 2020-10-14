@@ -2,10 +2,6 @@ package grpc
 
 import (
 	"context"
-	"encoding/json"
-	"log"
-	"net"
-	reflect "reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,76 +12,18 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/grpc/test/bufconn"
 )
 
-var _ helloworld.GreeterServer = server{}
-
-type server struct {
-	reply        *helloworld.HelloReply
-	err          error
-	replyHeader  metadata.MD
-	replyTrailer metadata.MD
-	*helloworld.UnimplementedGreeterServer
-}
-
-func (s server) SayHello(ctx context.Context, _ *helloworld.HelloRequest) (*helloworld.HelloReply, error) {
-	if s.reply == nil && s.err == nil {
-		log.Fatal("missing reply or error in server")
-	}
-
-	if err := grpc.SetTrailer(ctx, s.replyTrailer); err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to send reply trailer")
-	}
-
-	if err := grpc.SendHeader(ctx, s.replyHeader); err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to send reply headers")
-	}
-
-	return s.reply, s.err
-}
-
-// createDialer creates a connection to be used as context dialer in GRPC
-// communication.
-func createDialer(s *grpc.Server) func(context.Context, string) (net.Conn, error) {
-	const bufSize = 1024 * 1024
-
-	listener := bufconn.Listen(bufSize)
-	conn := func(context.Context, string) (net.Conn, error) {
-		return listener.Dial()
-	}
-
-	go func() {
-		if err := s.Serve(listener); err != nil {
-			log.Fatalf("Server exited with error: %v", err)
-		}
-	}()
-
-	return conn
-}
-
-// jsonEqual compares the JSON from two strings.
-func jsonEqual(a, b string) (bool, error) {
-	var j, j2 interface{}
-	if err := json.Unmarshal([]byte(a), &j); err != nil {
-		return false, err
-	}
-	if err := json.Unmarshal([]byte(b), &j2); err != nil {
-		return false, err
-	}
-	return reflect.DeepEqual(j2, j), nil
-}
-
-func TestServerHelloWorldSuccess(t *testing.T) {
+func TestClientHelloWorldSuccess(t *testing.T) {
 	flusher := internal.InitTracer()
 
-	s := grpc.NewServer(
-		grpc.StatsHandler(WrapServerHandler(&ocgrpc.ServerHandler{})),
-	)
+	s := grpc.NewServer()
 	defer s.Stop()
 
 	helloworld.RegisterGreeterServer(s, &server{
-		reply: &helloworld.HelloReply{Message: "Hi Pupo"},
+		reply:        &helloworld.HelloReply{Message: "Hi Pupo"},
+		replyHeader:  metadata.Pairs("test_header_key", "test_header_value"),
+		replyTrailer: metadata.Pairs("test_trailer_key", "test_trailer_value"),
 	})
 
 	dialer := createDialer(s)
@@ -96,6 +34,7 @@ func TestServerHelloWorldSuccess(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
+		grpc.WithStatsHandler(WrapClientHandler(&ocgrpc.ClientHandler{})),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -104,10 +43,13 @@ func TestServerHelloWorldSuccess(t *testing.T) {
 
 	client := helloworld.NewGreeterClient(conn)
 
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
-	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
-		Name: "Pupo",
-	})
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key_1", "test_value_1"))
+	_, err = client.SayHello(
+		ctx,
+		&helloworld.HelloRequest{
+			Name: "Pupo",
+		},
+	)
 	if err != nil {
 		t.Fatalf("call to Register failed: %v", err)
 	}
@@ -119,10 +61,13 @@ func TestServerHelloWorldSuccess(t *testing.T) {
 	// TODO: Make sure this is consistent with other instrumentations, e.g. OTel
 	// records helloworld.Greeter/SayHello
 	assert.Equal(t, "helloworld.Greeter.SayHello", span.Name)
+
 	assert.Equal(t, "grpc", span.Attributes["rpc.system"].(string))
 	assert.Equal(t, "helloworld.Greeter", span.Attributes["rpc.service"].(string))
 	assert.Equal(t, "SayHello", span.Attributes["rpc.method"].(string))
-	assert.Equal(t, "test_value", span.Attributes["rpc.request.metadata.test_key"].(string))
+	assert.Equal(t, "test_value_1", span.Attributes["rpc.request.metadata.test_key_1"].(string))
+	assert.Equal(t, "test_header_value", span.Attributes["rpc.response.metadata.test_header_key"].(string))
+	assert.Equal(t, "test_trailer_value", span.Attributes["rpc.response.metadata.test_trailer_key"].(string))
 
 	expectedBody := "{\"name\":\"Pupo\"}"
 	actualBody := span.Attributes["rpc.request.body"].(string)
@@ -141,12 +86,10 @@ func TestServerHelloWorldSuccess(t *testing.T) {
 	}
 }
 
-func TestServerHelloWorldFails(t *testing.T) {
+func TestClientRegisterPersonFails(t *testing.T) {
 	flusher := internal.InitTracer()
 
-	s := grpc.NewServer(
-		grpc.StatsHandler(WrapServerHandler(&ocgrpc.ServerHandler{})),
-	)
+	s := grpc.NewServer()
 	defer s.Stop()
 
 	expectedError := status.Error(codes.InvalidArgument, "invalid argument")
@@ -162,6 +105,7 @@ func TestServerHelloWorldFails(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
+		grpc.WithStatsHandler(WrapClientHandler(&ocgrpc.ClientHandler{})),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -185,12 +129,10 @@ func TestServerHelloWorldFails(t *testing.T) {
 	assert.Equal(t, "invalid argument", span.Status.Message)
 }
 
-func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
+func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
 	internal.InitTracer()
 
-	s := grpc.NewServer(
-		grpc.StatsHandler(WrapServerHandler(&ocgrpc.ServerHandler{})),
-	)
+	s := grpc.NewServer()
 	defer s.Stop()
 
 	helloworld.RegisterGreeterServer(s, &server{
@@ -205,6 +147,7 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
+		grpc.WithStatsHandler(WrapClientHandler(&ocgrpc.ClientHandler{})),
 	)
 	if err != nil {
 		b.Fatalf("failed to dial bufnet: %v", err)
@@ -225,10 +168,10 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 	}
 }
 
-func BenchmarkServerRequestDefaultServerHandler(b *testing.B) {
-	s := grpc.NewServer(
-		grpc.StatsHandler(&ocgrpc.ServerHandler{}),
-	)
+func BenchmarkClientRequestDefaultInterceptor(b *testing.B) {
+	internal.InitTracer()
+
+	s := grpc.NewServer()
 	defer s.Stop()
 
 	helloworld.RegisterGreeterServer(s, &server{
@@ -243,6 +186,7 @@ func BenchmarkServerRequestDefaultServerHandler(b *testing.B) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
+		grpc.WithStatsHandler(WrapClientHandler(&ocgrpc.ClientHandler{})),
 	)
 	if err != nil {
 		b.Fatalf("failed to dial bufnet: %v", err)

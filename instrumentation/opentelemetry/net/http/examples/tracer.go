@@ -4,8 +4,6 @@ import (
 	"log"
 
 	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/propagation"
-	apitrace "go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/exporters/stdout"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -14,7 +12,7 @@ import (
 )
 
 // InitTracer initializes the tracer and register it globally
-func InitTracer(serviceName string) {
+func InitTracer(serviceName string) func() {
 	// Create stdout exporter to be able to retrieve
 	// the collected spans.
 	stdoutExporter, err := stdout.NewExporter(stdout.WithPrettyPrint())
@@ -40,9 +38,7 @@ func InitTracer(serviceName string) {
 		log.Fatal(err)
 	}
 
-	global.SetPropagators(propagation.New(
-		propagation.WithExtractors(apitrace.B3{}),
-		propagation.WithInjectors(apitrace.B3{}),
-	))
 	global.SetTraceProvider(tp)
+
+	return func() {}
 }

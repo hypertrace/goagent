@@ -82,7 +82,7 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			EnrichUnaryServerInterceptor(
+			WrapUnaryServerInterceptor(
 				otel.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),
@@ -151,7 +151,7 @@ func TestServerRegisterPersonFails(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			EnrichUnaryServerInterceptor(
+			WrapUnaryServerInterceptor(
 				otel.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),
@@ -199,7 +199,7 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			EnrichUnaryServerInterceptor(
+			WrapUnaryServerInterceptor(
 				otel.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),

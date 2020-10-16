@@ -10,8 +10,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
 	traceablehttp "github.com/traceableai/goagent/instrumentation/opentelemetry/net/http"
+	"github.com/traceableai/goagent/instrumentation/opentelemetry/net/http/examples"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
@@ -20,7 +20,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.Handle("/foo", otelhttp.NewHandler(
-		traceablehttp.EnrichHandler(
+		traceablehttp.WrapHandler(
 			http.HandlerFunc(fooHandler),
 		),
 		"/foo",
@@ -38,6 +38,7 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer r.Body.Close()
 
 	p := &person{}
 	err = json.Unmarshal(sBody, p)

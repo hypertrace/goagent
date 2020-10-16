@@ -31,7 +31,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(
-			EnrichTransport(http.DefaultTransport),
+			WrapTransport(http.DefaultTransport),
 		),
 	}
 
@@ -81,7 +81,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 	expectedErr := errors.New("roundtrip error")
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(
-			EnrichTransport(failingTransport{expectedErr}),
+			WrapTransport(failingTransport{expectedErr}),
 		),
 	}
 
@@ -141,7 +141,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			client := &http.Client{
 				Transport: otelhttp.NewTransport(
-					EnrichTransport(http.DefaultTransport),
+					WrapTransport(http.DefaultTransport),
 				),
 			}
 
@@ -186,13 +186,14 @@ func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
 		// We make sure the context is being injected.
 		ctx := propagation.ExtractHTTP(context.Background(), global.Propagators(), req.Header)
 		_, extractedSpan := tracer.Start(ctx, "test2")
+		defer extractedSpan.End()
 		assert.Equal(t, span.SpanContext().TraceID, extractedSpan.SpanContext().TraceID)
 	}))
 	defer srv.Close()
 
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(
-			EnrichTransport(http.DefaultTransport),
+			WrapTransport(http.DefaultTransport),
 		),
 	}
 

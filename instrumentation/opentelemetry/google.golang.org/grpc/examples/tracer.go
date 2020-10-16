@@ -2,6 +2,7 @@ package examples
 
 import (
 	"log"
+	"time"
 
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/exporters/stdout"
@@ -12,7 +13,7 @@ import (
 )
 
 // InitTracer initializes the tracer and register it globally
-func InitTracer(serviceName string) {
+func InitTracer(serviceName string) func() {
 	// Create stdout exporter to be able to retrieve
 	// the collected spans.
 	stdoutExporter, err := stdout.NewExporter(stdout.WithPrettyPrint())
@@ -39,4 +40,7 @@ func InitTracer(serviceName string) {
 	}
 
 	global.SetTraceProvider(tp)
+	return func() {
+		<-time.After(2 * time.Second)
+	}
 }

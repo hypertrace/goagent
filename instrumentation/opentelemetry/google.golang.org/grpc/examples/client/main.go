@@ -11,6 +11,7 @@ import (
 	traceablegrpc "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
 	"github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
 	pb "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples/helloworld"
+	"go.opencensus.io/trace"
 	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
@@ -22,7 +23,15 @@ const (
 )
 
 func main() {
-	examples.InitTracer("grpc-client")
+	closer := examples.InitTracer("grpc-client")
+	defer closer()
+
+	ctx, span := trace.StartSpan(
+		context.Background(),
+		"client-bootstrap",
+		trace.WithSampler(trace.AlwaysSample()),
+	)
+	defer span.End()
 
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(
@@ -30,7 +39,7 @@ func main() {
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(
-			traceablegrpc.EnrichUnaryClientInterceptor(
+			traceablegrpc.WrapUnaryClientInterceptor(
 				otelgrpc.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),
@@ -46,7 +55,7 @@ func main() {
 	if len(os.Args) > 1 {
 		name = os.Args[1]
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	r, err := client.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {

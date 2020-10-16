@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/stats"
 )
 
-// EnrichUnaryServerInterceptor returns an interceptor that records the request and response message's body
+// WrapUnaryServerInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON
-func EnrichUnaryServerInterceptor(
+func WrapUnaryServerInterceptor(
 	delegateInterceptor grpc.UnaryServerInterceptor,
 	spanFromContext sdk.SpanFromContext,
 ) grpc.UnaryServerInterceptor {

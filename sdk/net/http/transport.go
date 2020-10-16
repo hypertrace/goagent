@@ -77,9 +77,9 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return res, err
 }
 
-// EnrichTransport returns a new round tripper instrumented that relies on the
-// needs to be used with OTel instrumentation.
-func EnrichTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext) http.RoundTripper {
+// WrapTransport returns a new http.RoundTripper that should be wrapped
+// by an instrumented http.RoundTripper
+func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext) http.RoundTripper {
 	defaultAttributes := make(map[string]string)
 	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes["container_id"] = containerID

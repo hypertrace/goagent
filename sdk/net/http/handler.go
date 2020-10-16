@@ -16,7 +16,7 @@ type handler struct {
 	spanFromContextRetriever sdk.SpanFromContext
 }
 
-func EnrichHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext) http.Handler {
+func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext) http.Handler {
 	defaultAttributes := make(map[string]string)
 	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes["container_id"] = containerID

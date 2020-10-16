@@ -36,7 +36,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	defer srv.Close()
 
 	tr := &mockTransport{
-		baseRoundTripper: EnrichTransport(http.DefaultTransport, mock.SpanFromContext),
+		baseRoundTripper: WrapTransport(http.DefaultTransport, mock.SpanFromContext),
 	}
 	client := &http.Client{
 		Transport: tr,
@@ -81,7 +81,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 	expectedErr := errors.New("roundtrip error")
 	client := &http.Client{
 		Transport: &mockTransport{
-			baseRoundTripper: EnrichTransport(failingTransport{expectedErr}, mock.SpanFromContext),
+			baseRoundTripper: WrapTransport(failingTransport{expectedErr}, mock.SpanFromContext),
 		},
 	}
 
@@ -138,7 +138,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			defer srv.Close()
 
 			tr := &mockTransport{
-				baseRoundTripper: EnrichTransport(http.DefaultTransport, mock.SpanFromContext),
+				baseRoundTripper: WrapTransport(http.DefaultTransport, mock.SpanFromContext),
 			}
 			client := &http.Client{
 				Transport: tr,

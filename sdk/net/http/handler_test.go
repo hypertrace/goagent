@@ -33,7 +33,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	ih := &mockHandler{baseHandler: EnrichHandler(h, mock.SpanFromContext)}
+	ih := &mockHandler{baseHandler: WrapHandler(h, mock.SpanFromContext)}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("api_key", "xyz123abc")
@@ -93,7 +93,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			ih := &mockHandler{baseHandler: EnrichHandler(h, mock.SpanFromContext)}
+			ih := &mockHandler{baseHandler: WrapHandler(h, mock.SpanFromContext)}
 
 			r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader(tCase.requestBody))
 			r.Header.Add("content-type", tCase.requestContentType)

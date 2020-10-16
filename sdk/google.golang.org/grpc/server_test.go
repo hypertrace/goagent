@@ -26,7 +26,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			EnrichUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext),
+			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext),
 		),
 	)
 	defer s.Stop()

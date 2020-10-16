@@ -9,8 +9,8 @@ import (
 	"net"
 
 	traceablegrpc "github.com/traceableai/goagent/instrumentation/opencensus/google.golang.org/grpc"
+	"github.com/traceableai/goagent/instrumentation/opencensus/google.golang.org/grpc/examples"
 	pb "github.com/traceableai/goagent/instrumentation/opencensus/google.golang.org/grpc/examples/helloworld"
-	"github.com/traceableai/goagent/instrumentation/opencensus/internal"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 )
@@ -31,7 +31,8 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 }
 
 func main() {
-	internal.InitTracer()
+	closer := examples.InitTracer("grpc-server")
+	defer closer()
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

@@ -17,12 +17,13 @@ import (
 )
 
 func main() {
-	examples.InitTracer("http-server")
+	closer := examples.InitTracer("http-server")
+	defer closer()
 
 	r := mux.NewRouter()
 	r.Handle("/foo", &ochttp.Handler{
 		Propagation: &b3.HTTPFormat{},
-		Handler:     traceablehttp.EnrichHandler(http.HandlerFunc(fooHandler)),
+		Handler:     traceablehttp.WrapHandler(http.HandlerFunc(fooHandler)),
 	})
 	log.Fatal(http.ListenAndServe(":8081", r))
 }

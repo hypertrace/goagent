@@ -40,7 +40,7 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
-			EnrichUnaryClientInterceptor(
+			WrapUnaryClientInterceptor(
 				makeMockUnaryClientInterceptor(&spans),
 				mock.SpanFromContext,
 			),

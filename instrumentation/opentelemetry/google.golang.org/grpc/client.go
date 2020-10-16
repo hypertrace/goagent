@@ -6,8 +6,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-// EnrichUnaryClientInterceptor returns a new unary client interceptor that will
+// WrapUnaryClientInterceptor returns a new unary client interceptor that will
 // complement existing OpenTelemetry instrumentation
-func EnrichUnaryClientInterceptor(delegate grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
-	return traceablegrpc.EnrichUnaryClientInterceptor(delegate, opentelemetry.SpanFromContext)
+func WrapUnaryClientInterceptor(delegate grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
+	return traceablegrpc.WrapUnaryClientInterceptor(delegate, opentelemetry.SpanFromContext)
 }

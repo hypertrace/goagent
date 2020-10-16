@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,6 +14,7 @@ import (
 	traceablehttp "github.com/traceableai/goagent/instrumentation/opentelemetry/net/http"
 	"github.com/traceableai/goagent/instrumentation/opentelemetry/net/http/examples"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
+	"go.opentelemetry.io/otel/api/global"
 )
 
 type message struct {
@@ -20,15 +22,23 @@ type message struct {
 }
 
 func main() {
-	examples.InitTracer("http-client")
+	flusher := examples.InitTracer("http-client")
+	defer flusher()
+
+	ctx, span := global.TraceProvider().Tracer("ai.traceable.goagent").Start(
+		context.Background(),
+		"bootstrap-span",
+	)
+	defer span.End()
 
 	client := http.Client{
 		Transport: otelhttp.NewTransport(
-			traceablehttp.EnrichTransport(http.DefaultTransport),
+			traceablehttp.WrapTransport(http.DefaultTransport),
 		),
 	}
 
 	req, err := http.NewRequest("GET", "http://localhost:8081/foo", bytes.NewBufferString(`{"name":"Dave"}`))
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		log.Fatalf("failed to create the request: %v", err)
@@ -44,6 +54,7 @@ func main() {
 		log.Fatalf("failed to read the response body: %v", err)
 	}
 	defer res.Body.Close()
+
 	m := &message{}
 	err = json.Unmarshal(resBody, m)
 	if err != nil {

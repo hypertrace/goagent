@@ -32,7 +32,8 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 }
 
 func main() {
-	examples.InitTracer("grpc-server")
+	closer := examples.InitTracer("grpc-server")
+	defer closer()
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
@@ -40,7 +41,7 @@ func main() {
 	}
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			traceablegrpc.EnrichUnaryServerInterceptor(
+			traceablegrpc.WrapUnaryServerInterceptor(
 				otelgrpc.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),

@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// EnrichUnaryClientInterceptor returns an interceptor that records the request and response message's body
+// WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON.
-func EnrichUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor, spanFromContext sdk.SpanFromContext) grpc.UnaryClientInterceptor {
+func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor, spanFromContext sdk.SpanFromContext) grpc.UnaryClientInterceptor {
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
 	}

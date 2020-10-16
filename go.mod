@@ -3,7 +3,9 @@ module github.com/traceableai/goagent
 go 1.14
 
 require (
+	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/golang/protobuf v1.4.2
+	github.com/openzipkin/zipkin-go v0.2.3
 	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.4
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc v0.11.0

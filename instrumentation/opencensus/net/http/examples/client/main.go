@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,7 +13,8 @@ import (
 
 	traceablehttp "github.com/traceableai/goagent/instrumentation/opencensus/net/http"
 	"github.com/traceableai/goagent/instrumentation/opencensus/net/http/examples"
-	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
+	ochttp "go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/trace"
 )
 
 type message struct {
@@ -20,15 +22,24 @@ type message struct {
 }
 
 func main() {
-	examples.InitTracer("http-client")
+	closer := examples.InitTracer("http-client")
+	defer closer()
+
+	ctx, span := trace.StartSpan(
+		context.Background(),
+		"client-bootstrap",
+		trace.WithSampler(trace.AlwaysSample()),
+	)
+	defer span.End()
 
 	client := http.Client{
-		Transport: otelhttp.NewTransport(
-			traceablehttp.EnrichTransport(http.DefaultTransport),
-		),
+		Transport: &ochttp.Transport{
+			Base: traceablehttp.WrapTransport(http.DefaultTransport),
+		},
 	}
 
 	req, err := http.NewRequest("GET", "http://localhost:8081/foo", bytes.NewBufferString(`{"name":"Dave"}`))
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		log.Fatalf("failed to create the request: %v", err)

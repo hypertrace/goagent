@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/instrumentation/opentelemetry/internal"
-	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
-	apitrace "go.opentelemetry.io/otel/api/trace"
+	"github.com/traceableai/goagent/instrumentation/opencensus/internal"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/trace"
 )
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	flusher := internal.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("request_id", "abc123xyz")
@@ -22,7 +22,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
+	ih := &ochttp.Handler{Handler: WrapHandler(h)}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("api_key", "xyz123abc")
@@ -34,17 +34,17 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 1, len(spans))
 
-	assert.Equal(t, "test_name", spans[0].Name)
-	assert.Equal(t, apitrace.SpanKindServer, spans[0].SpanKind)
+	span := spans[0]
+	assert.Equal(t, "/foo", span.Name)
+	assert.Equal(t, trace.SpanKindServer, span.SpanKind)
 
-	attrs := internal.LookupAttributes(spans[0].Attributes)
-	assert.Equal(t, "http://traceable.ai/foo?user_id=1", attrs.Get("http.url").AsString())
-	assert.Equal(t, "xyz123abc", attrs.Get("http.request.header.Api_key").AsString())
-	assert.Equal(t, "abc123xyz", attrs.Get("http.response.header.Request_id").AsString())
+	assert.Equal(t, "http://traceable.ai/foo?user_id=1", span.Attributes["http.url"].(string))
+	assert.Equal(t, "xyz123abc", span.Attributes["http.request.header.Api_key"].(string))
+	assert.Equal(t, "abc123xyz", span.Attributes["http.response.header.Request_id"].(string))
 }
 
 func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	flusher := internal.InitTracer()
 
 	tCases := map[string]struct {
 		requestBody                    string
@@ -88,7 +88,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
+			ih := &ochttp.Handler{Handler: WrapHandler(h)}
 
 			r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader(tCase.requestBody))
 			r.Header.Add("content-type", tCase.requestContentType)
@@ -98,25 +98,30 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			ih.ServeHTTP(w, r)
 
 			span := flusher()[0]
-			attrs := internal.LookupAttributes(span.Attributes)
 
 			if tCase.shouldHaveRecordedRequestBody {
-				assert.Equal(t, tCase.requestBody, attrs.Get("http.request.body").AsString())
+				assert.Equal(t, tCase.requestBody, span.Attributes["http.request.body"].(string))
+			} else {
+				_, found := span.Attributes["http.request.body"]
+				assert.False(t, found)
 			}
 
 			if tCase.shouldHaveRecordedResponseBody {
-				assert.Equal(t, tCase.responseBody, attrs.Get("http.response.body").AsString())
+				assert.Equal(t, tCase.responseBody, span.Attributes["http.response.body"].(string))
+			} else {
+				_, found := span.Attributes["http.response.body"]
+				assert.False(t, found)
 			}
 		})
 	}
 }
 
 func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	flusher := internal.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
 
-	ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
+	ih := &ochttp.Handler{Handler: WrapHandler(h)}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("X-B3-TraceId", "1f46165474d11ee5836777d85df2cdab")

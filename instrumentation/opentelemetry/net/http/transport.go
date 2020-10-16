@@ -7,8 +7,9 @@ import (
 	traceablehttp "github.com/traceableai/goagent/sdk/net/http"
 )
 
-// EnrichTransport returns a new round tripper instrumented that relies on the
-// needs to be used with OTel instrumentation.
-func EnrichTransport(delegate http.RoundTripper) http.RoundTripper {
-	return traceablehttp.EnrichTransport(delegate, opentelemetry.SpanFromContext)
+// WrapTransport wraps an uninstrumented RoundTripper (e.g. http.DefaultTransport)
+// and returns an instrumented RoundTripper that has to be used as base for the
+// OTel's RoundTripper.
+func WrapTransport(delegate http.RoundTripper) http.RoundTripper {
+	return traceablehttp.WrapTransport(delegate, opentelemetry.SpanFromContext)
 }

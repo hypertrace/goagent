@@ -7,8 +7,8 @@ import (
 	traceablehttp "github.com/traceableai/goagent/sdk/net/http"
 )
 
-// EnrichHandler returns a new round tripper instrumented that relies on the
-// needs to be used with OpenCensus instrumentation.
-func EnrichHandler(delegate http.Handler) http.Handler {
-	return traceablehttp.EnrichHandler(delegate, opencensus.SpanFromContext)
+// WrapHandler returns a new http.Handler that should be passed to
+// the *ochttp.Handler
+func WrapHandler(delegate http.Handler) http.Handler {
+	return traceablehttp.WrapHandler(delegate, opencensus.SpanFromContext)
 }

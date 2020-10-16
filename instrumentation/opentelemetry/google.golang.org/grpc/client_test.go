@@ -36,7 +36,7 @@ func TestClientHelloWorldSuccess(t *testing.T) {
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
-			EnrichUnaryClientInterceptor(
+			WrapUnaryClientInterceptor(
 				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),
@@ -110,7 +110,7 @@ func TestClientRegisterPersonFails(t *testing.T) {
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
-			EnrichUnaryClientInterceptor(
+			WrapUnaryClientInterceptor(
 				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),
@@ -156,7 +156,7 @@ func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
-			EnrichUnaryClientInterceptor(
+			WrapUnaryClientInterceptor(
 				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
 			),
 		),

@@ -30,7 +30,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	client := &http.Client{
 		Transport: &ochttp.Transport{
-			Base: EnrichTransport(http.DefaultTransport),
+			Base: WrapTransport(http.DefaultTransport),
 		},
 	}
 
@@ -78,7 +78,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 	expectedErr := errors.New("roundtrip error")
 	client := &http.Client{
 		Transport: &ochttp.Transport{
-			Base: EnrichTransport(failingTransport{expectedErr}),
+			Base: WrapTransport(failingTransport{expectedErr}),
 		},
 	}
 
@@ -138,7 +138,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			client := &http.Client{
 				Transport: &ochttp.Transport{
-					Base: EnrichTransport(http.DefaultTransport),
+					Base: WrapTransport(http.DefaultTransport),
 				},
 			}
 
@@ -191,7 +191,7 @@ func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
 
 	client := &http.Client{
 		Transport: &ochttp.Transport{
-			Base: EnrichTransport(http.DefaultTransport),
+			Base: WrapTransport(http.DefaultTransport),
 		},
 	}
 

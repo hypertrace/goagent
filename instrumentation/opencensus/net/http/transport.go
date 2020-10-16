@@ -7,8 +7,8 @@ import (
 	traceablehttp "github.com/traceableai/goagent/sdk/net/http"
 )
 
-// EnrichTransport returns a new round tripper instrumented that relies on the
-// needs to be used with OpenCensus instrumentation.
-func EnrichTransport(delegate http.RoundTripper) http.RoundTripper {
-	return traceablehttp.EnrichTransport(delegate, opencensus.SpanFromContext)
+// WrapTransport returns a new http.RoundTripper that should be passed to
+// the OpenCensus *ochttp.Transport
+func WrapTransport(delegate http.RoundTripper) http.RoundTripper {
+	return traceablehttp.WrapTransport(delegate, opencensus.SpanFromContext)
 }

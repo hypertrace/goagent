@@ -8,7 +8,9 @@ import (
 	"os"
 	"time"
 
+	traceablegrpc "github.com/traceableai/goagent/instrumentation/opencensus/google.golang.org/grpc"
 	pb "github.com/traceableai/goagent/instrumentation/opencensus/google.golang.org/grpc/examples/helloworld"
+	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -23,6 +25,7 @@ func main() {
 		address,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
+		grpc.WithStatsHandler(traceablegrpc.WrapClientHandler(&ocgrpc.ClientHandler{})),
 	)
 	if err != nil {
 		log.Fatalf("could not connect: %v", err)

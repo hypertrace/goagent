@@ -38,8 +38,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer(
-		grpc.StatsHandler(&ocgrpc.ServerHandler{}),
-		grpc.UnaryInterceptor(traceablegrpc.UnaryServerInterceptor()),
+		grpc.StatsHandler(traceablegrpc.WrapServerHandler(&ocgrpc.ServerHandler{})),
 	)
 
 	pb.RegisterGreeterServer(s, &server{})

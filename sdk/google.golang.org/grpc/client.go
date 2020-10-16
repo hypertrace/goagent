@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"strings"
 
 	"github.com/traceableai/goagent/sdk"
 	"github.com/traceableai/goagent/sdk/internal"
@@ -12,7 +13,9 @@ import (
 // EnrichUnaryClientInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON.
 func EnrichUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor, spanFromContext sdk.SpanFromContext) grpc.UnaryClientInterceptor {
-	defaultAttributes := make(map[string]string)
+	defaultAttributes := map[string]string{
+		"rpc.system": "grpc",
+	}
 	if containerID, err := internal.GetContainerID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
@@ -36,6 +39,10 @@ func EnrichUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientIntercepto
 			for key, value := range defaultAttributes {
 				span.SetAttribute(key, value)
 			}
+
+			pieces := strings.Split(method[1:], "/")
+			span.SetAttribute("rpc.service", pieces[0])
+			span.SetAttribute("rpc.method", pieces[1])
 
 			reqBody, err := marshalMessageableJSON(req)
 			if len(reqBody) > 0 && err == nil {

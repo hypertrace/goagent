@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"sync"
 
 	"github.com/traceableai/goagent/sdk"
 )
@@ -11,9 +12,13 @@ var _ sdk.Span = &Span{}
 type Span struct {
 	Attributes map[string]interface{}
 	Noop       bool
+	mux        sync.Mutex
 }
 
 func (s *Span) SetAttribute(key string, value interface{}) {
+	s.mux.Lock() // avoids race conditions
+	defer s.mux.Unlock()
+
 	if s.Attributes == nil {
 		s.Attributes = make(map[string]interface{})
 	}

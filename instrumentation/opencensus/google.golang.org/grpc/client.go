@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc/stats"
 )
 
-// WrapServerHandler wraps an OpenCensus ServerHandler and returns a new one that records
+// WrapClientHandler wraps an OpenCensus ClientHandler and returns a new one that records
 // the request/response body and metadata.
-func WrapServerHandler(delegate *ocgrpc.ServerHandler) stats.Handler {
+func WrapClientHandler(delegate *ocgrpc.ClientHandler) stats.Handler {
 	return traceablegrpc.WrapStatsHandler(delegate, opencensus.SpanFromContext)
 }

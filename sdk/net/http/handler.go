@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/traceableai/goagent/config"
 	"github.com/traceableai/goagent/sdk"
 	"github.com/traceableai/goagent/sdk/internal/container"
 )
@@ -14,15 +15,18 @@ type handler struct {
 	delegate                 http.Handler
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
+	recordingConfig          *config.Recording
 }
 
+// WrapHandler wraps an uninstrumented handler (e.g. a handleFunc) and returns a new one
+// that should be used as base to an instrumented handler
 func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext) http.Handler {
 	defaultAttributes := make(map[string]string)
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
 
-	return &handler{delegate, defaultAttributes, spanFromContext}
+	return &handler{delegate, defaultAttributes, spanFromContext, config.GetConfig().GetRecording()}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -41,10 +45,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	span.SetAttribute("http.url", r.URL.String())
-	// Sets an attribute per each request header.
-	setAttributesFromHeaders("request", r.Header, span)
 
-	if shouldRecordBodyOfContentType(r.Header) {
+	// Sets an attribute per each request header.
+	if h.recordingConfig.GetRecordRequestHeaders() {
+		setAttributesFromHeaders("request", r.Header, span)
+	}
+
+	if h.recordingConfig.GetRecordRequestBody() && shouldRecordBodyOfContentType(r.Header) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return
@@ -60,18 +67,21 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
 
-	// create http.ResponseWriter interceptor for tracking response size and
-	// status code.
+	// create http.ResponseWriter interceptor for tracking status code
 	wi := &rwInterceptor{w: w, statusCode: 200}
 
-	// tag found response size and status code on exit
+	// tag found status code on exit
 	defer func() {
-		if len(wi.body) > 0 && shouldRecordBodyOfContentType(wi.Header()) {
+		if h.recordingConfig.GetRecordResponseBody() &&
+			len(wi.body) > 0 &&
+			shouldRecordBodyOfContentType(wi.Header()) {
 			span.SetAttribute("http.response.body", string(wi.body))
 		}
 
-		// Sets an attribute per each response header.
-		setAttributesFromHeaders("response", wi.Header(), span)
+		if h.recordingConfig.GetRecordResponseHeaders() {
+			// Sets an attribute per each response header.
+			setAttributesFromHeaders("response", wi.Header(), span)
+		}
 	}()
 
 	h.delegate.ServeHTTP(wi, r)
@@ -80,8 +90,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Copied from Zipkin Go
 // https://github.com/openzipkin/zipkin-go/blob/v0.2.3/middleware/http/server.go#L164
 //
-// rwInterceptor intercepts the ResponseWriter so it can track response size
-// and returned status code.
+// rwInterceptor intercepts the ResponseWriter so it can track returned status code.
 type rwInterceptor struct {
 	w          http.ResponseWriter
 	body       []byte

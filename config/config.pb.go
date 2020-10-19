@@ -30,9 +30,13 @@ type Recording struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RecordRequestBody     *bool `protobuf:"varint,1,opt,name=recordRequestBody,def=1" json:"recordRequestBody,omitempty"`
-	RecordRequestHeaders  *bool `protobuf:"varint,2,opt,name=recordRequestHeaders,def=1" json:"recordRequestHeaders,omitempty"`
-	RecordResponseBody    *bool `protobuf:"varint,3,opt,name=recordResponseBody,def=1" json:"recordResponseBody,omitempty"`
+	// recordRequestBody enables/disables the recording of the request body
+	RecordRequestBody *bool `protobuf:"varint,1,opt,name=recordRequestBody,def=1" json:"recordRequestBody,omitempty"`
+	// recordRequestBody enables/disables the recording of the request headers
+	RecordRequestHeaders *bool `protobuf:"varint,2,opt,name=recordRequestHeaders,def=1" json:"recordRequestHeaders,omitempty"`
+	// recordRequestBody enables/disables the recording of the response body
+	RecordResponseBody *bool `protobuf:"varint,3,opt,name=recordResponseBody,def=1" json:"recordResponseBody,omitempty"`
+	// recordRequestBody enables/disables the recording of the response headers
 	RecordResponseHeaders *bool `protobuf:"varint,4,opt,name=recordResponseHeaders,def=1" json:"recordResponseHeaders,omitempty"`
 }
 
@@ -109,7 +113,7 @@ type Reporting struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Url    *string `protobuf:"bytes,1,opt,name=url" json:"url,omitempty"`
+	Host   *string `protobuf:"bytes,1,opt,name=host" json:"host,omitempty"`
 	ApiKey *string `protobuf:"bytes,2,opt,name=apiKey" json:"apiKey,omitempty"`
 }
 
@@ -145,9 +149,9 @@ func (*Reporting) Descriptor() ([]byte, []int) {
 	return file_config_config_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Reporting) GetUrl() string {
-	if x != nil && x.Url != nil {
-		return *x.Url
+func (x *Reporting) GetHost() string {
+	if x != nil && x.Host != nil {
+		return *x.Host
 	}
 	return ""
 }
@@ -159,17 +163,16 @@ func (x *Reporting) GetApiKey() string {
 	return ""
 }
 
-type Config struct {
+type Instrumentation struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Recording *Recording `protobuf:"bytes,1,req,name=recording" json:"recording,omitempty"`
-	Reporting *Reporting `protobuf:"bytes,2,req,name=reporting" json:"reporting,omitempty"`
+	ServiceName *string `protobuf:"bytes,1,req,name=serviceName" json:"serviceName,omitempty"`
 }
 
-func (x *Config) Reset() {
-	*x = Config{}
+func (x *Instrumentation) Reset() {
+	*x = Instrumentation{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_config_config_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -177,13 +180,13 @@ func (x *Config) Reset() {
 	}
 }
 
-func (x *Config) String() string {
+func (x *Instrumentation) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Config) ProtoMessage() {}
+func (*Instrumentation) ProtoMessage() {}
 
-func (x *Config) ProtoReflect() protoreflect.Message {
+func (x *Instrumentation) ProtoReflect() protoreflect.Message {
 	mi := &file_config_config_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -195,19 +198,75 @@ func (x *Config) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Config.ProtoReflect.Descriptor instead.
-func (*Config) Descriptor() ([]byte, []int) {
+// Deprecated: Use Instrumentation.ProtoReflect.Descriptor instead.
+func (*Instrumentation) Descriptor() ([]byte, []int) {
 	return file_config_config_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Config) GetRecording() *Recording {
+func (x *Instrumentation) GetServiceName() string {
+	if x != nil && x.ServiceName != nil {
+		return *x.ServiceName
+	}
+	return ""
+}
+
+type AgentConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Instrumentation *Instrumentation `protobuf:"bytes,1,req,name=instrumentation" json:"instrumentation,omitempty"`
+	Recording       *Recording       `protobuf:"bytes,2,req,name=recording" json:"recording,omitempty"`
+	Reporting       *Reporting       `protobuf:"bytes,3,req,name=reporting" json:"reporting,omitempty"`
+}
+
+func (x *AgentConfig) Reset() {
+	*x = AgentConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_config_config_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AgentConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AgentConfig) ProtoMessage() {}
+
+func (x *AgentConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_config_config_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AgentConfig.ProtoReflect.Descriptor instead.
+func (*AgentConfig) Descriptor() ([]byte, []int) {
+	return file_config_config_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AgentConfig) GetInstrumentation() *Instrumentation {
+	if x != nil {
+		return x.Instrumentation
+	}
+	return nil
+}
+
+func (x *AgentConfig) GetRecording() *Recording {
 	if x != nil {
 		return x.Recording
 	}
 	return nil
 }
 
-func (x *Config) GetReporting() *Reporting {
+func (x *AgentConfig) GetReporting() *Reporting {
 	if x != nil {
 		return x.Reporting
 	}
@@ -233,19 +292,26 @@ var file_config_config_proto_rawDesc = []byte{
 	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73,
 	0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x3a, 0x04, 0x74, 0x72, 0x75, 0x65, 0x52, 0x15, 0x72, 0x65,
 	0x63, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x48, 0x65, 0x61, 0x64,
-	0x65, 0x72, 0x73, 0x22, 0x35, 0x0a, 0x09, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x69, 0x6e, 0x67,
-	0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x75,
-	0x72, 0x6c, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x70, 0x69, 0x4b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x06, 0x61, 0x70, 0x69, 0x4b, 0x65, 0x79, 0x22, 0x5c, 0x0a, 0x06, 0x43, 0x6f,
-	0x6e, 0x66, 0x69, 0x67, 0x12, 0x28, 0x0a, 0x09, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x69, 0x6e,
-	0x67, 0x18, 0x01, 0x20, 0x02, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64,
-	0x69, 0x6e, 0x67, 0x52, 0x09, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x69, 0x6e, 0x67, 0x12, 0x28,
-	0x0a, 0x09, 0x72, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x69, 0x6e, 0x67, 0x18, 0x02, 0x20, 0x02, 0x28,
-	0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x69, 0x6e, 0x67, 0x52, 0x09, 0x72,
-	0x65, 0x70, 0x6f, 0x72, 0x74, 0x69, 0x6e, 0x67, 0x42, 0x27, 0x5a, 0x25, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x74, 0x72, 0x61, 0x63, 0x65, 0x61, 0x62, 0x6c, 0x65,
-	0x61, 0x69, 0x2f, 0x67, 0x6f, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69,
-	0x67,
+	0x65, 0x72, 0x73, 0x22, 0x37, 0x0a, 0x09, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x69, 0x6e, 0x67,
+	0x12, 0x12, 0x0a, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
+	0x68, 0x6f, 0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x70, 0x69, 0x4b, 0x65, 0x79, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x61, 0x70, 0x69, 0x4b, 0x65, 0x79, 0x22, 0x33, 0x0a, 0x0f,
+	0x49, 0x6e, 0x73, 0x74, 0x72, 0x75, 0x6d, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12,
+	0x20, 0x0a, 0x0b, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01,
+	0x20, 0x02, 0x28, 0x09, 0x52, 0x0b, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4e, 0x61, 0x6d,
+	0x65, 0x22, 0x9d, 0x01, 0x0a, 0x0b, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x12, 0x3a, 0x0a, 0x0f, 0x69, 0x6e, 0x73, 0x74, 0x72, 0x75, 0x6d, 0x65, 0x6e, 0x74, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x02, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x49, 0x6e, 0x73,
+	0x74, 0x72, 0x75, 0x6d, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0f, 0x69, 0x6e,
+	0x73, 0x74, 0x72, 0x75, 0x6d, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x28, 0x0a,
+	0x09, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x69, 0x6e, 0x67, 0x18, 0x02, 0x20, 0x02, 0x28, 0x0b,
+	0x32, 0x0a, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x69, 0x6e, 0x67, 0x52, 0x09, 0x72, 0x65,
+	0x63, 0x6f, 0x72, 0x64, 0x69, 0x6e, 0x67, 0x12, 0x28, 0x0a, 0x09, 0x72, 0x65, 0x70, 0x6f, 0x72,
+	0x74, 0x69, 0x6e, 0x67, 0x18, 0x03, 0x20, 0x02, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x65, 0x70,
+	0x6f, 0x72, 0x74, 0x69, 0x6e, 0x67, 0x52, 0x09, 0x72, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x69, 0x6e,
+	0x67, 0x42, 0x27, 0x5a, 0x25, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x74, 0x72, 0x61, 0x63, 0x65, 0x61, 0x62, 0x6c, 0x65, 0x61, 0x69, 0x2f, 0x67, 0x6f, 0x61, 0x67,
+	0x65, 0x6e, 0x74, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67,
 }
 
 var (
@@ -260,20 +326,22 @@ func file_config_config_proto_rawDescGZIP() []byte {
 	return file_config_config_proto_rawDescData
 }
 
-var file_config_config_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_config_config_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_config_config_proto_goTypes = []interface{}{
-	(*Recording)(nil), // 0: Recording
-	(*Reporting)(nil), // 1: Reporting
-	(*Config)(nil),    // 2: Config
+	(*Recording)(nil),       // 0: Recording
+	(*Reporting)(nil),       // 1: Reporting
+	(*Instrumentation)(nil), // 2: Instrumentation
+	(*AgentConfig)(nil),     // 3: AgentConfig
 }
 var file_config_config_proto_depIdxs = []int32{
-	0, // 0: Config.recording:type_name -> Recording
-	1, // 1: Config.reporting:type_name -> Reporting
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2, // 0: AgentConfig.instrumentation:type_name -> Instrumentation
+	0, // 1: AgentConfig.recording:type_name -> Recording
+	1, // 2: AgentConfig.reporting:type_name -> Reporting
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_config_config_proto_init() }
@@ -307,7 +375,19 @@ func file_config_config_proto_init() {
 			}
 		}
 		file_config_config_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Config); i {
+			switch v := v.(*Instrumentation); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_config_config_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AgentConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -325,7 +405,7 @@ func file_config_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_config_config_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

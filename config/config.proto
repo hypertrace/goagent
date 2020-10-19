@@ -17,11 +17,16 @@ message Recording {
 }
 
 message Reporting {
-    optional string url = 1;
+    optional string host = 1;
     optional string apiKey = 2;
 }
 
-message Config {
-    required Recording recording = 1;
-    required Reporting reporting = 2;
+message Instrumentation {
+    required string serviceName = 1;
+}
+
+message AgentConfig {
+    required Instrumentation instrumentation = 1;
+    required Recording recording = 2;
+    required Reporting reporting = 3;
 }

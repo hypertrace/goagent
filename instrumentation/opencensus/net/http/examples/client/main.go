@@ -11,8 +11,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/traceableai/goagent/config"
+	"github.com/traceableai/goagent/instrumentation/opencensus"
 	traceablehttp "github.com/traceableai/goagent/instrumentation/opencensus/net/http"
-	"github.com/traceableai/goagent/instrumentation/opencensus/net/http/examples"
 	ochttp "go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 )
@@ -22,8 +23,14 @@ type message struct {
 }
 
 func main() {
-	closer := examples.InitTracer("http-client")
-	defer closer()
+	cfg := &config.AgentConfig{
+		Instrumentation: &config.Instrumentation{
+			ServiceName: config.String("http-client"),
+		},
+	}
+
+	shutdown := opencensus.Init(cfg)
+	defer shutdown()
 
 	ctx, span := trace.StartSpan(
 		context.Background(),

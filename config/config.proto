@@ -1,0 +1,27 @@
+syntax = "proto2";
+
+option go_package = "github.com/traceableai/goagent/config";
+
+message Recording {
+    // recordRequestBody enables/disables the recording of the request body
+    optional bool recordRequestBody = 1 [default = true];
+
+    // recordRequestBody enables/disables the recording of the request headers
+    optional bool recordRequestHeaders = 2 [default = true];
+
+    // recordRequestBody enables/disables the recording of the response body
+    optional bool recordResponseBody = 3 [default = true];
+
+    // recordRequestBody enables/disables the recording of the response headers
+    optional bool recordResponseHeaders = 4 [default = true];
+}
+
+message Reporting {
+    optional string url = 1;
+    optional string apiKey = 2;
+}
+
+message Config {
+    required Recording recording = 1;
+    required Reporting reporting = 2;
+}

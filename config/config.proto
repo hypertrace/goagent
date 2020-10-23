@@ -1,32 +1,32 @@
-syntax = "proto2";
+syntax = "proto3";
 
 option go_package = "github.com/traceableai/goagent/config";
 
-message Recording {
-    // recordRequestBody enables/disables the recording of the request body
-    optional bool recordRequestBody = 1 [default = true];
+message AgentConfig {
+    // serviceName identifies the service/process running
+    string serviceName = 1;
 
-    // recordRequestBody enables/disables the recording of the request headers
-    optional bool recordRequestHeaders = 2 [default = true];
+    Reporting reporting = 2;
 
-    // recordRequestBody enables/disables the recording of the response body
-    optional bool recordResponseBody = 3 [default = true];
-
-    // recordRequestBody enables/disables the recording of the response headers
-    optional bool recordResponseHeaders = 4 [default = true];
+    DataCapture dataCapture = 3;
 }
 
 message Reporting {
-    optional string host = 1;
-    optional string apiKey = 2;
+    // tracesEndpointHost represents the host for reporting the traes e.g. api.traceable.ai
+    string tracesEndpointHost = 1;
 }
 
-message Instrumentation {
-    required string serviceName = 1;
+message DataCapture {
+    // enableHTTPPayloads enables/disables the capture of the request/response payload
+    bool enableHTTPPayloads = 1;
+
+    // enableHTTPHeaders enables/disables the capture of the request/response headers
+    bool enableHTTPHeaders = 2;
+
+    // enableRPCPayloads enables/disables the capture of the request/response payload
+    bool enableRPCPayloads = 3;
+
+    // enableRPCMetadata enables/disables the capture of the request/response metadata
+    bool enableRPCMetadata = 4;
 }
 
-message AgentConfig {
-    required Instrumentation instrumentation = 1;
-    required Recording recording = 2;
-    required Reporting reporting = 3;
-}

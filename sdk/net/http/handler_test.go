@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/traceableai/goagent/config"
 	"github.com/traceableai/goagent/sdk/internal/mock"
 )
 
@@ -33,7 +34,11 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	ih := &mockHandler{baseHandler: WrapHandler(h, mock.SpanFromContext)}
+	wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+	wh.dataCaptureConfig = &config.DataCapture{
+		EnableHTTPHeaders: true,
+	}
+	ih := &mockHandler{baseHandler: wh}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("api_key", "xyz123abc")
@@ -52,6 +57,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 
 func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 	tCases := map[string]struct {
+		enableHTTPPayloadConfig        bool
 		requestBody                    string
 		requestContentType             string
 		shouldHaveRecordedRequestBody  bool
@@ -60,28 +66,41 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 		shouldHaveRecordedResponseBody bool
 	}{
 		"no content type headers and empty body": {
+			enableHTTPPayloadConfig:        true,
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
 		"no content type headers and non empty body": {
+			enableHTTPPayloadConfig:        true,
 			requestBody:                    "{}",
 			responseBody:                   "{}",
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
 		"content type headers but empty body": {
+			enableHTTPPayloadConfig:        true,
 			requestContentType:             "application/json",
 			responseContentType:            "application/x-www-form-urlencoded",
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
-		"content type and body": {
+		"content type and body with config enabled": {
+			enableHTTPPayloadConfig:        true,
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
 			requestContentType:             "application/x-www-form-urlencoded",
 			responseContentType:            "Application/JSON",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,
+		},
+		"content type and body but config disabled": {
+			enableHTTPPayloadConfig:        false,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "application/x-www-form-urlencoded",
+			responseContentType:            "Application/JSON",
+			shouldHaveRecordedRequestBody:  false,
+			shouldHaveRecordedResponseBody: false,
 		},
 	}
 
@@ -93,7 +112,11 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			ih := &mockHandler{baseHandler: WrapHandler(h, mock.SpanFromContext)}
+			wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+			wh.dataCaptureConfig = &config.DataCapture{
+				EnableHTTPPayloads: tCase.enableHTTPPayloadConfig,
+			}
+			ih := &mockHandler{baseHandler: wh}
 
 			r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader(tCase.requestBody))
 			r.Header.Add("content-type", tCase.requestContentType)

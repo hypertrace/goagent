@@ -8,6 +8,7 @@ import (
 
 	"github.com/traceableai/goagent/config"
 	"github.com/traceableai/goagent/sdk"
+	sdkconfig "github.com/traceableai/goagent/sdk/internal/config"
 	"github.com/traceableai/goagent/sdk/internal/container"
 )
 
@@ -15,7 +16,7 @@ type handler struct {
 	delegate                 http.Handler
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
-	recordingConfig          *config.Recording
+	dataCaptureConfig        *config.DataCapture
 }
 
 // WrapHandler wraps an uninstrumented handler (e.g. a handleFunc) and returns a new one
@@ -26,7 +27,7 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext) htt
 		defaultAttributes["container_id"] = containerID
 	}
 
-	return &handler{delegate, defaultAttributes, spanFromContext, config.GetConfig().GetRecording()}
+	return &handler{delegate, defaultAttributes, spanFromContext, sdkconfig.GetConfig().GetDataCapture()}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -47,11 +48,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span.SetAttribute("http.url", r.URL.String())
 
 	// Sets an attribute per each request header.
-	if h.recordingConfig.GetRecordRequestHeaders() {
+	if h.dataCaptureConfig.EnableHTTPHeaders {
 		setAttributesFromHeaders("request", r.Header, span)
 	}
 
-	if h.recordingConfig.GetRecordRequestBody() && shouldRecordBodyOfContentType(r.Header) {
+	if h.dataCaptureConfig.EnableHTTPPayloads && shouldRecordBodyOfContentType(r.Header) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return
@@ -72,13 +73,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// tag found status code on exit
 	defer func() {
-		if h.recordingConfig.GetRecordResponseBody() &&
+		if h.dataCaptureConfig.EnableHTTPPayloads &&
 			len(wi.body) > 0 &&
 			shouldRecordBodyOfContentType(wi.Header()) {
 			span.SetAttribute("http.response.body", string(wi.body))
 		}
 
-		if h.recordingConfig.GetRecordResponseHeaders() {
+		if h.dataCaptureConfig.EnableHTTPHeaders {
 			// Sets an attribute per each response header.
 			setAttributesFromHeaders("response", wi.Header(), span)
 		}

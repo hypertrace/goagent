@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script compares the container ID obtained from docker ps and a test
-# app writen in golang using the GetContainerID function.
+# app writen in golang using the GetID function.
 
 docker rmi --force goagent-test
 docker rm goagent-test

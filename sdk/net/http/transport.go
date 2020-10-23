@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/traceableai/goagent/sdk"
-	"github.com/traceableai/goagent/sdk/internal"
+	"github.com/traceableai/goagent/sdk/internal/container"
 )
 
 var _ http.RoundTripper = &roundTripper{}
@@ -81,7 +81,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 // by an instrumented http.RoundTripper
 func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext) http.RoundTripper {
 	defaultAttributes := make(map[string]string)
-	if containerID, err := internal.GetContainerID(); err == nil {
+	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
 

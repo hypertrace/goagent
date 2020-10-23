@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/traceableai/goagent/docker/internal"
+	"github.com/traceableai/goagent/docker/internal/container"
 )
 
 func main() {
-	containerID, err := internal.GetContainerID()
+	containerID, err := container.GetID()
 	if err != nil {
 		log.Fatal(err)
 	}

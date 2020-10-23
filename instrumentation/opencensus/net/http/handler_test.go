@@ -7,10 +7,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/traceableai/goagent/config"
 	"github.com/traceableai/goagent/instrumentation/opencensus/internal"
+	sdkconfig "github.com/traceableai/goagent/sdk/config"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 )
+
+func TestMain(m *testing.M) {
+	sdkconfig.InitConfig(config.AgentConfig{
+		DataCapture: &config.DataCapture{
+			EnableHTTPHeaders:  true,
+			EnableHTTPPayloads: true,
+		},
+	})
+}
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	flusher := internal.InitTracer()

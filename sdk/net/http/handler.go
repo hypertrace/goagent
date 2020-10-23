@@ -8,7 +8,7 @@ import (
 
 	"github.com/traceableai/goagent/config"
 	"github.com/traceableai/goagent/sdk"
-	sdkconfig "github.com/traceableai/goagent/sdk/internal/config"
+	internalconfig "github.com/traceableai/goagent/sdk/internal/config"
 	"github.com/traceableai/goagent/sdk/internal/container"
 )
 
@@ -27,7 +27,7 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext) htt
 		defaultAttributes["container_id"] = containerID
 	}
 
-	return &handler{delegate, defaultAttributes, spanFromContext, sdkconfig.GetConfig().GetDataCapture()}
+	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture()}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

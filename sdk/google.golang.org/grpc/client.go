@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/traceableai/goagent/sdk"
-	"github.com/traceableai/goagent/sdk/internal"
+	"github.com/traceableai/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -16,7 +16,7 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
 	}
-	if containerID, err := internal.GetContainerID(); err == nil {
+	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
 

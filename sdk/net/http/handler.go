@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/traceableai/goagent/sdk"
-	"github.com/traceableai/goagent/sdk/internal"
+	"github.com/traceableai/goagent/sdk/internal/container"
 )
 
 type handler struct {
@@ -18,7 +18,7 @@ type handler struct {
 
 func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext) http.Handler {
 	defaultAttributes := make(map[string]string)
-	if containerID, err := internal.GetContainerID(); err == nil {
+	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
 

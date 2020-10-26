@@ -11,7 +11,7 @@ import (
 func TestSetScalarAttributeSuccess(t *testing.T) {
 	h := http.Header{}
 	h.Set("key_1", "value_1")
-	span := &mock.Span{}
+	span := mock.NewSpan()
 	setAttributesFromHeaders("request", h, span)
 	assert.Equal(t, "value_1", span.Attributes["http.request.header.Key_1"].(string))
 }
@@ -21,7 +21,7 @@ func TestSetMultivalueAttributeSuccess(t *testing.T) {
 	h.Add("key_1", "value_1")
 	h.Add("key_1", "value_2")
 
-	span := &mock.Span{}
+	span := mock.NewSpan()
 	setAttributesFromHeaders("response", h, span)
 
 	assert.Equal(t, "value_1", span.Attributes["http.response.header.Key_1[0]"].(string))

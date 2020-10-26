@@ -4,12 +4,14 @@ import "github.com/traceableai/goagent/config"
 
 func ExampleInit() {
 	shutdown := Init(config.AgentConfig{
-		ServiceName: "my_example_svc",
+		ServiceName: config.StringVal("my_example_svc"),
 		DataCapture: &config.DataCapture{
-			EnableHTTPHeaders: true,
+			HTTPHeaders: &config.Message{
+				Request: config.BoolVal(true),
+			},
 		},
 		Reporting: &config.Reporting{
-			TracesEndpointHost: "api.traceable.ai",
+			Address: config.StringVal("api.traceable.ai"),
 		},
 	})
 

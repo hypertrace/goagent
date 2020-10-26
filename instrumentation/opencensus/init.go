@@ -17,7 +17,7 @@ func Init(cfg config.AgentConfig) func() {
 	sdkconfig.InitConfig(cfg)
 	localEndpoint, _ := zipkin.NewEndpoint(cfg.GetServiceName(), "localhost")
 
-	reporterURI := fmt.Sprintf("http://%s:9411/api/v2/spans", cfg.Reporting.GetTracesEndpointHost())
+	reporterURI := fmt.Sprintf("http://%s:9411/api/v2/spans", cfg.Reporting.GetAddress())
 	reporter := zipkinHTTP.NewReporter(reporterURI)
 
 	exporter := oczipkin.NewExporter(reporter, localEndpoint)

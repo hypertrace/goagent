@@ -8,22 +8,22 @@ import (
 	"path/filepath"
 )
 
-const defaultConfig = "./config.json"
+const defaultConfigFile = "./config.json"
 
-func getBoolEnv(s string, defaultValue bool) bool {
+func getBoolEnv(s string) (bool, bool) {
 	if val := os.Getenv(s); val != "" {
-		return val == "1"
+		return val == "true", true
 	}
 
-	return defaultValue
+	return false, false
 }
 
-func getStringEnv(s string, defaultValue string) string {
+func getStringEnv(s string) (string, bool) {
 	if val := os.Getenv(s); val != "" {
-		return val
+		return val, true
 	}
 
-	return defaultValue
+	return "", false
 }
 
 func loadFromFile(c *AgentConfig, filename string) error {
@@ -43,23 +43,13 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-// Load loads load
+// Load loads the configuration from the default values, config file and env vars.
 func Load() AgentConfig {
-	cfg := AgentConfig{
-		Reporting: &Reporting{
-			TracesEndpointHost: getStringEnv("HT_REPORTING_TRACES_ENDPOINT_HOST", "localhost"),
-		},
-		DataCapture: &DataCapture{
-			EnableHTTPPayloads: getBoolEnv("HT_DATA_CAPTURE_ENABLE_HTTP_PAYLOADS", false),
-			EnableHTTPHeaders:  getBoolEnv("HT_DATA_CAPTURE_ENABLE_HTTP_HEADERS", false),
-			EnableRPCPayloads:  getBoolEnv("HT_DATA_CAPTURE_ENABLE_HTTP_PAYLOADS", false),
-			EnableRPCMetadata:  getBoolEnv("HT_DATA_CAPTURE_ENABLE_HTTP_METADATA", false),
-		},
-	}
+	cfg := AgentConfig{}
 
 	if configFile := os.Getenv("HT_CONFIG_FILE"); configFile == "" {
-		if fileExists(defaultConfig) {
-			loadFromFile(&cfg, defaultConfig)
+		if fileExists(defaultConfigFile) {
+			loadFromFile(&cfg, defaultConfigFile)
 		}
 	} else {
 		absConfigFile, err := filepath.Abs(configFile)
@@ -73,6 +63,8 @@ func Load() AgentConfig {
 			log.Printf("config file %q does not exist.\n", absConfigFile)
 		}
 	}
+
+	cfg.loadFromEnv("HT_", &defaultConfig)
 
 	return cfg
 }

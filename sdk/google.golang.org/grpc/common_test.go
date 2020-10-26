@@ -100,7 +100,7 @@ func (h *mockHandler) HandleRPC(ctx context.Context, rs stats.RPCStats) {}
 
 // TagRPC implements per-RPC context management.
 func (h *mockHandler) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) context.Context {
-	s := &mock.Span{}
+	s := mock.NewSpan()
 	h.Spans = append(h.Spans, s)
 	return mock.ContextWithSpan(ctx, s)
 }

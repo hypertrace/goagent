@@ -1,13 +1,12 @@
-generate-go:
-	@protoc \
-		--go_out=Mgrpc/service_config/service_config.proto=/internal/proto/grpc_service_config:. \
-		--go-grpc_out=Mgrpc/service_config/service_config.proto=/internal/proto/grpc_service_config:. \
-		--go_opt=paths=source_relative \
-		--go-grpc_opt=paths=source_relative \
-		config.proto
+generate-go: # generates proto object for Go
+	#@protoc --go_out=plugins=grpc,paths=source_relative:./transport config.proto
+	go run cmd/generator/main.go config.proto
+	gofmt -s config.ps.go
 
-example-go:
+example-go: # runs the Go example
+	@echo "Parsed values:"
+	@echo ""
 	@go run example/main.go | jq .
 
-defaults-go:
+defaults-go: # displays the Go defaults
 	@go run defaults/main.go | jq .

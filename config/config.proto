@@ -12,21 +12,29 @@ message AgentConfig {
 }
 
 message Reporting {
-    // tracesEndpointHost represents the host for reporting the traes e.g. api.traceable.ai
-    string tracesEndpointHost = 1;
+    // address represents the host for reporting the traes e.g. api.traceable.ai
+    string address = 1;
+
+    // isSecure permits connecting to the trace endpoint without a certificate
+    bool isSecure = 2;
+}
+
+message Message {
+    bool request = 1;
+    bool response = 2;
 }
 
 message DataCapture {
-    // enableHTTPPayloads enables/disables the capture of the request/response payload
-    bool enableHTTPPayloads = 1;
+    // httpHeaders enables/disables the capture of the request/response headers in HTTP
+    Message httpHeaders = 1;
 
-    // enableHTTPHeaders enables/disables the capture of the request/response headers
-    bool enableHTTPHeaders = 2;
+    // httpBody enables/disables the capture of the request/response body in HTTP
+    Message httpBody = 2;
 
-    // enableRPCPayloads enables/disables the capture of the request/response payload
-    bool enableRPCPayloads = 3;
+    // rpcMetadata enables/disables the capture of the request/response metadata in RPC
+    Message rpcMetadata = 3;
 
-    // enableRPCMetadata enables/disables the capture of the request/response metadata
-    bool enableRPCMetadata = 4;
+    // rpcBody enables/disables the capture of the request/response body in RPC
+    Message rpcBody = 4;
 }
 

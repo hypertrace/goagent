@@ -9,7 +9,7 @@ import (
 )
 
 var cfg *config.AgentConfig
-var mux = sync.Mutex{}
+var cfgMux = &sync.Mutex{}
 
 // InitConfig initializes the config with default values
 func InitConfig(c config.AgentConfig) {
@@ -19,9 +19,9 @@ func InitConfig(c config.AgentConfig) {
 	}
 
 	cfg = &config.AgentConfig{}
-	mux.Lock()
+	cfgMux.Lock()
 	err := copier.Copy(cfg, &c)
-	mux.Unlock()
+	cfgMux.Unlock()
 	if err != nil {
 		log.Fatalf("failed to initialize config: %v", err)
 	}

@@ -5,9 +5,11 @@ go 1.14
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/golang/protobuf v1.4.2
-	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
+	github.com/iancoleman/strcase v0.1.2 // indirect
+	github.com/jinzhu/copier v0.0.0-20201025035756-632e723a6687
 	github.com/openzipkin/zipkin-go v0.2.3
 	github.com/stretchr/testify v1.6.1
+	github.com/tallstoat/pbparser v0.2.0 // indirect
 	go.opencensus.io v0.22.4
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc v0.11.0
 	go.opentelemetry.io/contrib/instrumentation/net/http v0.11.0

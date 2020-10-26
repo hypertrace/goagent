@@ -13,7 +13,7 @@ import (
 
 func makeMockUnaryClientInterceptor(mockSpans *[]*mock.Span) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		span := &mock.Span{}
+		span := mock.NewSpan()
 		ctx = mock.ContextWithSpan(ctx, span)
 		*mockSpans = append(*mockSpans, span)
 		return invoker(ctx, method, req, reply, cc, opts...)

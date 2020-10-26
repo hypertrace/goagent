@@ -7,10 +7,27 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/traceableai/goagent/config"
 	"github.com/traceableai/goagent/instrumentation/opentelemetry/internal"
+	sdkconfig "github.com/traceableai/goagent/sdk/config"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 	apitrace "go.opentelemetry.io/otel/api/trace"
 )
+
+func TestMain(m *testing.M) {
+	sdkconfig.InitConfig(config.AgentConfig{
+		DataCapture: &config.DataCapture{
+			HTTPHeaders: &config.Message{
+				Request:  config.BoolVal(true),
+				Response: config.BoolVal(true),
+			},
+			HTTPBody: &config.Message{
+				Request:  config.BoolVal(true),
+				Response: config.BoolVal(true),
+			},
+		},
+	})
+}
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	_, flusher := internal.InitTracer()

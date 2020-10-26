@@ -17,8 +17,14 @@ import (
 func TestMain(m *testing.M) {
 	sdkconfig.InitConfig(config.AgentConfig{
 		DataCapture: &config.DataCapture{
-			EnableHTTPHeaders:  true,
-			EnableHTTPPayloads: true,
+			HTTPHeaders: &config.Message{
+				Request:  config.BoolVal(true),
+				Response: config.BoolVal(true),
+			},
+			HTTPBody: &config.Message{
+				Request:  config.BoolVal(true),
+				Response: config.BoolVal(true),
+			},
 		},
 	})
 }

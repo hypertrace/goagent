@@ -20,7 +20,7 @@ type mockTransport struct {
 }
 
 func (t *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	span := &mock.Span{}
+	span := mock.NewSpan()
 	ctx := mock.ContextWithSpan(context.Background(), span)
 	t.spans = append(t.spans, span)
 	return t.baseRoundTripper.RoundTrip(req.WithContext(ctx))

@@ -9,6 +9,9 @@ type AgentConfig struct {
 
 // GetServiceName returns the serviceName
 func (x *AgentConfig) GetServiceName() string {
+	if x.ServiceName == nil {
+		return ""
+	}
 	return *x.ServiceName
 }
 
@@ -52,11 +55,17 @@ type Reporting struct {
 
 // GetAddress returns the address
 func (x *Reporting) GetAddress() string {
+	if x.Address == nil {
+		return ""
+	}
 	return *x.Address
 }
 
 // GetIsSecure returns the isSecure
 func (x *Reporting) GetIsSecure() bool {
+	if x.IsSecure == nil {
+		return false
+	}
 	return *x.IsSecure
 }
 
@@ -90,11 +99,17 @@ type Message struct {
 
 // GetRequest returns the request
 func (x *Message) GetRequest() bool {
+	if x.Request == nil {
+		return false
+	}
 	return *x.Request
 }
 
 // GetResponse returns the response
 func (x *Message) GetResponse() bool {
+	if x.Response == nil {
+		return false
+	}
 	return *x.Response
 }
 

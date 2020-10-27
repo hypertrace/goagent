@@ -83,6 +83,7 @@ Parse PROTO_FILE and generate output value objects`)
 			} else {
 				c += fmt.Sprintf("// Get%s returns the %s\n", fieldName, mf.Name)
 				c += fmt.Sprintf("func (x *%s) Get%s() %s {\n", m.Name, fieldName, mf.Type.Name())
+				c += fmt.Sprintf("    if x.%s == nil { return %s }\n", fieldName, zeroValues[mf.Type.Name()])
 				c += fmt.Sprintf("    return *x.%s\n", fieldName)
 				c += "}\n\n"
 			}
@@ -118,19 +119,23 @@ Parse PROTO_FILE and generate output value objects`)
 	baseFilename := filepath.Base(file)
 	outputFile := baseFilename[0 : len(baseFilename)-6] // 6 = len(".proto")
 
-	writeToFile(outputFile+".ps.go", []byte(c))
-}
-
-func writeToFile(filename string, content []byte) {
-	f, err := os.Create(filename)
+	err = writeToFile(outputFile+".ps.go", []byte(c))
 	if err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(1)
+	}
+}
+
+func writeToFile(filename string, content []byte) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create file %q: %v", filename, err)
 	}
 	defer f.Close()
 	_, err = f.Write(content)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return fmt.Errorf("failed to write into file %q: %v", filename, err)
 	}
+
+	return nil
 }

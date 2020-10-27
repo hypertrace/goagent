@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"go/format"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,12 +84,12 @@ Parse PROTO_FILE and generate output value objects`)
 			} else {
 				c += fmt.Sprintf("// Get%s returns the %s\n", fieldName, mf.Name)
 				c += fmt.Sprintf("func (x *%s) Get%s() %s {\n", m.Name, fieldName, mf.Type.Name())
-				c += fmt.Sprintf("    if x.%s == nil { return %s }\n", fieldName, zeroValues[mf.Type.Name()])
 				c += fmt.Sprintf("    return *x.%s\n", fieldName)
 				c += "}\n\n"
 			}
 		}
 
+		c += "// loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.\n"
 		c += fmt.Sprintf("func (x *%s) loadFromEnv(prefix string, defaultValues *%s) {\n", m.Name, m.Name)
 		for _, mf := range m.Fields {
 			fieldName := toPublicFieldName(mf.Name)
@@ -99,15 +100,14 @@ Parse PROTO_FILE and generate output value objects`)
 			} else {
 				_type := mf.Type.Name()
 				c += fmt.Sprintf("    if x.%s == nil {\n", fieldName)
+				c += fmt.Sprintf("        x.%s = new(%s)\n", fieldName, _type)
 				c += fmt.Sprintf(
 					"        if val, ok := get%sEnv(prefix + \"%s\"); ok {\n",
 					strings.Title(_type),
 					envPrefix,
 				)
-				c += fmt.Sprintf("            x.%s = new(%s)\n", fieldName, _type)
 				c += fmt.Sprintf("            *x.%s = val\n", fieldName)
 				c += fmt.Sprintf("        } else if defaultValues != nil && defaultValues.%s != nil {\n", fieldName)
-				c += fmt.Sprintf("            x.%s = new(%s)\n", fieldName, _type)
 				c += fmt.Sprintf("            *x.%s = *defaultValues.%s\n", fieldName, fieldName)
 				c += fmt.Sprintf("        }\n")
 				c += fmt.Sprintf("    }\n\n")
@@ -119,7 +119,14 @@ Parse PROTO_FILE and generate output value objects`)
 	baseFilename := filepath.Base(file)
 	outputFile := baseFilename[0 : len(baseFilename)-6] // 6 = len(".proto")
 
-	err = writeToFile(outputFile+".ps.go", []byte(c))
+	bc := []byte(c)
+	fbc, err := format.Source(bc)
+	if err != nil {
+		fmt.Printf("failed to format the content, writing unformatted: %v\n", err)
+		fbc = bc
+	}
+
+	err = writeToFile(outputFile+".ps.go", fbc)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

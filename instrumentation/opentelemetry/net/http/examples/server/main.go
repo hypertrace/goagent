@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	traceablehttp "github.com/traceableai/goagent/instrumentation/opentelemetry/net/http"
@@ -16,7 +17,8 @@ import (
 )
 
 func main() {
-	examples.InitTracer("http-server")
+	flusher := examples.InitTracer("http-server")
+	defer flusher()
 
 	r := mux.NewRouter()
 	r.Handle("/foo", otelhttp.NewHandler(
@@ -46,6 +48,8 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	<-time.After(300 * time.Millisecond)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

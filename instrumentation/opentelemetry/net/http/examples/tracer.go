@@ -1,44 +1,23 @@
 package examples
 
 import (
-	"log"
-
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/exporters/stdout"
-	"go.opentelemetry.io/otel/exporters/trace/zipkin"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
+	"github.com/traceableai/goagent/config"
+	"github.com/traceableai/goagent/instrumentation/opentelemetry"
 )
 
 // InitTracer initializes the tracer and register it globally
 func InitTracer(serviceName string) func() {
-	// Create stdout exporter to be able to retrieve
-	// the collected spans.
-	stdoutExporter, err := stdout.NewExporter(stdout.WithPrettyPrint())
-	if err != nil {
-		log.Fatal(err)
-	}
+	cfg := config.Load()
 
-	// Creates a zipkin exporter that can be plugged into a hypertrace
-	// ingester (see https://raw.githubusercontent.com/hypertrace/hypertrace/main/docker/docker-compose.yml)
-	zipkinBatchExporter, err := zipkin.NewRawExporter("http://localhost:9411/api/v2/spans", serviceName)
-	if err != nil {
-		log.Fatal(err)
-	}
+	cfg.ServiceName = config.StringVal(serviceName)
 
-	// For the demonstration, use sdktrace.AlwaysSample sampler to sample all traces.
-	// In a production application, use sdktrace.ProbabilitySampler with a desired probability.
-	tp, err := sdktrace.NewProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
-		sdktrace.WithSyncer(stdoutExporter),
-		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithMaxExportBatchSize(1)),
-		sdktrace.WithResource(resource.New(semconv.ServiceNameKey.String(serviceName))))
-	if err != nil {
-		log.Fatal(err)
-	}
+	cfg.DataCapture.HTTPHeaders.Request = config.BoolVal(true)
+	cfg.DataCapture.HTTPHeaders.Response = config.BoolVal(true)
+	cfg.DataCapture.HTTPBody.Request = config.BoolVal(true)
+	cfg.DataCapture.HTTPBody.Response = config.BoolVal(true)
 
-	global.SetTraceProvider(tp)
+	cfg.Reporting.Address = config.StringVal("localhost")
+	cfg.Reporting.Secure = config.BoolVal(false)
 
-	return func() {}
+	return opentelemetry.Init(cfg)
 }

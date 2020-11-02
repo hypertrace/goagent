@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/traceableai/goagent/config"
+	"github.com/hypertrace/goagent/config"
 )
 
 func TestConfig(t *testing.T) {

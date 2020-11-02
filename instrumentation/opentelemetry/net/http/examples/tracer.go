@@ -1,8 +1,8 @@
 package examples
 
 import (
-	"github.com/traceableai/goagent/config"
-	"github.com/traceableai/goagent/instrumentation/opentelemetry"
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 )
 
 // InitTracer initializes the tracer and register it globally

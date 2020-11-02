@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/traceableai/goagent/sdk"
-	"github.com/traceableai/goagent/sdk/internal/container"
+	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

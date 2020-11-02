@@ -6,10 +6,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/traceableai/goagent/config"
-	"github.com/traceableai/goagent/sdk"
-	internalconfig "github.com/traceableai/goagent/sdk/internal/config"
-	"github.com/traceableai/goagent/sdk/internal/container"
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/sdk"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
+	"github.com/hypertrace/goagent/sdk/internal/container"
 )
 
 type handler struct {

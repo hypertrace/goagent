@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/traceableai/goagent/docker/internal/container"
+	"github.com/hypertrace/goagent/docker/internal/container"
 )
 
 func main() {

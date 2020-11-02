@@ -1,6 +1,6 @@
 FROM golang:1.14
 
-WORKDIR $GOPATH/src/github.com/traceableai/goagent/docker
+WORKDIR $GOPATH/src/github.com/hypertrace/goagent/docker
 
 COPY tests/docker/main.go main.go
 COPY sdk/internal/container/container.go internal/container/container.go

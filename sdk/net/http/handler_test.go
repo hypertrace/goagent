@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hypertrace/goagent/config"
+	sdkconfig "github.com/hypertrace/goagent/sdk/config"
+	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/config"
-	sdkconfig "github.com/traceableai/goagent/sdk/config"
-	"github.com/traceableai/goagent/sdk/internal/mock"
 )
 
 var _ http.Handler = &mockHandler{}

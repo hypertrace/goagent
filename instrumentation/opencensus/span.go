@@ -3,7 +3,7 @@ package opencensus
 import (
 	"context"
 
-	"github.com/traceableai/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk"
 	"go.opencensus.io/trace"
 )
 

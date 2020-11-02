@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/instrumentation/opentelemetry"
-	"github.com/traceableai/goagent/instrumentation/opentelemetry/internal"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/trace"
 )

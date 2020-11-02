@@ -1,8 +1,8 @@
 package grpc
 
 import (
-	"github.com/traceableai/goagent/instrumentation/opentelemetry"
-	traceablegrpc "github.com/traceableai/goagent/sdk/google.golang.org/grpc"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
+	traceablegrpc "github.com/hypertrace/goagent/sdk/google.golang.org/grpc"
 	"google.golang.org/grpc"
 )
 

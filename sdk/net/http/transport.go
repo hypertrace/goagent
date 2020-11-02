@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/traceableai/goagent/sdk"
-	"github.com/traceableai/goagent/sdk/internal/container"
+	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/internal/container"
 )
 
 var _ http.RoundTripper = &roundTripper{}

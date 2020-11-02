@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/instrumentation/opencensus/internal"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
 	"go.opencensus.io/trace"

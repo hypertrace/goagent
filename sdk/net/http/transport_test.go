@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/sdk/internal/mock"
 )
 
 type mockTransport struct {

@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/traceableai/goagent/config"
-	internalconfig "github.com/traceableai/goagent/sdk/internal/config"
+	"github.com/hypertrace/goagent/config"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 )
 
 // InitConfig allows users to initialize the config

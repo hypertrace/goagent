@@ -1,4 +1,4 @@
-module github.com/traceableai/goagent
+module github.com/hypertrace/goagent
 
 go 1.14
 

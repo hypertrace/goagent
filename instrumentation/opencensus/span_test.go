@@ -6,8 +6,8 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"github.com/hypertrace/goagent/instrumentation/opencensus"
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/instrumentation/opencensus"
 )
 
 func TestIsNoop(t *testing.T) {

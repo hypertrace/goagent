@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
+	"github.com/hypertrace/goagent/config"
+	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/openzipkin/zipkin-go"
 	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
-	"github.com/traceableai/goagent/config"
-	sdkconfig "github.com/traceableai/goagent/sdk/config"
 	"go.opencensus.io/trace"
 )
 

@@ -3,6 +3,8 @@
         "address": "api.traceable.ai"
     },
     "dataCapture": {
-        "enableRPCMetadata": true
+        "httpHeaders": {
+            "request": false
+        }
     }
 }

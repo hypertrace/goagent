@@ -1,5 +1,6 @@
 package config
 
+// defaultConfig holds the default config for agent.
 var defaultConfig = AgentConfig{
 	DataCapture: &DataCapture{
 		HTTPHeaders: &Message{
@@ -20,8 +21,8 @@ var defaultConfig = AgentConfig{
 		},
 	},
 	Reporting: &Reporting{
-		Address:  StringVal("localhost"),
-		IsSecure: BoolVal(false),
+		Address: StringVal("localhost"),
+		Secure:  BoolVal(false),
 	},
 }
 

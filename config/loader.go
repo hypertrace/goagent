@@ -10,22 +10,27 @@ import (
 
 const defaultConfigFile = "./config.json"
 
-func getBoolEnv(s string) (bool, bool) {
-	if val := os.Getenv(s); val != "" {
+// getBoolEnv returns the bool value for an env var and a confirmation
+// if the var exists
+func getBoolEnv(name string) (bool, bool) {
+	if val := os.Getenv(name); val != "" {
 		return val == "true", true
 	}
 
 	return false, false
 }
 
-func getStringEnv(s string) (string, bool) {
-	if val := os.Getenv(s); val != "" {
+// getStringEnv returns the string value for an env var and a confirmation
+// if the var exists
+func getStringEnv(name string) (string, bool) {
+	if val := os.Getenv(name); val != "" {
 		return val, true
 	}
 
 	return "", false
 }
 
+// loadFromFile loads the agent config from a file
 func loadFromFile(c *AgentConfig, filename string) error {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -35,6 +40,7 @@ func loadFromFile(c *AgentConfig, filename string) error {
 	return json.Unmarshal(content, c)
 }
 
+// fileExists checks if a file exists
 func fileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {

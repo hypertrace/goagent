@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/grpc/examples/helloworld"
+	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/instrumentation/opencensus/google.golang.org/grpc/examples/helloworld"
-	"github.com/traceableai/goagent/instrumentation/opencensus/internal"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

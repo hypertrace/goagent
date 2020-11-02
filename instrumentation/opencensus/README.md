@@ -13,7 +13,7 @@ import (
     "net/http"
 
     "github.com/gorilla/mux"
-    traceablehttp "github.com/traceableai/goagent/instrumentation/opencensus/net/http"
+    traceablehttp "github.com/hypertrace/goagent/instrumentation/opencensus/net/http"
 	ochttp "go.opencensus.io/plugin/ochttp"
 )
 
@@ -36,7 +36,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 ```go
 import (
     "net/http"
-    traceablehttp "github.com/traceableai/goagent/instrumentation/net/http"
+    traceablehttp "github.com/hypertrace/goagent/instrumentation/net/http"
     ochttp "go.opencensus.io/plugin/ochttp"
 )
 
@@ -79,7 +79,7 @@ The server instrumentation relies on the `grpc.UnaryServerInterceptor` component
 import (
     // ...
 
-    traceablegrpc "github.com/traceableai/goagent/instrumentation/opencensus/google.golang.org/grpc"
+    traceablegrpc "github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/grpc"
     "go.opencensus.io/plugin/ocgrpc"
     "google.golang.org/grpc"
 )
@@ -100,7 +100,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 import (
     // ...
 
-    traceablegrpc "github.com/traceableai/goagent/instrumentation/google.golang.org/grpc"
+    traceablegrpc "github.com/hypertrace/goagent/instrumentation/google.golang.org/grpc"
     "go.opencensus.io/plugin/ocgrpc"
     "google.golang.org/grpc"
 )

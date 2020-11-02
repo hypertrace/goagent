@@ -3,8 +3,8 @@ package http
 import (
 	"net/http"
 
-	"github.com/traceableai/goagent/instrumentation/opencensus"
-	traceablehttp "github.com/traceableai/goagent/sdk/net/http"
+	"github.com/hypertrace/goagent/instrumentation/opencensus"
+	traceablehttp "github.com/hypertrace/goagent/sdk/net/http"
 )
 
 // WrapTransport returns a new http.RoundTripper that should be passed to

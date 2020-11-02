@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
+	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/config"
-	"github.com/traceableai/goagent/instrumentation/opencensus/internal"
-	sdkconfig "github.com/traceableai/goagent/sdk/config"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 )

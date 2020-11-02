@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/traceableai/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk"
 	"google.golang.org/grpc/metadata"
 )
 

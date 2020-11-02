@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	"github.com/stretchr/testify/assert"
-	"github.com/traceableai/goagent/instrumentation/opentelemetry/internal"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/propagation"

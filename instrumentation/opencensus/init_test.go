@@ -1,6 +1,6 @@
 package opencensus
 
-import "github.com/traceableai/goagent/config"
+import "github.com/hypertrace/goagent/config"
 
 func ExampleInit() {
 	cfg := config.Load()

@@ -3,7 +3,7 @@ package opentelemetry
 import (
 	"context"
 
-	"github.com/traceableai/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk"
 	"go.opentelemetry.io/otel/api/trace"
 )
 

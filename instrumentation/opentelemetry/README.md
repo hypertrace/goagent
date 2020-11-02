@@ -13,7 +13,7 @@ import (
     "net/http"
 
     "github.com/gorilla/mux"
-    traceablehttp "github.com/traceableai/goagent/instrumentation/opentelemetry/net/http"
+    traceablehttp "github.com/hypertrace/goagent/instrumentation/opentelemetry/net/http"
     otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
@@ -37,7 +37,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 ```go
 import (
     "net/http"
-    traceablehttp "github.com/traceableai/goagent/instrumentation/opentelemetry/net/http"
+    traceablehttp "github.com/hypertrace/goagent/instrumentation/opentelemetry/net/http"
     otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
@@ -96,7 +96,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 import (
     // ...
 
-    traceablegrpc "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
+    traceablegrpc "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
     otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
     "google.golang.org/grpc"
 )

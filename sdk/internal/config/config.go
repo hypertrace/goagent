@@ -4,8 +4,8 @@ import (
 	"log"
 	"sync"
 
+	"github.com/hypertrace/goagent/config"
 	"github.com/jinzhu/copier"
-	"github.com/traceableai/goagent/config"
 )
 
 var cfg *config.AgentConfig

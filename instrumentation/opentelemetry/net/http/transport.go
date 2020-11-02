@@ -3,8 +3,8 @@ package http
 import (
 	"net/http"
 
-	"github.com/traceableai/goagent/instrumentation/opentelemetry"
-	traceablehttp "github.com/traceableai/goagent/sdk/net/http"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
+	traceablehttp "github.com/hypertrace/goagent/sdk/net/http"
 )
 
 // WrapTransport wraps an uninstrumented RoundTripper (e.g. http.DefaultTransport)

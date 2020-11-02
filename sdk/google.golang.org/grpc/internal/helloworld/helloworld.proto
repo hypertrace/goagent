@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/traceableai/goagent/sdk/google.golang.org/grpc/internal/helloworld";
+option go_package = "github.com/hypertrace/goagent/sdk/google.golang.org/grpc/internal/helloworld";
 
 package helloworld;
 

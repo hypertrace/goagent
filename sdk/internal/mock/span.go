@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/traceableai/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk"
 )
 
 var _ sdk.Span = &Span{}

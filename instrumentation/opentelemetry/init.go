@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/traceableai/goagent/config"
-	sdkconfig "github.com/traceableai/goagent/sdk/config"
+	"github.com/hypertrace/goagent/config"
+	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/sdk/resource"

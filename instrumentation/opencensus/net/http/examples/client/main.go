@@ -11,8 +11,8 @@ import (
 	"log"
 	"net/http"
 
-	traceablehttp "github.com/traceableai/goagent/instrumentation/opencensus/net/http"
-	"github.com/traceableai/goagent/instrumentation/opencensus/net/http/examples"
+	traceablehttp "github.com/hypertrace/goagent/instrumentation/opencensus/net/http"
+	"github.com/hypertrace/goagent/instrumentation/opencensus/net/http/examples"
 	ochttp "go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 )

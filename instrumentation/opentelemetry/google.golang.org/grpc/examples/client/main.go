@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	traceablegrpc "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
-	"github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
-	pb "github.com/traceableai/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples/helloworld"
+	traceablegrpc "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples"
+	pb "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/grpc/examples/helloworld"
 	"go.opencensus.io/trace"
 	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"go.opentelemetry.io/otel/api/global"

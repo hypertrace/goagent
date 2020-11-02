@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/traceableai/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk"
 )
 
 func setAttributesFromHeaders(_type string, headers http.Header, span sdk.Span) {

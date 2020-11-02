@@ -13,7 +13,7 @@ import (
 
 func makeMockUnaryServerInterceptor(mockSpans *[]*mock.Span) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		span := &mock.Span{}
+		span := mock.NewSpan()
 		ctx = mock.ContextWithSpan(ctx, span)
 		*mockSpans = append(*mockSpans, span)
 		return handler(ctx, req)

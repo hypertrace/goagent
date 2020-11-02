@@ -37,3 +37,11 @@ check-examples:
 	go build -o ./examples/http_server instrumentation/opencensus/net/http/examples/server/main.go && rm ./examples/http_server
 	go build -o ./examples/grpc_client instrumentation/opencensus/google.golang.org/grpc/examples/client/main.go && rm ./examples/grpc_client
 	go build -o ./examples/grpc_server instrumentation/opencensus/google.golang.org/grpc/examples/server/main.go && rm ./examples/grpc_server
+
+generate-config: # generates proto object for Go
+	# if agent-config module isn't present we initialize submodules.
+	[ -d "./config/agent-config" ] || git submodule update --init --recursive
+	@cd config; go run cmd/generator/main.go agent-config/config.proto
+
+test:
+	@go test ./...

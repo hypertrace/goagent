@@ -1,0 +1,10 @@
+{
+    "reporting": {
+        "address": "api.traceable.ai"
+    },
+    "dataCapture": {
+        "httpHeaders": {
+            "request": false
+        }
+    }
+}

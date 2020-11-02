@@ -12,7 +12,11 @@ var _ sdk.Span = &Span{}
 type Span struct {
 	Attributes map[string]interface{}
 	Noop       bool
-	mux        sync.Mutex
+	mux        *sync.Mutex
+}
+
+func NewSpan() *Span {
+	return &Span{mux: &sync.Mutex{}}
 }
 
 func (s *Span) SetAttribute(key string, value interface{}) {

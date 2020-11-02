@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/traceableai/goagent/config"
+	sdkconfig "github.com/traceableai/goagent/sdk/config"
 	"github.com/traceableai/goagent/sdk/internal/mock"
 )
 
@@ -19,10 +21,25 @@ type mockHandler struct {
 }
 
 func (h *mockHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	span := &mock.Span{}
+	span := mock.NewSpan()
 	ctx := mock.ContextWithSpan(context.Background(), span)
 	h.spans = append(h.spans, span)
 	h.baseHandler.ServeHTTP(rw, r.WithContext(ctx))
+}
+
+func TestMain(m *testing.M) {
+	sdkconfig.InitConfig(config.AgentConfig{
+		DataCapture: &config.DataCapture{
+			HTTPHeaders: &config.Message{
+				Request:  config.BoolVal(true),
+				Response: config.BoolVal(true),
+			},
+			HTTPBody: &config.Message{
+				Request:  config.BoolVal(true),
+				Response: config.BoolVal(true),
+			},
+		},
+	})
 }
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
@@ -33,7 +50,14 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	ih := &mockHandler{baseHandler: WrapHandler(h, mock.SpanFromContext)}
+	wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+	wh.dataCaptureConfig = &config.DataCapture{
+		HTTPHeaders: &config.Message{
+			Request:  config.BoolVal(true),
+			Response: config.BoolVal(true),
+		},
+	}
+	ih := &mockHandler{baseHandler: wh}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("api_key", "xyz123abc")
@@ -52,6 +76,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 
 func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 	tCases := map[string]struct {
+		captureHTTPBodyConfig          bool
 		requestBody                    string
 		requestContentType             string
 		shouldHaveRecordedRequestBody  bool
@@ -60,28 +85,41 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 		shouldHaveRecordedResponseBody bool
 	}{
 		"no content type headers and empty body": {
+			captureHTTPBodyConfig:          true,
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
 		"no content type headers and non empty body": {
+			captureHTTPBodyConfig:          true,
 			requestBody:                    "{}",
 			responseBody:                   "{}",
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
 		"content type headers but empty body": {
+			captureHTTPBodyConfig:          true,
 			requestContentType:             "application/json",
 			responseContentType:            "application/x-www-form-urlencoded",
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
-		"content type and body": {
+		"content type and body with config enabled": {
+			captureHTTPBodyConfig:          true,
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
 			requestContentType:             "application/x-www-form-urlencoded",
 			responseContentType:            "Application/JSON",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,
+		},
+		"content type and body but config disabled": {
+			captureHTTPBodyConfig:          false,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "application/x-www-form-urlencoded",
+			responseContentType:            "Application/JSON",
+			shouldHaveRecordedRequestBody:  false,
+			shouldHaveRecordedResponseBody: false,
 		},
 	}
 
@@ -93,7 +131,14 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			ih := &mockHandler{baseHandler: WrapHandler(h, mock.SpanFromContext)}
+			wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+			wh.dataCaptureConfig = &config.DataCapture{
+				HTTPBody: &config.Message{
+					Request:  &tCase.captureHTTPBodyConfig,
+					Response: &tCase.captureHTTPBodyConfig,
+				},
+			}
+			ih := &mockHandler{baseHandler: wh}
 
 			r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader(tCase.requestBody))
 			r.Header.Add("content-type", tCase.requestContentType)

@@ -13,7 +13,7 @@ import (
     "net/http"
 
     "github.com/gorilla/mux"
-    traceablehttp "github.com/hypertrace/goagent/instrumentation/opentelemetry/net/http"
+    "github.com/hypertrace/goagent/instrumentation/opentelemetry/net/htiohttp"
     otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
@@ -22,7 +22,7 @@ func main() {
 
     r := mux.NewRouter()
     r.Handle("/foo/{bar}", otelhttp.NewHandler(
-        traceablehttp.WrapHandler(fooHandler),
+        htiohttp.WrapHandler(fooHandler),
         "/foo/{bar}",
     ))
 
@@ -37,7 +37,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 ```go
 import (
     "net/http"
-    traceablehttp "github.com/hypertrace/goagent/instrumentation/opentelemetry/net/http"
+    "github.com/hypertrace/goagent/instrumentation/opentelemetry/net/htiohttp"
     otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
@@ -45,7 +45,7 @@ import (
 
 client := http.Client{
     Transport: otelhttp.NewTransport(
-        traceablehttp.WrapDefaultTransport(),
+        htiohttp.WrapDefaultTransport(),
         ...
     ),
 }
@@ -81,7 +81,7 @@ The server instrumentation relies on the `grpc.UnaryServerInterceptor` component
 
 server := grpc.NewServer(
     grpc.UnaryInterceptor(
-        traceablegrpc.WrapUnaryServerInterceptor(
+        htiogrpc.WrapUnaryServerInterceptor(
             otelgrpc.UnaryServerInterceptor(myTracer),
         ),
     ),
@@ -96,7 +96,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 import (
     // ...
 
-    traceablegrpc "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
+    htiogrpc "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
     otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
     "google.golang.org/grpc"
 )
@@ -108,7 +108,7 @@ func main() {
         grpc.WithInsecure(),
         grpc.WithBlock(),
         grpc.WithUnaryInterceptor(
-            traceablegrpc.WrapUnaryClientInterceptor(
+            htiogrpc.WrapUnaryClientInterceptor(
                 otelgrpc.UnaryClientInterceptor(myTracer),
             ),
         ),

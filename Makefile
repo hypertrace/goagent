@@ -29,14 +29,14 @@ deps-ci:
 	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 check-examples:
-	go build -o ./examples/http_client instrumentation/opentelemetry/net/http/examples/client/main.go && rm ./examples/http_client
-	go build -o ./examples/http_server instrumentation/opentelemetry/net/http/examples/server/main.go && rm ./examples/http_server
-	go build -o ./examples/grpc_client instrumentation/opentelemetry/google.golang.org/grpc/examples/client/main.go && rm ./examples/grpc_client
-	go build -o ./examples/grpc_server instrumentation/opentelemetry/google.golang.org/grpc/examples/server/main.go && rm ./examples/grpc_server
-	go build -o ./examples/http_client instrumentation/opencensus/net/http/examples/client/main.go && rm ./examples/http_client
-	go build -o ./examples/http_server instrumentation/opencensus/net/http/examples/server/main.go && rm ./examples/http_server
-	go build -o ./examples/grpc_client instrumentation/opencensus/google.golang.org/grpc/examples/client/main.go && rm ./examples/grpc_client
-	go build -o ./examples/grpc_server instrumentation/opencensus/google.golang.org/grpc/examples/server/main.go && rm ./examples/grpc_server
+	go build -o ./examples/http_client instrumentation/opentelemetry/net/htiohttp/examples/client/main.go && rm ./examples/http_client
+	go build -o ./examples/http_server instrumentation/opentelemetry/net/htiohttp/examples/server/main.go && rm ./examples/http_server
+	go build -o ./examples/grpc_client instrumentation/opentelemetry/google.golang.org/htiogrpc/examples/client/main.go && rm ./examples/grpc_client
+	go build -o ./examples/grpc_server instrumentation/opentelemetry/google.golang.org/htiogrpc/examples/server/main.go && rm ./examples/grpc_server
+	go build -o ./examples/http_client instrumentation/opencensus/net/htiohttp/examples/client/main.go && rm ./examples/http_client
+	go build -o ./examples/http_server instrumentation/opencensus/net/htiohttp/examples/server/main.go && rm ./examples/http_server
+	go build -o ./examples/grpc_client instrumentation/opencensus/google.golang.org/htiogrpc/examples/client/main.go && rm ./examples/grpc_client
+	go build -o ./examples/grpc_server instrumentation/opencensus/google.golang.org/htiogrpc/examples/server/main.go && rm ./examples/grpc_server
 
 generate-config: # generates proto object for Go
 	# if agent-config module isn't present we initialize submodules.

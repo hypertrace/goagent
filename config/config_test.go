@@ -23,10 +23,10 @@ func TestSourcesPrecedence(t *testing.T) {
 	// use defaults
 	assert.Equal(t, false, cfg.GetDataCapture().GetHTTPBody().GetResponse())
 
-	// config file take precende over defaults
+	// config file take precedence over defaults
 	assert.Equal(t, "api.traceable.ai", cfg.GetReporting().GetAddress())
 
-	// env vars take precendence over config file
+	// env vars take precedence over config file
 	assert.Equal(t, true, cfg.GetDataCapture().GetHTTPHeaders().GetRequest())
 
 	// static value take precedence over config files

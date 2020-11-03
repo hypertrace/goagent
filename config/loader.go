@@ -69,7 +69,7 @@ func Load() AgentConfig {
 
 		if fileExists(absConfigFile) {
 			if err := loadFromFile(&cfg, absConfigFile); err != nil {
-				log.Printf("failed to load the config fromt %q: %v\n", absConfigFile, err)
+				log.Printf("failed to load the config from %q: %v\n", absConfigFile, err)
 			}
 		} else {
 			log.Printf("config file %q does not exist.\n", absConfigFile)
@@ -92,7 +92,7 @@ func LoadFromFile(configFile string) AgentConfig {
 
 	if fileExists(absConfigFile) {
 		if err := loadFromFile(&cfg, absConfigFile); err != nil {
-			log.Printf("failed to load the config fromt %q: %v\n", absConfigFile, err)
+			log.Printf("failed to load the config from %q: %v\n", absConfigFile, err)
 		}
 	} else {
 		log.Printf("config file %q does not exist.\n", absConfigFile)

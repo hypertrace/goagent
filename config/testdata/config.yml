@@ -1,0 +1,5 @@
+reporting:
+  address: "35.233.143.122"
+  dataCapture:
+    httpHeaders:
+      request": false

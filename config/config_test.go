@@ -32,3 +32,11 @@ func TestSourcesPrecedence(t *testing.T) {
 	// static value take precedence over config files
 	cfg.DataCapture.HTTPHeaders.Response = BoolVal(false)
 }
+
+func TestYAMLLoadSuccess(t *testing.T) {
+	// loads the config
+	cfg := LoadFromFile("./testdata/config.yml")
+
+	// config file take precedence over defaults
+	assert.Equal(t, "35.233.143.122", cfg.GetReporting().GetAddress())
+}

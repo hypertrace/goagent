@@ -13,7 +13,7 @@ import (
     "net/http"
 
     "github.com/gorilla/mux"
-    traceablehttp "github.com/hypertrace/goagent/instrumentation/opencensus/net/http"
+    "github.com/hypertrace/goagent/instrumentation/opencensus/net/hyperhttp"
 	ochttp "go.opencensus.io/plugin/ochttp"
 )
 
@@ -22,7 +22,7 @@ func main() {
 
     r := mux.NewRouter()
     r.Handle("/foo/{bar}", &ochttp.Handler{
-        Handler: traceablehttp.WrapHandler(http.HandlerFunc(fooHandler)),
+        Handler: hyperhttp.WrapHandler(http.HandlerFunc(fooHandler)),
     })
 
     // ...
@@ -36,15 +36,15 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 ```go
 import (
     "net/http"
-    traceablehttp "github.com/hypertrace/goagent/instrumentation/net/http"
-    ochttp "go.opencensus.io/plugin/ochttp"
+    "github.com/hypertrace/goagent/instrumentation/net/hyperhttp"
+    "go.opencensus.io/plugin/ochttp"
 )
 
 // ...
 
 client := http.Client{
     Transport: &ochttp.Transport{
-        Base: traceablehttp.WrapTransport(http.DefaultTransport),
+        Base: hyperhttp.WrapTransport(http.DefaultTransport),
     },
 }
 
@@ -79,7 +79,7 @@ The server instrumentation relies on the `grpc.UnaryServerInterceptor` component
 import (
     // ...
 
-    traceablegrpc "github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/grpc"
+    "github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc"
     "go.opencensus.io/plugin/ocgrpc"
     "google.golang.org/grpc"
 )
@@ -87,7 +87,7 @@ import (
 
 server := grpc.NewServer(
     grpc.UnaryInterceptor(
-        grpc.StatsHandler(traceablegrpc.WrapServerHandler(&ocgrpc.ServerHandler{})),
+        grpc.StatsHandler(hypergrpc.WrapServerHandler(&ocgrpc.ServerHandler{})),
     ),
 )
 ```
@@ -100,7 +100,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 import (
     // ...
 
-    traceablegrpc "github.com/hypertrace/goagent/instrumentation/google.golang.org/grpc"
+    "github.com/hypertrace/goagent/instrumentation/google.golang.org/hypergrpc"
     "go.opencensus.io/plugin/ocgrpc"
     "google.golang.org/grpc"
 )
@@ -111,7 +111,7 @@ func main() {
         address,
         grpc.WithInsecure(),
         grpc.WithBlock(),
-        grpc.WithStatsHandler(traceablegrpc.WrapClientHandler(&ocgrpc.ClientHandler{})),
+        grpc.WithStatsHandler(hypergrpc.WrapClientHandler(&ocgrpc.ClientHandler{})),
     )
     if err != nil {
         log.Fatalf("could not dial: %v", err)

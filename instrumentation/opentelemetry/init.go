@@ -22,7 +22,7 @@ func Init(cfg *config.AgentConfig) func() {
 	sdkconfig.InitConfig(cfg)
 
 	reporterURL := fmt.Sprintf("http://%s:9411/api/v2/spans", cfg.Reporting.GetAddress().GetValue())
-	zipkinBatchExporter, err := zipkin.NewRawExporter(reporterURL, cfg.GetServiceName())
+	zipkinBatchExporter, err := zipkin.NewRawExporter(reporterURL, cfg.GetServiceName().GetValue())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func Init(cfg *config.AgentConfig) func() {
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
 		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeoutInSecs*time.Millisecond)),
 		sdktrace.WithResource(
-			resource.New(semconv.ServiceNameKey.String(cfg.GetServiceName())),
+			resource.New(semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue())),
 		),
 	)
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 func InitTracer(serviceName string) func() {
 	cfg := config.Load()
 
-	cfg.ServiceName = serviceName
+	cfg.ServiceName = config.StringVal(serviceName)
 
 	cfg.Reporting.Address = config.StringVal("localhost")
 	cfg.Reporting.Secure = config.BoolVal(false)

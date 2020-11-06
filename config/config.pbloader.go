@@ -7,11 +7,15 @@ import wrappers "github.com/golang/protobuf/ptypes/wrappers"
 // loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.
 func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 	if val, ok := getStringEnv(prefix + "SERVICE_NAME"); ok {
-		x.ServiceName = val
-	} else if x.ServiceName == "" && defaultValues != nil && defaultValues.ServiceName != "" {
-		x.ServiceName = defaultValues.ServiceName
+		x.ServiceName = &wrappers.StringValue{Value: val}
+	} else if x.ServiceName == nil {
+		// when there is no value to set we still prefer to initialize the variable to avoid
+		// `nil` checks in the consumers.
+		x.ServiceName = new(wrappers.StringValue)
+		if defaultValues != nil && defaultValues.ServiceName != nil {
+			x.ServiceName = &wrappers.StringValue{Value: defaultValues.ServiceName.Value}
+		}
 	}
-
 	if x.Reporting == nil {
 		x.Reporting = new(Reporting)
 	}

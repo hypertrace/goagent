@@ -55,15 +55,6 @@ func (pi *protobufImportModuleProvider) Provide(module string) (io.Reader, error
 	return r, nil
 }
 
-func find(s string, haystack []string) bool {
-	for _, e := range haystack {
-		if s == e {
-			return true
-		}
-	}
-	return false
-}
-
 func main() {
 	var outDir = flag.String("o", ".", "OUT_DIR for the generated code.")
 	flag.Parse()

@@ -17,7 +17,11 @@ func Init(cfg *config.AgentConfig) func() {
 	sdkconfig.InitConfig(cfg)
 	localEndpoint, _ := zipkin.NewEndpoint(cfg.GetServiceName().GetValue(), "localhost")
 
-	reporterURL := fmt.Sprintf("http://%s:9411/api/v2/spans", cfg.Reporting.GetAddress().GetValue())
+	protocol := "http"
+	if cfg.GetReporting().GetSecure().GetValue() {
+		protocol = "https"
+	}
+	reporterURL := fmt.Sprintf("%s://%s:9411/api/v2/spans", protocol, cfg.GetReporting().GetAddress().GetValue())
 	reporter := zipkinHTTP.NewReporter(reporterURL)
 
 	exporter := oczipkin.NewExporter(reporter, localEndpoint)

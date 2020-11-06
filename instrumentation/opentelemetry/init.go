@@ -21,7 +21,11 @@ const batchTimeoutInSecs = 200.0
 func Init(cfg *config.AgentConfig) func() {
 	sdkconfig.InitConfig(cfg)
 
-	reporterURL := fmt.Sprintf("http://%s:9411/api/v2/spans", cfg.Reporting.GetAddress().GetValue())
+	protocol := "http"
+	if cfg.GetReporting().GetSecure().GetValue() {
+		protocol = "https"
+	}
+	reporterURL := fmt.Sprintf("%s://%s:9411/api/v2/spans", protocol, cfg.GetReporting().GetAddress().GetValue())
 	zipkinBatchExporter, err := zipkin.NewRawExporter(reporterURL, cfg.GetServiceName().GetValue())
 	if err != nil {
 		log.Fatal(err)

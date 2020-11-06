@@ -5,7 +5,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 )
 
@@ -15,6 +17,7 @@ type roundTripper struct {
 	delegate                 http.RoundTripper
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
+	dataCaptureConfig        *config.DataCapture
 }
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -31,13 +34,15 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		span.SetAttribute(key, value)
 	}
 
-	setAttributesFromHeaders("request", req.Header, span)
+	if rt.dataCaptureConfig.GetHttpHeaders().GetRequest().GetValue() {
+		setAttributesFromHeaders("request", req.Header, span)
+	}
 
 	// Only records the body if it is not empty and the content type header
 	// is in the recording accept list. Notice in here we rely on the fact that
 	// the content type is not streamable, otherwise we could end up in a very
 	// expensive parsing of a big body in memory.
-	if shouldRecordBodyOfContentType(req.Header) {
+	if rt.dataCaptureConfig.GetHttpBody().GetRequest().GetValue() && shouldRecordBodyOfContentType(req.Header) {
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			return rt.delegate.RoundTrip(req)
@@ -57,7 +62,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Notice, parsing a streamed content in memory can be expensive.
-	if shouldRecordBodyOfContentType(res.Header) {
+	if rt.dataCaptureConfig.GetHttpBody().GetResponse().GetValue() && shouldRecordBodyOfContentType(res.Header) {
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return res, nil
@@ -71,8 +76,10 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
 
-	// Sets an attribute per each response header.
-	setAttributesFromHeaders("response", res.Header, span)
+	if rt.dataCaptureConfig.GetHttpHeaders().GetResponse().GetValue() {
+		// Sets an attribute per each response header.
+		setAttributesFromHeaders("response", res.Header, span)
+	}
 
 	return res, err
 }
@@ -85,5 +92,5 @@ func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.Span
 		defaultAttributes["container_id"] = containerID
 	}
 
-	return &roundTripper{delegate, defaultAttributes, spanFromContextRetriever}
+	return &roundTripper{delegate, defaultAttributes, spanFromContextRetriever, internalconfig.GetConfig().GetDataCapture()}
 }

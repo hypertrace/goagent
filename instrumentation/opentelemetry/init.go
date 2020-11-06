@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/semconv"
 )
 
-const batchTimeoutInSecs = 200.0
+const batchTimeoutInMillisecs = 200.0
 
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately
 // on a termination signal.
@@ -33,7 +33,7 @@ func Init(cfg *config.AgentConfig) func() {
 
 	tp, err := sdktrace.NewProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
-		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeoutInSecs*time.Millisecond)),
+		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeoutInMillisecs*time.Millisecond)),
 		sdktrace.WithResource(
 			resource.New(semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue())),
 		),
@@ -48,6 +48,6 @@ func Init(cfg *config.AgentConfig) func() {
 		// What we do here is that we wait for `batchTimeout` seconds as that is the time configured
 		// in the batcher and hence we make sure spans had time to be flushed.
 		// In next versions the flush functionality is finally added and we will use it.
-		<-time.After(batchTimeoutInSecs * 1.1 * time.Millisecond)
+		<-time.After(batchTimeoutInMillisecs * 1.5 * time.Millisecond)
 	}
 }

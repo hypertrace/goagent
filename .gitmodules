@@ -1,3 +1,9 @@
 [submodule "config/agent-config"]
+	# loads the config proto file to be compiled
 	path = config/agent-config
 	url = https://github.com/hypertrace/agent-config
+[submodule "config/cmd/generator/protobuf"]
+	# adds support for wrappers in protobuf. Mostly used for generating
+	# the config loaders. See ./config/cmd/generator
+	path = config/cmd/generator/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git

@@ -1,23 +1,27 @@
 package config
 
+import (
+	"google.golang.org/protobuf/types/known/wrapperspb"
+)
+
 // defaultConfig holds the default config for agent.
 var defaultConfig = AgentConfig{
 	DataCapture: &DataCapture{
-		HTTPHeaders: &Message{
-			Request:  BoolVal(false),
-			Response: BoolVal(false),
+		HttpHeaders: &Message{
+			Request:  BoolVal(true),
+			Response: BoolVal(true),
 		},
-		HTTPBody: &Message{
-			Request:  BoolVal(false),
-			Response: BoolVal(false),
+		HttpBody: &Message{
+			Request:  BoolVal(true),
+			Response: BoolVal(true),
 		},
-		RPCMetadata: &Message{
-			Request:  BoolVal(false),
-			Response: BoolVal(false),
+		RpcMetadata: &Message{
+			Request:  BoolVal(true),
+			Response: BoolVal(true),
 		},
-		RPCBody: &Message{
-			Request:  BoolVal(false),
-			Response: BoolVal(false),
+		RpcBody: &Message{
+			Request:  BoolVal(true),
+			Response: BoolVal(true),
 		},
 	},
 	Reporting: &Reporting{
@@ -26,12 +30,10 @@ var defaultConfig = AgentConfig{
 	},
 }
 
-// StringVal returns the pointer value from a string
-func StringVal(s string) *string {
-	return &s
+func BoolVal(val bool) *wrapperspb.BoolValue {
+	return &wrapperspb.BoolValue{Value: val}
 }
 
-// BoolVal returns the pointer value from a string
-func BoolVal(b bool) *bool {
-	return &b
+func StringVal(val string) *wrapperspb.StringValue {
+	return &wrapperspb.StringValue{Value: val}
 }

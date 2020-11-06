@@ -15,18 +15,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	sdkconfig.InitConfig(config.AgentConfig{
-		DataCapture: &config.DataCapture{
-			HTTPHeaders: &config.Message{
-				Request:  config.BoolVal(true),
-				Response: config.BoolVal(true),
-			},
-			HTTPBody: &config.Message{
-				Request:  config.BoolVal(true),
-				Response: config.BoolVal(true),
-			},
-		},
-	})
+	sdkconfig.InitConfig(&config.AgentConfig{})
 }
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {

@@ -1,14 +1,14 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 
-	"gopkg.in/yaml.v2"
+	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/jsonpb"
 )
 
 // getBoolEnv returns the bool value for an env var and a confirmation
@@ -33,16 +33,30 @@ func getStringEnv(name string) (string, bool) {
 
 // loadFromFile loads the agent config from a file
 func loadFromFile(c *AgentConfig, filename string) error {
-	content, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
-	}
-
 	switch ext := filepath.Ext(filename); ext {
 	case ".json":
-		return json.Unmarshal(content, c)
+		freader, err := os.Open(filename)
+		if err != nil {
+			return fmt.Errorf("failed to open file %q: %v", filename, err)
+		}
+		// The usage of wrappers for scalars in protos make it impossible to use standard
+		// unmarshalers as the wrapped values aren't scalars but of type Message, hence they
+		// have object structure in json e.g. myBoolVal: {Value: true} instead of myBoolVal:true
+		// jsonpb is meant to solve this problem.
+		return jsonpb.Unmarshal(freader, c)
 	case ".yaml", ".yml":
-		return yaml.Unmarshal(content, c)
+		fcontent, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return fmt.Errorf("failed to read file %q: %v", filename, err)
+		}
+		// Because of the reson mentioned above we can't use YAML parsers either and hence
+		// we convert the YAML into JSON in order to parse the JSON value with jsonpb.
+		// The implications of this is that comments and multi-line strings aren't desirable.
+		fcontentAsJSON, err := yaml.YAMLToJSON(fcontent)
+		if err != nil {
+			return fmt.Errorf("failed to parse file %q: %v", filename, err)
+		}
+		return jsonpb.UnmarshalString(string(fcontentAsJSON), c)
 	default:
 		return fmt.Errorf("unknown extension: %s", ext)
 	}
@@ -58,7 +72,7 @@ func fileExists(filename string) bool {
 }
 
 // Load loads the configuration from the default values, config file and env vars.
-func Load() AgentConfig {
+func Load() *AgentConfig {
 	cfg := AgentConfig{}
 
 	if configFile := os.Getenv("HT_CONFIG_FILE"); configFile != "" {
@@ -78,11 +92,11 @@ func Load() AgentConfig {
 
 	cfg.loadFromEnv("HT_", &defaultConfig)
 
-	return cfg
+	return &cfg
 }
 
 // LoadFromFile loads the configuration from the default values, config file and env vars.
-func LoadFromFile(configFile string) AgentConfig {
+func LoadFromFile(configFile string) *AgentConfig {
 	cfg := AgentConfig{}
 
 	absConfigFile, err := filepath.Abs(configFile)
@@ -100,5 +114,5 @@ func LoadFromFile(configFile string) AgentConfig {
 
 	cfg.loadFromEnv("HT_", &defaultConfig)
 
-	return cfg
+	return &cfg
 }

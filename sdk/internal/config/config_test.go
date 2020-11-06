@@ -7,7 +7,7 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	InitConfig(config.AgentConfig{
+	InitConfig(&config.AgentConfig{
 		ServiceName: config.StringVal("my_service"),
 	})
 }

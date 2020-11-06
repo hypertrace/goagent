@@ -11,11 +11,6 @@ func InitTracer(serviceName string) func() {
 
 	cfg.ServiceName = config.StringVal(serviceName)
 
-	cfg.DataCapture.HTTPHeaders.Request = config.BoolVal(true)
-	cfg.DataCapture.HTTPHeaders.Response = config.BoolVal(true)
-	cfg.DataCapture.HTTPBody.Request = config.BoolVal(true)
-	cfg.DataCapture.HTTPBody.Response = config.BoolVal(true)
-
 	cfg.Reporting.Address = config.StringVal("localhost")
 	cfg.Reporting.Secure = config.BoolVal(false)
 

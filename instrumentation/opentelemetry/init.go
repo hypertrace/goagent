@@ -18,10 +18,10 @@ const batchTimeoutInSecs = 200.0
 
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately
 // on a termination signal.
-func Init(cfg config.AgentConfig) func() {
+func Init(cfg *config.AgentConfig) func() {
 	sdkconfig.InitConfig(cfg)
 
-	reporterURL := fmt.Sprintf("http://%s:9411/api/v2/spans", cfg.Reporting.GetAddress())
+	reporterURL := fmt.Sprintf("http://%s:9411/api/v2/spans", cfg.Reporting.GetAddress().GetValue())
 	zipkinBatchExporter, err := zipkin.NewRawExporter(reporterURL, cfg.GetServiceName())
 	if err != nil {
 		log.Fatal(err)
@@ -30,7 +30,10 @@ func Init(cfg config.AgentConfig) func() {
 	tp, err := sdktrace.NewProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
 		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeoutInSecs*time.Millisecond)),
-		sdktrace.WithResource(resource.New(semconv.ServiceNameKey.String(cfg.GetServiceName()))))
+		sdktrace.WithResource(
+			resource.New(semconv.ServiceNameKey.String(cfg.GetServiceName())),
+		),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

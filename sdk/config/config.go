@@ -6,6 +6,6 @@ import (
 )
 
 // InitConfig allows users to initialize the config
-func InitConfig(c config.AgentConfig) {
+func InitConfig(c *config.AgentConfig) {
 	internalconfig.InitConfig(c)
 }

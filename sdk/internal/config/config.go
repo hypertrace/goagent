@@ -5,25 +5,29 @@ import (
 	"sync"
 
 	"github.com/hypertrace/goagent/config"
-	"github.com/jinzhu/copier"
+	"google.golang.org/protobuf/proto"
 )
 
 var cfg *config.AgentConfig
 var cfgMux = &sync.Mutex{}
 
 // InitConfig initializes the config with default values
-func InitConfig(c config.AgentConfig) {
+func InitConfig(c *config.AgentConfig) {
 	if cfg != nil {
 		log.Println("config already initialized, ignoring new config.")
 		return
 	}
 
-	cfg = &config.AgentConfig{}
 	cfgMux.Lock()
-	err := copier.Copy(cfg, &c)
-	cfgMux.Unlock()
-	if err != nil {
-		log.Fatalf("failed to initialize config: %v", err)
+	defer cfgMux.Unlock()
+
+	// The reason why we clone the message instead of reusing the one passed by the user
+	// is because user might decide to change values in runtime and that is undesirable
+	// without a proper API.
+	var ok bool
+	cfg, ok = proto.Clone(c).(*config.AgentConfig)
+	if !ok {
+		log.Fatal("failed to initialize config.")
 	}
 }
 

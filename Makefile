@@ -39,6 +39,11 @@ check-examples:
 	go build -o ./examples/grpc_server instrumentation/opencensus/google.golang.org/hypergrpc/examples/server/main.go && rm ./examples/grpc_server
 
 generate-config: # generates config object for Go
-	# if agent-config module isn't present we initialize submodules.
-	[ -d "./config/agent-config" ] || git submodule update --init --recursive
+	@echo "Verifying required submodules"
+	@[ -d "./config/agent-config" ] || git submodule update --init --recursive
+	@[ -d "./config/cmd/generator/protobuf" ] || git submodule update --init --recursive
+	@echo "Compiling the proto file"
+	@cd config/agent-config; protoc --go_out=plugins=grpc,paths=source_relative:.. config.proto
+	@echo "Generating the loaders"
 	@cd config; go run cmd/generator/main.go agent-config/config.proto
+	@echo "Done."

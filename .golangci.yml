@@ -11,7 +11,7 @@ linters:
     - golint
     - govet
     - ineffassign
-    - interfacer
+    #- interfacer
     - lll
     - misspell
     - nakedret

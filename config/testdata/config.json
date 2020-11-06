@@ -3,8 +3,8 @@
         "address": "api.traceable.ai"
     },
     "dataCapture": {
-        "httpHeaders": {
-            "request": false
+        "httpBody": {
+            "response": false
         }
     }
 }

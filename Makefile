@@ -40,8 +40,7 @@ check-examples:
 
 generate-config: # generates config object for Go
 	@echo "Verifying required submodules"
-	@[ -d "./config/agent-config" ] || git submodule update --init --recursive
-	@[ -d "./config/cmd/generator/protobuf" ] || git submodule update --init --recursive
+	git submodule update --init --recursive
 	@echo "Compiling the proto file"
 	@cd config/agent-config; protoc --go_out=plugins=grpc,paths=source_relative:.. config.proto
 	@echo "Generating the loaders"

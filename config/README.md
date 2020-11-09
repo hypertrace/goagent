@@ -9,8 +9,8 @@ Agent config holds all the configuration settings for the Hypertrace Go Agent.
 cfg := config.Load()
 
 // overrides statically the service name
-cfg.ServiceName = config.StringVal("myservice")
-cfg.DataCapture.HTTPHeaders.Request = config.BoolVal(true)
+cfg.ServiceName = config.String("myservice")
+cfg.DataCapture.HTTPHeaders.Request = config.Bool(true)
 ```
 
 Values can also be overriden by the environment variables, e.g. `HT_DATA_CAPTURE_HTTP_HEADERS_RESPONSE=false`.

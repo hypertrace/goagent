@@ -4,36 +4,38 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-// defaultConfig holds the default config for agent.
+// defaultConfig holds the default config values for agent.
 var defaultConfig = AgentConfig{
 	DataCapture: &DataCapture{
 		HttpHeaders: &Message{
-			Request:  BoolVal(true),
-			Response: BoolVal(true),
+			Request:  Bool(true),
+			Response: Bool(true),
 		},
 		HttpBody: &Message{
-			Request:  BoolVal(true),
-			Response: BoolVal(true),
+			Request:  Bool(true),
+			Response: Bool(true),
 		},
 		RpcMetadata: &Message{
-			Request:  BoolVal(true),
-			Response: BoolVal(true),
+			Request:  Bool(true),
+			Response: Bool(true),
 		},
 		RpcBody: &Message{
-			Request:  BoolVal(true),
-			Response: BoolVal(true),
+			Request:  Bool(true),
+			Response: Bool(true),
 		},
 	},
 	Reporting: &Reporting{
-		Address: StringVal("localhost"),
-		Secure:  BoolVal(false),
+		Address: String("localhost"),
+		Secure:  Bool(false),
 	},
 }
 
-func BoolVal(val bool) *wrapperspb.BoolValue {
+// Bool wraps the scalar value to be used in the AgentConfig object
+func Bool(val bool) *wrapperspb.BoolValue {
 	return &wrapperspb.BoolValue{Value: val}
 }
 
-func StringVal(val string) *wrapperspb.StringValue {
+// String wraps the scalar value to be used in the AgentConfig object
+func String(val string) *wrapperspb.StringValue {
 	return &wrapperspb.StringValue{Value: val}
 }

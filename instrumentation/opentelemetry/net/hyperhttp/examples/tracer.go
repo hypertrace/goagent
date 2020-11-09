@@ -9,10 +9,10 @@ import (
 func InitTracer(serviceName string) func() {
 	cfg := config.Load()
 
-	cfg.ServiceName = config.StringVal(serviceName)
+	cfg.ServiceName = config.String(serviceName)
 
-	cfg.Reporting.Address = config.StringVal("localhost")
-	cfg.Reporting.Secure = config.BoolVal(false)
+	cfg.Reporting.Address = config.String("localhost")
+	cfg.Reporting.Secure = config.Bool(false)
 
 	return opentelemetry.Init(cfg)
 }

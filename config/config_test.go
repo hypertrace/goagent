@@ -19,7 +19,7 @@ func TestSourcesPrecedence(t *testing.T) {
 
 	// loads the config
 	cfg := Load()
-	cfg.DataCapture.RpcMetadata.Response = BoolVal(false)
+	cfg.DataCapture.RpcMetadata.Response = Bool(false)
 
 	// use defaults
 	assert.Equal(t, true, cfg.GetDataCapture().GetHttpBody().GetRequest().GetValue())

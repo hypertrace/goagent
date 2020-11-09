@@ -31,12 +31,12 @@ func TestMain(m *testing.M) {
 	sdkconfig.InitConfig(&config.AgentConfig{
 		DataCapture: &config.DataCapture{
 			HttpHeaders: &config.Message{
-				Request:  config.BoolVal(true),
-				Response: config.BoolVal(true),
+				Request:  config.Bool(true),
+				Response: config.Bool(true),
 			},
 			HttpBody: &config.Message{
-				Request:  config.BoolVal(true),
-				Response: config.BoolVal(true),
+				Request:  config.Bool(true),
+				Response: config.Bool(true),
 			},
 		},
 	})
@@ -53,8 +53,8 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
 	wh.dataCaptureConfig = &config.DataCapture{
 		HttpHeaders: &config.Message{
-			Request:  config.BoolVal(true),
-			Response: config.BoolVal(true),
+			Request:  config.Bool(true),
+			Response: config.Bool(true),
 		},
 	}
 	ih := &mockHandler{baseHandler: wh}
@@ -134,8 +134,8 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
 			wh.dataCaptureConfig = &config.DataCapture{
 				HttpBody: &config.Message{
-					Request:  config.BoolVal(tCase.captureHTTPBodyConfig),
-					Response: config.BoolVal(tCase.captureHTTPBodyConfig),
+					Request:  config.Bool(tCase.captureHTTPBodyConfig),
+					Response: config.Bool(tCase.captureHTTPBodyConfig),
 				},
 			}
 			ih := &mockHandler{baseHandler: wh}

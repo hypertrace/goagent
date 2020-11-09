@@ -8,6 +8,6 @@ import (
 
 func TestConfig(t *testing.T) {
 	InitConfig(&config.AgentConfig{
-		ServiceName: config.StringVal("my_service"),
+		ServiceName: config.String("my_service"),
 	})
 }

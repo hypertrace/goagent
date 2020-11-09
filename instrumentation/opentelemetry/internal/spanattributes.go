@@ -19,3 +19,14 @@ func (a LookupAttributes) Get(key string) label.Value {
 
 	return label.Value{}
 }
+
+// Has returns true if it can find the attribute by key otherwise false
+func (a LookupAttributes) Has(key string) bool {
+	for _, kv := range a {
+		if string(kv.Key) == key {
+			return true
+		}
+	}
+
+	return false
+}

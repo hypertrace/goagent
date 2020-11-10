@@ -17,8 +17,10 @@ type interceptor struct {
 	sqlmw.NullInterceptor
 }
 
+const tracerName = "github.com/hypertrace/goagent"
+
 func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQueryContext, query string, args []driver.NamedValue) (driver.Rows, error) {
-	ctx, span := global.TraceProvider().Tracer("org.hypertrace.goagent").Start(ctx, "query")
+	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/query")
 	span.SetAttribute("query", query)
 	defer span.End()
 
@@ -31,7 +33,7 @@ func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQue
 }
 
 func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExecContext, query string, args []driver.NamedValue) (driver.Result, error) {
-	ctx, span := global.TraceProvider().Tracer("org.hypertrace.goagent").Start(ctx, "exec")
+	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/exec")
 	span.SetAttribute("query", query)
 	defer span.End()
 
@@ -44,7 +46,7 @@ func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExec
 }
 
 func (in *interceptor) ConnQueryContext(ctx context.Context, conn driver.QueryerContext, query string, args []driver.NamedValue) (driver.Rows, error) {
-	ctx, span := global.TraceProvider().Tracer("org.hypertrace.goagent").Start(ctx, "query")
+	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/query")
 	span.SetAttribute("query", query)
 	defer span.End()
 
@@ -57,7 +59,7 @@ func (in *interceptor) ConnQueryContext(ctx context.Context, conn driver.Queryer
 }
 
 func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerContext, query string, args []driver.NamedValue) (driver.Result, error) {
-	ctx, span := global.TraceProvider().Tracer("org.hypertrace.goagent").Start(ctx, "exec")
+	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/exec")
 	span.SetAttribute("query", query)
 	defer span.End()
 
@@ -67,6 +69,54 @@ func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerCo
 	}
 
 	return rows, err
+}
+
+func (in *interceptor) ConnBeginTx(ctx context.Context, conn driver.ConnBeginTx, txOpts driver.TxOptions) (driver.Tx, error) {
+	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/begin_transaction")
+	defer span.End()
+
+	tx, err := conn.BeginTx(ctx, txOpts)
+	if err != nil {
+		span.RecordError(ctx, err)
+	}
+
+	return tx, err
+}
+
+func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnPrepareContext, query string) (driver.Stmt, error) {
+	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/prepare")
+	defer span.End()
+
+	tx, err := conn.PrepareContext(ctx, query)
+	if err != nil {
+		span.RecordError(ctx, err)
+	}
+
+	return tx, err
+}
+
+func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
+	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/commit")
+	defer span.End()
+
+	err := tx.Commit()
+	if err != nil {
+		span.RecordError(ctx, err)
+	}
+
+	return err
+}
+
+func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
+	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/rollback")
+	defer span.End()
+
+	err := tx.Rollback()
+	if err != nil {
+		span.RecordError(ctx, err)
+	}
+
+	return err
 }
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.

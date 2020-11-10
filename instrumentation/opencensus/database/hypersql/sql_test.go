@@ -7,14 +7,14 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
+	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/sdk/export/trace"
+	"go.opencensus.io/trace"
 )
 
 func createDB(t *testing.T) (*sql.DB, func() []*trace.SpanData) {
-	_, flusher := internal.InitTracer()
+	flusher := internal.InitTracer()
 
 	driverName, err := Register("sqlite3")
 	if err != nil {
@@ -52,10 +52,10 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "sql/query", spans[0].Name)
+	assert.Equal(t, "sql:query", spans[0].Name)
 
-	attrs := internal.LookupAttributes(span.Attributes)
-	assert.False(t, attrs.Has("error"))
+	_, ok := span.Attributes["error"]
+	assert.False(t, ok)
 
 	db.Close()
 }
@@ -80,10 +80,10 @@ func TestExecSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "sql/exec", span.Name)
+	assert.Equal(t, "sql:exec", span.Name)
 
-	attrs := internal.LookupAttributes(span.Attributes)
-	assert.False(t, attrs.Has("error"))
+	_, ok := span.Attributes["error"]
+	assert.False(t, ok)
 }
 
 func TestTxWithCommitSuccess(t *testing.T) {
@@ -120,15 +120,15 @@ func TestTxWithCommitSuccess(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 5, len(spans))
 
-	assert.Equal(t, "sql/exec", spans[0].Name)
-	assert.Equal(t, "sql/begin_transaction", spans[1].Name)
-	assert.Equal(t, "sql/prepare", spans[2].Name)
-	assert.Equal(t, "sql/exec", spans[3].Name)
-	assert.Equal(t, "sql/commit", spans[4].Name)
+	assert.Equal(t, "sql:exec", spans[0].Name)
+	assert.Equal(t, "sql:begin_transaction", spans[1].Name)
+	assert.Equal(t, "sql:prepare", spans[2].Name)
+	assert.Equal(t, "sql:exec", spans[3].Name)
+	assert.Equal(t, "sql:commit", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
-		attrs := internal.LookupAttributes(spans[i].Attributes)
-		assert.False(t, attrs.Has("error"))
+		_, ok := spans[i].Attributes["error"]
+		assert.False(t, ok)
 	}
 
 	db.Close()
@@ -165,15 +165,15 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 5, len(spans))
 
-	assert.Equal(t, "sql/exec", spans[0].Name)
-	assert.Equal(t, "sql/begin_transaction", spans[1].Name)
-	assert.Equal(t, "sql/prepare", spans[2].Name)
-	assert.Equal(t, "sql/exec", spans[3].Name)
-	assert.Equal(t, "sql/rollback", spans[4].Name)
+	assert.Equal(t, "sql:exec", spans[0].Name)
+	assert.Equal(t, "sql:begin_transaction", spans[1].Name)
+	assert.Equal(t, "sql:prepare", spans[2].Name)
+	assert.Equal(t, "sql:exec", spans[3].Name)
+	assert.Equal(t, "sql:rollback", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
-		attrs := internal.LookupAttributes(spans[i].Attributes)
-		assert.False(t, attrs.Has("error"))
+		_, ok := spans[i].Attributes["error"]
+		assert.False(t, ok)
 	}
 
 	db.Close()

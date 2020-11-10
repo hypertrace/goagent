@@ -11,6 +11,7 @@ func Wrap(d driver.Driver) driver.Driver {
 	return ocsql.Wrap(d,
 		ocsql.WithQuery(true),
 		ocsql.WithDisableErrSkip(true),
+		ocsql.WithAllowRoot(true),
 	)
 }
 
@@ -22,5 +23,6 @@ func Register(driverName string) (string, error) {
 		driverName,
 		ocsql.WithQuery(true),
 		ocsql.WithDisableErrSkip(true),
+		ocsql.WithAllowRoot(true),
 	)
 }

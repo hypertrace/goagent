@@ -17,7 +17,7 @@ jobs:
       - run: make deps
       - run: make deps-ci
       - run: make lint
-      - run: CGO_ENABLED=0 go test -coverprofile=coverage.txt -v ./...
+      - run: CGO_ENABLED=1 go test -coverprofile=coverage.txt -v ./...
       - codecov/upload:
           file: ./coverage.txt
       - run: make check-examples

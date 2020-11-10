@@ -60,13 +60,13 @@ res, err := client.Do(req)
 In terminal 1 run the client:
 
 ```bash
-go run ./net/http/examples/client/main.go
+go run ./net/hyperhttp/examples/client/main.go
 ```
 
 In terminal 2 run the server:
 
 ```bash
-go run ./net/http/examples/server/main.go
+go run ./net/hyperhttp/examples/server/main.go
 ```
 
 ## Package google.golang.org/grpc
@@ -129,11 +129,11 @@ func main() {
 In terminal 1 run the client:
 
 ```bash
-go run ./google.golang.org/grpc/examples/client/main.go
+go run ./google.golang.org/hypergrpc/examples/client/main.go
 ```
 
 In terminal 2 run the server:
 
 ```bash
-go run ./google.golang.org/grpc/examples/server/main.go
+go run ./google.golang.org/hypergrpc/examples/server/main.go
 ```

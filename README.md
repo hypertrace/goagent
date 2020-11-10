@@ -1,12 +1,13 @@
-[![codecov](https://codecov.io/gh/hypertrace/goagent/branch/master/graph/badge.svg)](https://codecov.io/gh/hypertrace/goagent)
-
 # Go Agent
 
-`goagent` provides a set of complementary instrumentation features for collecting relevant data to be processed by Hypertrace.
+[![CircleCI](https://circleci.com/gh/hypertrace/goagent/tree/main.svg?style=svg)](https://circleci.com/gh/hypertrace/goagent/tree/main)
+[![codecov](https://codecov.io/gh/hypertrace/goagent/branch/master/graph/badge.svg)](https://codecov.io/gh/hypertrace/goagent)
+
+`goagent` provides a set of complementary instrumentation features for collecting relevant data to be processed by [Hypertrace](https://hypertrace.org).
 
 ## Getting started
 
-## Package net/http
+## Package net/hyperhttp
 
 ### HTTP server
 
@@ -72,7 +73,7 @@ In terminal 2 run the server:
 go run ./instrumentation/hypertrace/net/hyperhttp/examples/server/main.go
 ```
 
-## Package google.golang.org/grpc
+## Package google.golang.org/hypergrpc
 
 ### GRPC server
 

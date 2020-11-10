@@ -2,7 +2,7 @@
 
 Go Agent provides a set of complementary features for OpenTelemetry instrumentation
 
-## Package net/http
+## Package net/hyperhttp
 
 ### HTTP server
 
@@ -71,7 +71,7 @@ In terminal 2 run the server:
 go run ./net/http/examples/server/main.go
 ```
 
-## Package google.golang.org/grpc
+## Package google.golang.org/hypergrpc
 
 ### GRPC server
 
@@ -96,7 +96,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 import (
     // ...
 
-    hypergrpc "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/grpc"
+    hypergrpc "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc"
     otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
     "google.golang.org/grpc"
 )
@@ -129,11 +129,11 @@ func main() {
 In terminal 1 run the client:
 
 ```bash
-go run ./google.golang.org/grpc/examples/client/main.go
+go run ./google.golang.org/hypergrpc/examples/client/main.go
 ```
 
 In terminal 2 run the server:
 
 ```bash
-go run ./google.golang.org/grpc/examples/server/main.go
+go run ./google.golang.org/hypergrpc/examples/server/main.go
 ```

@@ -29,6 +29,10 @@ deps-ci:
 	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 check-examples:
+	go build -o ./examples/http_client instrumentation/hypertrace/net/hyperhttp/examples/client/main.go && rm ./examples/http_client
+	go build -o ./examples/http_server instrumentation/hypertrace/net/hyperhttp/examples/server/main.go && rm ./examples/http_server
+	go build -o ./examples/grpc_client instrumentation/hypertrace/google.golang.org/hypergrpc/examples/client/main.go && rm ./examples/grpc_client
+	go build -o ./examples/grpc_server instrumentation/hypertrace/google.golang.org/hypergrpc/examples/server/main.go && rm ./examples/grpc_server
 	go build -o ./examples/http_client instrumentation/opentelemetry/net/hyperhttp/examples/client/main.go && rm ./examples/http_client
 	go build -o ./examples/http_server instrumentation/opentelemetry/net/hyperhttp/examples/server/main.go && rm ./examples/http_server
 	go build -o ./examples/grpc_client instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/client/main.go && rm ./examples/grpc_client

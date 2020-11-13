@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/hypertrace/goagent/sdk"
@@ -94,18 +93,6 @@ type handler struct {
 	defaultAttributes map[string]string
 }
 
-func resolveInType(isClient bool) string {
-	if isClient {
-		return "response"
-	}
-
-	return "request"
-}
-
-func resolveOutType(isClient bool) string {
-	return resolveInType(!isClient)
-}
-
 // HandleRPC implements per-RPC tracing and stats instrumentation.
 func (s *handler) HandleRPC(ctx context.Context, rs stats.RPCStats) {
 	defer s.Handler.HandleRPC(ctx, rs)
@@ -126,28 +113,50 @@ func (s *handler) HandleRPC(ctx context.Context, rs stats.RPCStats) {
 		}
 	case *stats.InPayload:
 		body, err := marshalMessageableJSON(rs.Payload)
-		if len(body) > 0 && err == nil {
-			span.SetAttribute(
-				fmt.Sprintf("rpc.%s.body", resolveInType(rs.IsClient())),
-				string(body),
-			)
+		if len(body) == 0 || err != nil {
+			return
+		}
+
+		if rs.IsClient() {
+			span.SetAttribute("rpc.response.body", string(body))
+		} else {
+			span.SetAttribute("rpc.request.body", string(body))
 		}
 	case *stats.InHeader:
-		setAttributesFromMetadata(resolveInType(rs.IsClient()), rs.Header, span)
+		if rs.IsClient() {
+			setAttributesFromMetadata("response", rs.Header, span)
+		} else {
+			setAttributesFromMetadata("request", rs.Header, span)
+		}
 	case *stats.InTrailer:
-		setAttributesFromMetadata(resolveInType(rs.IsClient()), rs.Trailer, span)
+		if rs.IsClient() {
+			setAttributesFromMetadata("response", rs.Trailer, span)
+		} else {
+			setAttributesFromMetadata("request", rs.Trailer, span)
+		}
 	case *stats.OutPayload:
 		body, err := marshalMessageableJSON(rs.Payload)
-		if len(body) > 0 && err == nil {
-			span.SetAttribute(
-				fmt.Sprintf("rpc.%s.body", resolveOutType(rs.IsClient())),
-				string(body),
-			)
+		if len(body) == 0 || err != nil {
+			return
+		}
+
+		if rs.IsClient() {
+			span.SetAttribute("rpc.request.body", string(body))
+		} else {
+			span.SetAttribute("rpc.response.body", string(body))
 		}
 	case *stats.OutHeader:
-		setAttributesFromMetadata(resolveOutType(rs.IsClient()), rs.Header, span)
+		if rs.IsClient() {
+			setAttributesFromMetadata("request", rs.Header, span)
+		} else {
+			setAttributesFromMetadata("response", rs.Header, span)
+		}
 	case *stats.OutTrailer:
-		setAttributesFromMetadata(resolveOutType(rs.IsClient()), rs.Trailer, span)
+		if rs.IsClient() {
+			setAttributesFromMetadata("request", rs.Trailer, span)
+		} else {
+			setAttributesFromMetadata("response", rs.Trailer, span)
+		}
 	}
 }
 
@@ -158,7 +167,7 @@ func (s *handler) TagRPC(ctx context.Context, rti *stats.RPCTagInfo) context.Con
 		// isNoop means either the span is not sampled or there was no span
 		// in the request context which means this Handler is not used
 		// inside an instrumented Handler, hence we just invoke the delegate
-		// round tripper.
+		// handler.
 		return ctx
 	}
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/hypertrace/goagent/sdk"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -19,6 +20,8 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
+
+	dataCaptureConfig := internalconfig.GetConfig().GetDataCapture()
 
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		var header metadata.MD
@@ -45,22 +48,26 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 			span.SetAttribute("rpc.method", pieces[1])
 
 			reqBody, err := marshalMessageableJSON(req)
-			if len(reqBody) > 0 && err == nil {
+			if dataCaptureConfig.RpcBody.Request.Value && len(reqBody) > 0 && err == nil {
 				span.SetAttribute("rpc.request.body", string(reqBody))
 			}
 
-			setAttributesFromRequestOutgoingMetadata(ctx, span)
+			if dataCaptureConfig.RpcMetadata.Request.Value {
+				setAttributesFromRequestOutgoingMetadata(ctx, span)
+			}
 
 			err = invoker(ctx, method, req, reply, cc, opts...)
 			if err != nil {
 				return err
 			}
 
-			setAttributesFromMetadata("response", header, span)
-			setAttributesFromMetadata("response", trailer, span)
+			if dataCaptureConfig.RpcMetadata.Response.Value {
+				setAttributesFromMetadata("response", header, span)
+				setAttributesFromMetadata("response", trailer, span)
+			}
 
 			resBody, err := marshalMessageableJSON(reply)
-			if len(resBody) > 0 && err == nil {
+			if dataCaptureConfig.RpcBody.Response.Value && len(resBody) > 0 && err == nil {
 				span.SetAttribute("rpc.response.body", string(resBody))
 			}
 

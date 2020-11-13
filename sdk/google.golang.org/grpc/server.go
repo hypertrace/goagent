@@ -4,7 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/stats"
@@ -36,7 +38,7 @@ func WrapUnaryServerInterceptor(
 			ctx,
 			req,
 			info,
-			wrapHandler(info.FullMethod, handler, spanFromContext, defaultAttributes),
+			wrapHandler(info.FullMethod, handler, spanFromContext, defaultAttributes, internalconfig.GetConfig().GetDataCapture()),
 		)
 	}
 }
@@ -46,6 +48,7 @@ func wrapHandler(
 	delegateHandler grpc.UnaryHandler,
 	spanFromContext sdk.SpanFromContext,
 	defaultAttributes map[string]string,
+	dataCaptureConfig *config.DataCapture,
 ) grpc.UnaryHandler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		span := spanFromContext(ctx)
@@ -65,11 +68,14 @@ func wrapHandler(
 		span.SetAttribute("rpc.method", pieces[1])
 
 		reqBody, err := marshalMessageableJSON(req)
-		if len(reqBody) > 0 && err == nil {
+		if dataCaptureConfig.RpcBody.Request.Value &&
+			len(reqBody) > 0 && err == nil {
 			span.SetAttribute("rpc.request.body", string(reqBody))
 		}
 
-		setAttributesFromRequestIncomingMetadata(ctx, span)
+		if dataCaptureConfig.RpcMetadata.Request.Value {
+			setAttributesFromRequestIncomingMetadata(ctx, span)
+		}
 
 		res, err := delegateHandler(ctx, req)
 		if err != nil {
@@ -77,7 +83,8 @@ func wrapHandler(
 		}
 
 		resBody, err := marshalMessageableJSON(res)
-		if len(resBody) > 0 && err == nil {
+		if dataCaptureConfig.RpcBody.Response.Value &&
+			len(resBody) > 0 && err == nil {
 			span.SetAttribute("rpc.response.body", string(resBody))
 		}
 
@@ -91,6 +98,7 @@ type handler struct {
 	stats.Handler
 	spanFromContext   sdk.SpanFromContext
 	defaultAttributes map[string]string
+	dataCaptureConfig *config.DataCapture
 }
 
 // HandleRPC implements per-RPC tracing and stats instrumentation.
@@ -102,7 +110,7 @@ func (s *handler) HandleRPC(ctx context.Context, rs stats.RPCStats) {
 		// isNoop means either the span is not sampled or there was no span
 		// in the request context which means this Handler is not used
 		// inside an instrumented Handler, hence we just invoke the delegate
-		// round tripper.
+		// handler.
 		return
 	}
 
@@ -117,21 +125,21 @@ func (s *handler) HandleRPC(ctx context.Context, rs stats.RPCStats) {
 			return
 		}
 
-		if rs.IsClient() {
+		if rs.IsClient() && s.dataCaptureConfig.RpcBody.Response.Value {
 			span.SetAttribute("rpc.response.body", string(body))
-		} else {
+		} else if !rs.IsClient() && s.dataCaptureConfig.RpcBody.Request.Value {
 			span.SetAttribute("rpc.request.body", string(body))
 		}
 	case *stats.InHeader:
-		if rs.IsClient() {
+		if rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Response.Value {
 			setAttributesFromMetadata("response", rs.Header, span)
-		} else {
+		} else if !rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Request.Value {
 			setAttributesFromMetadata("request", rs.Header, span)
 		}
 	case *stats.InTrailer:
-		if rs.IsClient() {
+		if rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Response.Value {
 			setAttributesFromMetadata("response", rs.Trailer, span)
-		} else {
+		} else if !rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Request.Value {
 			setAttributesFromMetadata("request", rs.Trailer, span)
 		}
 	case *stats.OutPayload:
@@ -140,21 +148,21 @@ func (s *handler) HandleRPC(ctx context.Context, rs stats.RPCStats) {
 			return
 		}
 
-		if rs.IsClient() {
+		if rs.IsClient() && s.dataCaptureConfig.RpcBody.Request.Value {
 			span.SetAttribute("rpc.request.body", string(body))
-		} else {
+		} else if !rs.IsClient() && s.dataCaptureConfig.RpcBody.Response.Value {
 			span.SetAttribute("rpc.response.body", string(body))
 		}
 	case *stats.OutHeader:
-		if rs.IsClient() {
+		if rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Request.Value {
 			setAttributesFromMetadata("request", rs.Header, span)
-		} else {
+		} else if !rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Response.Value {
 			setAttributesFromMetadata("response", rs.Header, span)
 		}
 	case *stats.OutTrailer:
-		if rs.IsClient() {
+		if rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Request.Value {
 			setAttributesFromMetadata("request", rs.Trailer, span)
-		} else {
+		} else if !rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Response.Value {
 			setAttributesFromMetadata("response", rs.Trailer, span)
 		}
 	}
@@ -188,5 +196,10 @@ func WrapStatsHandler(delegate stats.Handler, spanFromContext sdk.SpanFromContex
 		defaultAttributes["container_id"] = containerID
 	}
 
-	return &handler{Handler: delegate, spanFromContext: spanFromContext, defaultAttributes: defaultAttributes}
+	return &handler{
+		Handler:           delegate,
+		spanFromContext:   spanFromContext,
+		defaultAttributes: defaultAttributes,
+		dataCaptureConfig: internalconfig.GetConfig().GetDataCapture(),
+	}
 }

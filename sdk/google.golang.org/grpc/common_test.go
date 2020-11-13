@@ -7,11 +7,9 @@ import (
 	"log"
 	"net"
 	reflect "reflect"
-	"testing"
 
 	"github.com/hypertrace/goagent/sdk/google.golang.org/grpc/internal/helloworld"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
-	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -75,13 +73,6 @@ func jsonEqual(a, b string) (bool, error) {
 		return false, err
 	}
 	return reflect.DeepEqual(j2, j), nil
-}
-
-func TestResolveInOutType(t *testing.T) {
-	assert.Equal(t, "response", resolveInType(true))
-	assert.Equal(t, "request", resolveOutType(true))
-	assert.Equal(t, "request", resolveInType(false))
-	assert.Equal(t, "response", resolveOutType(false))
 }
 
 var _ stats.Handler = &mockHandler{}

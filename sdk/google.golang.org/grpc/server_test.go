@@ -110,10 +110,7 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 
 	client := helloworld.NewGreeterClient(conn)
 
-	ctx = metadata.NewOutgoingContext(
-		ctx,
-		metadata.Pairs("test_key", "test_value"),
-	)
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
 
 	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
 		Name: "Pupo",

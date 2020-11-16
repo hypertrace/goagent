@@ -149,6 +149,12 @@ func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 // driverAttributes returns a list of attributes for given driver
 // it relies on reflection to obtain information about the driver
 // hidden by driver.Driver interface.
+// While using reflection represents an overhead, we only using when
+// bootstraping the driver and not anymore after that hence the trade-off
+// is acceptable. More so when the other alternative is to do typecast
+// across different drivers which will also create a runtime dependency or
+// rely on the name assigned to driverName which might not be standard.
+//
 func driverAttributes(d driver.Driver) map[string]string {
 	elem := reflect.TypeOf(d).Elem()
 	pkg, name := elem.PkgPath(), elem.Name()
@@ -166,6 +172,10 @@ func driverAttributes(d driver.Driver) map[string]string {
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.
 func Wrap(d driver.Driver) driver.Driver {
+	// At the moment the wrapped driver will be returned but in the future
+	// if we need access to the connection string (once we sort out how to
+	// anonymize sensitive data) we might need to wrap this one more time
+	// to intercept the `sql.Open` call and record the connection string.
 	return sqlmw.Driver(d, &interceptor{defaultAttributes: driverAttributes(d)})
 }
 

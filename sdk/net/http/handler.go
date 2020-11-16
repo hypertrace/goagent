@@ -48,7 +48,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span.SetAttribute("http.url", r.URL.String())
 
 	// Sets an attribute per each request header.
-	if h.dataCaptureConfig.HttpHeaders.Request.Value {
+	if h.dataCaptureConfig.GetHttpHeaders().Request.Value {
 		setAttributesFromHeaders("request", r.Header, span)
 	}
 

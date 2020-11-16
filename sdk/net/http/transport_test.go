@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,23 +29,31 @@ func (t *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Header().Set("content-type", "application/json")
-		rw.Header().Set("request_id", "xyz123abc")
 		rw.WriteHeader(202)
 		rw.Write([]byte(`{"id":123}`))
 	}))
 	defer srv.Close()
 
+	rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+	rt.dataCaptureConfig = &config.DataCapture{
+		HttpHeaders: &config.Message{
+			Request:  config.Bool(false),
+			Response: config.Bool(false),
+		},
+		HttpBody: &config.Message{
+			Request:  config.Bool(false),
+			Response: config.Bool(false),
+		},
+	}
+
 	tr := &mockTransport{
-		baseRoundTripper: WrapTransport(http.DefaultTransport, mock.SpanFromContext),
+		baseRoundTripper: rt,
 	}
 	client := &http.Client{
 		Transport: tr,
 	}
 
 	req, _ := http.NewRequest("POST", srv.URL, bytes.NewBufferString(`{"name":"Jacinto"}`))
-	req.Header.Set("api_key", "abc123xyz")
-	req.Header.Set("content-type", "application/json")
 	res, err := client.Do(req)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -60,10 +69,80 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, 1, len(spans), "unexpected number of spans")
 
 	span := spans[0]
-	assert.Equal(t, "abc123xyz", span.Attributes["http.request.header.Api_key"].(string))
-	assert.Equal(t, `{"name":"Jacinto"}`, span.Attributes["http.request.body"].(string))
-	assert.Equal(t, "xyz123abc", span.Attributes["http.response.header.Request_id"].(string))
-	assert.Equal(t, `{"id":123}`, span.Attributes["http.response.body"].(string))
+
+	// We make sure we read all attributes and covered them with tests
+	assert.Zero(t, span.RemainingAttributes())
+}
+
+func TestClientRequestHeadersAreCapturedAccordingly(t *testing.T) {
+	tCases := []struct {
+		captureHTTPHeadersRequestConfig  bool
+		captureHTTPHeadersResponseConfig bool
+	}{
+		{true, true},
+		{true, false},
+		{false, true},
+		{false, false},
+	}
+	for _, tCase := range tCases {
+
+		srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.Header().Set("content-type", "application/json")
+			rw.Header().Set("request_id", "xyz123abc")
+			rw.WriteHeader(202)
+			rw.Write([]byte(`{"id":123}`))
+		}))
+		defer srv.Close()
+
+		rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+		rt.dataCaptureConfig = &config.DataCapture{
+			HttpHeaders: &config.Message{
+				Request:  config.Bool(tCase.captureHTTPHeadersRequestConfig),
+				Response: config.Bool(tCase.captureHTTPHeadersResponseConfig),
+			},
+			HttpBody: &config.Message{
+				Request:  config.Bool(false),
+				Response: config.Bool(false),
+			},
+		}
+
+		tr := &mockTransport{
+			baseRoundTripper: rt,
+		}
+		client := &http.Client{
+			Transport: tr,
+		}
+
+		req, _ := http.NewRequest("POST", srv.URL, bytes.NewBufferString(`{"name":"Jacinto"}`))
+		req.Header.Set("api_key", "abc123xyz")
+		req.Header.Set("content-type", "application/json")
+		res, err := client.Do(req)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		assert.Equal(t, 202, res.StatusCode)
+
+		resBody, err := ioutil.ReadAll(res.Body)
+		assert.Nil(t, err)
+		assert.Equal(t, `{"id":123}`, string(resBody))
+
+		spans := tr.spans
+		assert.Equal(t, 1, len(spans), "unexpected number of spans")
+
+		span := spans[0]
+		if tCase.captureHTTPHeadersRequestConfig {
+			assert.Equal(t, "abc123xyz", span.ReadAttribute("http.request.header.Api_key").(string))
+		} else {
+			assert.Nil(t, span.ReadAttribute("http.request.header.Api_key"))
+		}
+
+		if tCase.captureHTTPHeadersResponseConfig {
+			assert.Equal(t, "xyz123abc", span.ReadAttribute("http.response.header.Request_id").(string))
+		} else {
+			assert.Nil(t, span.ReadAttribute("http.response.header.Request_id"))
+		}
+	}
 }
 
 type failingTransport struct {
@@ -94,6 +173,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 
 func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 	tCases := map[string]struct {
+		captureHTTPBodyConfig          bool
 		requestBody                    string
 		requestContentType             string
 		shouldHaveRecordedRequestBody  bool
@@ -102,28 +182,44 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 		shouldHaveRecordedResponseBody bool
 	}{
 		"no content type headers and empty body": {
+			captureHTTPBodyConfig: true,
+
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
 		"no content type headers and non empty body": {
+			captureHTTPBodyConfig: true,
+
 			requestBody:                    "{}",
 			responseBody:                   "{}",
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
 		"content type headers but empty body": {
+			captureHTTPBodyConfig: true,
+
 			requestContentType:             "application/json",
 			responseContentType:            "application/x-www-form-urlencoded",
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
-		"content type and body": {
+		"content type and body with config enabled": {
+			captureHTTPBodyConfig:          true,
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
 			requestContentType:             "application/x-www-form-urlencoded",
 			responseContentType:            "Application/JSON",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,
+		},
+		"content type and body but config disabled": {
+			captureHTTPBodyConfig:          false,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "application/x-www-form-urlencoded",
+			responseContentType:            "Application/JSON",
+			shouldHaveRecordedRequestBody:  false,
+			shouldHaveRecordedResponseBody: false,
 		},
 	}
 
@@ -137,9 +233,22 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			tr := &mockTransport{
-				baseRoundTripper: WrapTransport(http.DefaultTransport, mock.SpanFromContext),
+			rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+			rt.dataCaptureConfig = &config.DataCapture{
+				HttpBody: &config.Message{
+					Request:  config.Bool(tCase.captureHTTPBodyConfig),
+					Response: config.Bool(tCase.captureHTTPBodyConfig),
+				},
+				HttpHeaders: &config.Message{
+					Request:  config.Bool(false),
+					Response: config.Bool(false),
+				},
 			}
+
+			tr := &mockTransport{
+				baseRoundTripper: rt,
+			}
+
 			client := &http.Client{
 				Transport: tr,
 			}
@@ -158,19 +267,16 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			assert.Nil(t, err)
 
 			span := tr.spans[0]
-
 			if tCase.shouldHaveRecordedRequestBody {
-				assert.Equal(t, tCase.requestBody, span.Attributes["http.request.body"].(string))
+				assert.Equal(t, tCase.requestBody, span.ReadAttribute("http.request.body").(string))
 			} else {
-				_, ok := span.Attributes["http.request.body"]
-				assert.False(t, ok)
+				assert.Nil(t, span.ReadAttribute("http.request.body"))
 			}
 
 			if tCase.shouldHaveRecordedResponseBody {
-				assert.Equal(t, tCase.responseBody, span.Attributes["http.response.body"].(string))
+				assert.Equal(t, tCase.responseBody, span.ReadAttribute("http.response.body").(string))
 			} else {
-				_, ok := span.Attributes["http.response.body"]
-				assert.False(t, ok)
+				assert.Nil(t, span.ReadAttribute("http.response.body"))
 			}
 		})
 	}

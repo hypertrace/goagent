@@ -61,13 +61,13 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 
 	span := spans[0]
 
-	assert.Equal(t, "grpc", span.Attributes["rpc.system"].(string))
-	assert.Equal(t, "helloworld.Greeter", span.Attributes["rpc.service"].(string))
-	assert.Equal(t, "SayHello", span.Attributes["rpc.method"].(string))
-	assert.Equal(t, "test_value", span.Attributes["rpc.request.metadata.test_key"].(string))
+	assert.Equal(t, "grpc", span.ReadAttribute("rpc.system").(string))
+	assert.Equal(t, "helloworld.Greeter", span.ReadAttribute("rpc.service").(string))
+	assert.Equal(t, "SayHello", span.ReadAttribute("rpc.method").(string))
+	assert.Equal(t, "test_value", span.ReadAttribute("rpc.request.metadata.test_key").(string))
 
 	expectedBody := "{\"name\":\"Pupo\"}"
-	actualBody := span.Attributes["rpc.request.body"].(string)
+	actualBody := span.ReadAttribute("rpc.request.body").(string)
 	if ok, err := jsonEqual(expectedBody, actualBody); err == nil {
 		assert.True(t, ok, "incorrect request body:\nwant %s,\nhave %s", expectedBody, actualBody)
 	} else {
@@ -75,7 +75,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 	}
 
 	expectedBody = "{\"message\":\"Hello Pupo\"}"
-	actualBody = span.Attributes["rpc.response.body"].(string)
+	actualBody = span.ReadAttribute("rpc.response.body").(string)
 	if ok, err := jsonEqual(expectedBody, actualBody); err == nil {
 		assert.True(t, ok, "incorrect response body:\nwant %s,\nhave %s", expectedBody, actualBody)
 	} else {
@@ -101,6 +101,7 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
+		grpc.WithUserAgent("test_agent"),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -109,7 +110,11 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 
 	client := helloworld.NewGreeterClient(conn)
 
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
+	ctx = metadata.NewOutgoingContext(
+		ctx,
+		metadata.Pairs("test_key", "test_value"),
+	)
+
 	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
 		Name: "Pupo",
 	})
@@ -121,14 +126,17 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 
 	span := mockHandler.Spans[0]
 
-	assert.Equal(t, "grpc", span.Attributes["rpc.system"].(string))
-	assert.Equal(t, "helloworld.Greeter", span.Attributes["rpc.service"].(string))
-	assert.Equal(t, "SayHello", span.Attributes["rpc.method"].(string))
-	assert.Equal(t, "test_value", span.Attributes["rpc.request.metadata.test_key"].(string))
-	assert.Equal(t, "test_value", span.Attributes["rpc.request.metadata.test_key"].(string))
+	assert.Equal(t, "grpc", span.ReadAttribute("rpc.system").(string))
+	assert.Equal(t, "helloworld.Greeter", span.ReadAttribute("rpc.service").(string))
+	assert.Equal(t, "SayHello", span.ReadAttribute("rpc.method").(string))
+	assert.Equal(t, "test_value", span.ReadAttribute("rpc.request.metadata.test_key").(string))
+
+	assert.Equal(t, "bufnet", span.ReadAttribute("rpc.request.metadata.:authority").(string))
+	assert.Equal(t, "application/grpc", span.ReadAttribute("rpc.request.metadata.content-type").(string))
+	assert.Contains(t, span.ReadAttribute("rpc.request.metadata.user-agent").(string), "test_agent")
 
 	expectedBody := "{\"name\":\"Pupo\"}"
-	actualBody := span.Attributes["rpc.request.body"].(string)
+	actualBody := span.ReadAttribute("rpc.request.body").(string)
 	if ok, err := jsonEqual(expectedBody, actualBody); err == nil {
 		assert.True(t, ok, "incorrect request body:\nwant %s,\nhave %s", expectedBody, actualBody)
 	} else {
@@ -136,10 +144,11 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 	}
 
 	expectedBody = "{\"message\":\"Hello Pupo\"}"
-	actualBody = span.Attributes["rpc.response.body"].(string)
+	actualBody = span.ReadAttribute("rpc.response.body").(string)
 	if ok, err := jsonEqual(expectedBody, actualBody); err == nil {
 		assert.True(t, ok, "incorrect response body:\nwant %s,\nhave %s", expectedBody, actualBody)
 	} else {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	assert.Zero(t, span.RemainingAttributes())
 }

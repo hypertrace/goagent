@@ -13,7 +13,8 @@ func TestSetScalarAttributeSuccess(t *testing.T) {
 	span := mock.NewSpan()
 	setAttributesFromMetadata("request", md, span)
 
-	assert.Equal(t, "value_1", span.Attributes["rpc.request.metadata.key_1"].(string))
+	assert.Equal(t, "value_1", span.ReadAttribute("rpc.request.metadata.key_1").(string))
+	assert.Zero(t, span.RemainingAttributes())
 }
 
 func TestSetMultivalueAttributeSuccess(t *testing.T) {
@@ -21,6 +22,7 @@ func TestSetMultivalueAttributeSuccess(t *testing.T) {
 	span := mock.NewSpan()
 	setAttributesFromMetadata("request", md, span)
 
-	assert.Equal(t, "value_1", span.Attributes["rpc.request.metadata.key_1[0]"].(string))
-	assert.Equal(t, "value_2", span.Attributes["rpc.request.metadata.key_1[1]"].(string))
+	assert.Equal(t, "value_1", span.ReadAttribute("rpc.request.metadata.key_1[0]").(string))
+	assert.Equal(t, "value_2", span.ReadAttribute("rpc.request.metadata.key_1[1]").(string))
+	assert.Zero(t, span.RemainingAttributes())
 }

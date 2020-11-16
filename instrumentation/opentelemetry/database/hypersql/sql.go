@@ -9,19 +9,25 @@ import (
 
 	"github.com/ngrok/sqlmw"
 	"go.opentelemetry.io/otel/api/global"
+
+	"reflect"
 )
 
 var regMu sync.Mutex
 
 type interceptor struct {
 	sqlmw.NullInterceptor
+	defaultAttributes map[string]string
 }
 
 const tracerName = "github.com/hypertrace/goagent"
 
 func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQueryContext, query string, args []driver.NamedValue) (driver.Rows, error) {
 	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/query")
-	span.SetAttribute("query", query)
+	for key, value := range in.defaultAttributes {
+		span.SetAttribute(key, value)
+	}
+	span.SetAttribute("db.statement", query)
 	defer span.End()
 
 	rows, err := conn.QueryContext(ctx, args)
@@ -34,7 +40,10 @@ func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQue
 
 func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExecContext, query string, args []driver.NamedValue) (driver.Result, error) {
 	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/exec")
-	span.SetAttribute("query", query)
+	for key, value := range in.defaultAttributes {
+		span.SetAttribute(key, value)
+	}
+	span.SetAttribute("db.statement", query)
 	defer span.End()
 
 	rows, err := conn.ExecContext(ctx, args)
@@ -47,7 +56,10 @@ func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExec
 
 func (in *interceptor) ConnQueryContext(ctx context.Context, conn driver.QueryerContext, query string, args []driver.NamedValue) (driver.Rows, error) {
 	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/query")
-	span.SetAttribute("query", query)
+	for key, value := range in.defaultAttributes {
+		span.SetAttribute(key, value)
+	}
+	span.SetAttribute("db.statement", query)
 	defer span.End()
 
 	rows, err := conn.QueryContext(ctx, query, args)
@@ -60,7 +72,10 @@ func (in *interceptor) ConnQueryContext(ctx context.Context, conn driver.Queryer
 
 func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerContext, query string, args []driver.NamedValue) (driver.Result, error) {
 	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/exec")
-	span.SetAttribute("query", query)
+	for key, value := range in.defaultAttributes {
+		span.SetAttribute(key, value)
+	}
+	span.SetAttribute("db.statement", query)
 	defer span.End()
 
 	rows, err := conn.ExecContext(ctx, query, args)
@@ -73,6 +88,9 @@ func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerCo
 
 func (in *interceptor) ConnBeginTx(ctx context.Context, conn driver.ConnBeginTx, txOpts driver.TxOptions) (driver.Tx, error) {
 	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/begin_transaction")
+	for key, value := range in.defaultAttributes {
+		span.SetAttribute(key, value)
+	}
 	defer span.End()
 
 	tx, err := conn.BeginTx(ctx, txOpts)
@@ -85,6 +103,9 @@ func (in *interceptor) ConnBeginTx(ctx context.Context, conn driver.ConnBeginTx,
 
 func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnPrepareContext, query string) (driver.Stmt, error) {
 	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/prepare")
+	for key, value := range in.defaultAttributes {
+		span.SetAttribute(key, value)
+	}
 	defer span.End()
 
 	tx, err := conn.PrepareContext(ctx, query)
@@ -97,6 +118,9 @@ func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnP
 
 func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
 	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/commit")
+	for key, value := range in.defaultAttributes {
+		span.SetAttribute(key, value)
+	}
 	defer span.End()
 
 	err := tx.Commit()
@@ -109,6 +133,9 @@ func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
 
 func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 	ctx, span := global.TraceProvider().Tracer(tracerName).Start(ctx, "sql/rollback")
+	for key, value := range in.defaultAttributes {
+		span.SetAttribute(key, value)
+	}
 	defer span.End()
 
 	err := tx.Rollback()
@@ -119,9 +146,27 @@ func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 	return err
 }
 
+// driverAttributes returns a list of attributes for given driver
+// it relies on reflection to obtain information about the driver
+// hidden by driver.Driver interface.
+func driverAttributes(d driver.Driver) map[string]string {
+	elem := reflect.TypeOf(d).Elem()
+	pkg, name := elem.PkgPath(), elem.Name()
+	attrs := map[string]string{}
+	switch {
+	case pkg == "github.com/mattn/go-sqlite3" &&
+		name == "SQLiteDriver":
+		attrs["db.system"] = "sqlite"
+	case pkg == "github.com/go-sql-driver/mysql" &&
+		name == "MySQLDriver":
+		attrs["db.system"] = "mysql"
+	}
+	return attrs
+}
+
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.
 func Wrap(d driver.Driver) driver.Driver {
-	return sqlmw.Driver(d, new(interceptor))
+	return sqlmw.Driver(d, &interceptor{defaultAttributes: driverAttributes(d)})
 }
 
 // Register initializes and registers the hypersql wrapped database driver

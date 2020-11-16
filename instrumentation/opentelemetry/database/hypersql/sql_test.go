@@ -1,6 +1,6 @@
 package hypersql
 
-// highly inspired by https://github.com/openzipkin-contrib/zipkin-go-sql/blob/master/driver_test.go
+// highly inspired in https://github.com/openzipkin-contrib/zipkin-go-sql/blob/master/driver_test.go
 
 import (
 	"context"
@@ -55,6 +55,8 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, "sql/query", spans[0].Name)
 
 	attrs := internal.LookupAttributes(span.Attributes)
+	assert.Equal(t, "SELECT 1 WHERE 1 = ?", attrs.Get("db.statement").AsString())
+	assert.Equal(t, "sqlite", attrs.Get("db.system").AsString())
 	assert.False(t, attrs.Has("error"))
 
 	db.Close()

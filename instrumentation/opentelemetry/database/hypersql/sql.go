@@ -27,6 +27,7 @@ func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQue
 	for key, value := range in.defaultAttributes {
 		span.SetAttribute(key, value)
 	}
+
 	span.SetAttribute("db.statement", query)
 	defer span.End()
 
@@ -43,6 +44,7 @@ func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExec
 	for key, value := range in.defaultAttributes {
 		span.SetAttribute(key, value)
 	}
+
 	span.SetAttribute("db.statement", query)
 	defer span.End()
 
@@ -75,6 +77,7 @@ func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerCo
 	for key, value := range in.defaultAttributes {
 		span.SetAttribute(key, value)
 	}
+
 	span.SetAttribute("db.statement", query)
 	defer span.End()
 
@@ -91,6 +94,7 @@ func (in *interceptor) ConnBeginTx(ctx context.Context, conn driver.ConnBeginTx,
 	for key, value := range in.defaultAttributes {
 		span.SetAttribute(key, value)
 	}
+
 	defer span.End()
 
 	tx, err := conn.BeginTx(ctx, txOpts)
@@ -106,6 +110,7 @@ func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnP
 	for key, value := range in.defaultAttributes {
 		span.SetAttribute(key, value)
 	}
+
 	defer span.End()
 
 	tx, err := conn.PrepareContext(ctx, query)
@@ -121,6 +126,7 @@ func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
 	for key, value := range in.defaultAttributes {
 		span.SetAttribute(key, value)
 	}
+
 	defer span.End()
 
 	err := tx.Commit()
@@ -136,6 +142,7 @@ func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 	for key, value := range in.defaultAttributes {
 		span.SetAttribute(key, value)
 	}
+
 	defer span.End()
 
 	err := tx.Rollback()
@@ -155,19 +162,31 @@ func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 // across different drivers which will also create a runtime dependency or
 // rely on the name assigned to driverName which might not be standard.
 //
-func driverAttributes(d driver.Driver) map[string]string {
+func getDriverName(d driver.Driver) string {
 	elem := reflect.TypeOf(d).Elem()
 	pkg, name := elem.PkgPath(), elem.Name()
+	return pkg + "." + name
+}
+
+type dsnReadWrapper struct {
+	driver.Driver
+	driverName          string
+	inDefaultAttributes *map[string]string
+}
+
+func (w *dsnReadWrapper) Open(dsn string) (driver.Conn, error) {
 	attrs := map[string]string{}
-	switch {
-	case pkg == "github.com/mattn/go-sqlite3" &&
-		name == "SQLiteDriver":
+	switch w.driverName {
+	case "github.com/mattn/go-sqlite3.SQLiteDriver":
 		attrs["db.system"] = "sqlite"
-	case pkg == "github.com/go-sql-driver/mysql" &&
-		name == "MySQLDriver":
+	case "github.com/go-sql-driver/mysql.MySQLDriver":
+		if parsedAttrs, err := parseDSN(dsn); err == nil {
+			attrs = parsedAttrs
+		}
 		attrs["db.system"] = "mysql"
 	}
-	return attrs
+	*w.inDefaultAttributes = attrs
+	return w.Driver.Open(dsn)
 }
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.
@@ -176,7 +195,9 @@ func Wrap(d driver.Driver) driver.Driver {
 	// if we need access to the connection string (once we sort out how to
 	// anonymize sensitive data) we might need to wrap this one more time
 	// to intercept the `sql.Open` call and record the connection string.
-	return sqlmw.Driver(d, &interceptor{defaultAttributes: driverAttributes(d)})
+	driverName := getDriverName(d)
+	in := &interceptor{}
+	return &dsnReadWrapper{Driver: sqlmw.Driver(d, in), driverName: driverName, inDefaultAttributes: &in.defaultAttributes}
 }
 
 // Register initializes and registers the hypersql wrapped database driver

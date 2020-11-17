@@ -168,6 +168,7 @@ func getDriverName(d driver.Driver) string {
 	return pkg + "." + name
 }
 
+// dsnReadWrapper is a driver.Driver that allows to read and parse the DSN.
 type dsnReadWrapper struct {
 	driver.Driver
 	driverName          string
@@ -175,6 +176,12 @@ type dsnReadWrapper struct {
 }
 
 func (w *dsnReadWrapper) Open(dsn string) (driver.Conn, error) {
+	*w.inDefaultAttributes = w.parseDSNAttributes(dsn)
+	return w.Driver.Open(dsn)
+}
+
+// parseDSNAttributes parses the DSN to obtain attributes like user, ip, port and dbName
+func (w *dsnReadWrapper) parseDSNAttributes(dsn string) map[string]string {
 	attrs := map[string]string{}
 	switch w.driverName {
 	case "github.com/mattn/go-sqlite3.SQLiteDriver":
@@ -185,16 +192,11 @@ func (w *dsnReadWrapper) Open(dsn string) (driver.Conn, error) {
 		}
 		attrs["db.system"] = "mysql"
 	}
-	*w.inDefaultAttributes = attrs
-	return w.Driver.Open(dsn)
+	return attrs
 }
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.
 func Wrap(d driver.Driver) driver.Driver {
-	// At the moment the wrapped driver will be returned but in the future
-	// if we need access to the connection string (once we sort out how to
-	// anonymize sensitive data) we might need to wrap this one more time
-	// to intercept the `sql.Open` call and record the connection string.
 	driverName := getDriverName(d)
 	in := &interceptor{}
 	return &dsnReadWrapper{Driver: sqlmw.Driver(d, in), driverName: driverName, inDefaultAttributes: &in.defaultAttributes}

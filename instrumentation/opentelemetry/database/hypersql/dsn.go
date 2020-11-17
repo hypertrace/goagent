@@ -15,6 +15,13 @@ var (
 	errInvalidDSNNoSlash   = errors.New("invalid DSN: missing the slash separating the database name")
 )
 
+const (
+	transportTCP  = "tcp"
+	transportUnix = "unix"
+
+	defaultTCPPort = "3306"
+)
+
 func parseDSN(dsn string) (map[string]string, error) {
 	var (
 		user      string
@@ -83,20 +90,20 @@ func parseDSN(dsn string) (map[string]string, error) {
 	}
 
 	if transport == "" {
-		transport = "tcp"
+		transport = transportTCP
 	}
 
 	if hostport == "" {
 		switch transport {
-		case "tcp":
+		case transportTCP:
 			ip = "127.0.0.1"
-			port = "3306"
-		case "unix":
+			port = defaultTCPPort
+		case transportUnix:
 			hostname = "/tmp/mysql.sock"
 		default:
 			return nil, fmt.Errorf("default addr for network %q unknown", transport)
 		}
-	} else if transport == "tcp" {
+	} else if transport == transportTCP {
 		hostname, ip, port = parseHostport(hostport)
 	} else {
 		hostname = hostport
@@ -112,9 +119,9 @@ func parseDSN(dsn string) (map[string]string, error) {
 	}
 
 	switch transport {
-	case "tcp":
+	case transportTCP:
 		attrs["net.transport"] = "IP.TCP"
-	case "unix":
+	case transportUnix:
 		attrs["net.transport"] = "Unix"
 	}
 
@@ -140,7 +147,7 @@ func parseHostport(hostport string) (string, string, string) {
 	if strings.Count(hostport, ":") > 1 { // presumably ipv6
 		if idx := strings.LastIndex(hostport, "]"); idx == -1 { // no brackes, hence no port
 			ip = hostport
-			port = "3306"
+			port = defaultTCPPort
 		} else {
 			ip = hostport[1:idx]
 			port = hostport[idx+2:]
@@ -148,7 +155,7 @@ func parseHostport(hostport string) (string, string, string) {
 	} else {
 		hostportPieces := strings.SplitN(hostport, ":", 2)
 		if len(hostportPieces) == 1 {
-			port = "3306"
+			port = defaultTCPPort
 		} else {
 			port = hostportPieces[1]
 		}

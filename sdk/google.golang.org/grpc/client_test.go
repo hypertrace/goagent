@@ -92,6 +92,7 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }
 

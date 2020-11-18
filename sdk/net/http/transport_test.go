@@ -70,6 +70,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	span := spans[0]
 
+	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	// We make sure we read all attributes and covered them with tests
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }

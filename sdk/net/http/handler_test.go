@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/config"
-	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,21 +26,6 @@ func (h *mockHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.baseHandler.ServeHTTP(rw, r.WithContext(ctx))
 }
 
-func TestMain(m *testing.M) {
-	sdkconfig.InitConfig(&config.AgentConfig{
-		DataCapture: &config.DataCapture{
-			HttpHeaders: &config.Message{
-				Request:  config.Bool(true),
-				Response: config.Bool(true),
-			},
-			HttpBody: &config.Message{
-				Request:  config.Bool(true),
-				Response: config.Bool(true),
-			},
-		},
-	})
-}
-
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("request_id", "abc123xyz")
@@ -53,10 +37,15 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
 	wh.dataCaptureConfig = &config.DataCapture{
 		HttpHeaders: &config.Message{
-			Request:  config.Bool(true),
-			Response: config.Bool(true),
+			Request:  config.Bool(false),
+			Response: config.Bool(false),
+		},
+		HttpBody: &config.Message{
+			Request:  config.Bool(false),
+			Response: config.Bool(false),
 		},
 	}
+
 	ih := &mockHandler{baseHandler: wh}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
@@ -66,12 +55,66 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	ih.ServeHTTP(w, r)
 	assert.Equal(t, "test_response_body", w.Body.String())
 
-	spans := ih.spans
-	assert.Equal(t, 1, len(spans))
+	assert.Equal(t, 1, len(ih.spans))
 
-	assert.Equal(t, "http://traceable.ai/foo?user_id=1", spans[0].Attributes["http.url"].(string))
-	assert.Equal(t, "xyz123abc", spans[0].Attributes["http.request.header.Api_key"].(string))
-	assert.Equal(t, "abc123xyz", spans[0].Attributes["http.response.header.Request_id"].(string))
+	span := ih.spans[0]
+	assert.Equal(t, "http://traceable.ai/foo?user_id=1", span.ReadAttribute("http.url").(string))
+
+	_ = span.ReadAttribute("container_id") // needed in containarized envs
+	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
+}
+
+func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {
+	tCases := []struct {
+		captureHTTPHeadersRequestConfig  bool
+		captureHTTPHeadersResponseConfig bool
+	}{
+		{true, true},
+		{true, false},
+		{false, true},
+		{false, false},
+	}
+	for _, tCase := range tCases {
+		h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			rw.Header().Add("request_id", "abc123xyz")
+			rw.WriteHeader(202)
+		})
+
+		wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+		ih := &mockHandler{baseHandler: wh}
+		wh.dataCaptureConfig = &config.DataCapture{
+			HttpHeaders: &config.Message{
+				Request:  config.Bool(tCase.captureHTTPHeadersRequestConfig),
+				Response: config.Bool(tCase.captureHTTPHeadersResponseConfig),
+			},
+			HttpBody: &config.Message{
+				Request:  config.Bool(false),
+				Response: config.Bool(false),
+			},
+		}
+
+		r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
+		r.Header.Add("api_key", "xyz123abc")
+		w := httptest.NewRecorder()
+
+		ih.ServeHTTP(w, r)
+
+		spans := ih.spans
+		assert.Equal(t, 1, len(spans))
+
+		span := spans[0]
+		if tCase.captureHTTPHeadersRequestConfig {
+			assert.Equal(t, "xyz123abc", span.ReadAttribute("http.request.header.Api_key").(string))
+		} else {
+			assert.Nil(t, span.ReadAttribute("http.request.header.Api_key"))
+		}
+
+		if tCase.captureHTTPHeadersResponseConfig {
+			assert.Equal(t, "abc123xyz", span.ReadAttribute("http.response.header.Request_id").(string))
+		} else {
+			assert.Nil(t, span.ReadAttribute("http.response.header.Request_id"))
+		}
+	}
 }
 
 func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
@@ -137,6 +180,10 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 					Request:  config.Bool(tCase.captureHTTPBodyConfig),
 					Response: config.Bool(tCase.captureHTTPBodyConfig),
 				},
+				HttpHeaders: &config.Message{
+					Request:  config.Bool(false),
+					Response: config.Bool(false),
+				},
 			}
 			ih := &mockHandler{baseHandler: wh}
 
@@ -150,11 +197,15 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			span := ih.spans[0]
 
 			if tCase.shouldHaveRecordedRequestBody {
-				assert.Equal(t, tCase.requestBody, span.Attributes["http.request.body"].(string))
+				assert.Equal(t, tCase.requestBody, span.ReadAttribute("http.request.body").(string))
+			} else {
+				assert.Nil(t, span.ReadAttribute("http.request.body"))
 			}
 
 			if tCase.shouldHaveRecordedResponseBody {
-				assert.Equal(t, tCase.responseBody, span.Attributes["http.response.body"].(string))
+				assert.Equal(t, tCase.responseBody, span.ReadAttribute("http.response.body").(string))
+			} else {
+				assert.Nil(t, span.ReadAttribute("http.response.body"))
 			}
 		})
 	}

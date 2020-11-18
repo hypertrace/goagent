@@ -13,7 +13,10 @@ func TestSetScalarAttributeSuccess(t *testing.T) {
 	span := mock.NewSpan()
 	setAttributesFromMetadata("request", md, span)
 
-	assert.Equal(t, "value_1", span.Attributes["rpc.request.metadata.key_1"].(string))
+	assert.Equal(t, "value_1", span.ReadAttribute("rpc.request.metadata.key_1").(string))
+
+	_ = span.ReadAttribute("container_id") // needed in containarized envs
+	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }
 
 func TestSetMultivalueAttributeSuccess(t *testing.T) {
@@ -21,6 +24,9 @@ func TestSetMultivalueAttributeSuccess(t *testing.T) {
 	span := mock.NewSpan()
 	setAttributesFromMetadata("request", md, span)
 
-	assert.Equal(t, "value_1", span.Attributes["rpc.request.metadata.key_1[0]"].(string))
-	assert.Equal(t, "value_2", span.Attributes["rpc.request.metadata.key_1[1]"].(string))
+	assert.Equal(t, "value_1", span.ReadAttribute("rpc.request.metadata.key_1[0]").(string))
+	assert.Equal(t, "value_2", span.ReadAttribute("rpc.request.metadata.key_1[1]").(string))
+
+	_ = span.ReadAttribute("container_id") // needed in containarized envs
+	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }

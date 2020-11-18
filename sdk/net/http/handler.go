@@ -48,11 +48,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span.SetAttribute("http.url", r.URL.String())
 
 	// Sets an attribute per each request header.
-	if h.dataCaptureConfig.GetHttpHeaders().GetRequest().GetValue() {
+	if h.dataCaptureConfig.GetHttpHeaders().Request.Value {
 		setAttributesFromHeaders("request", r.Header, span)
 	}
 
-	if h.dataCaptureConfig.GetHttpBody().GetRequest().GetValue() && shouldRecordBodyOfContentType(r.Header) {
+	if h.dataCaptureConfig.HttpBody.Request.Value && shouldRecordBodyOfContentType(r.Header) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return
@@ -73,13 +73,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// tag found status code on exit
 	defer func() {
-		if h.dataCaptureConfig.GetHttpBody().GetResponse().GetValue() &&
+		if h.dataCaptureConfig.HttpBody.Response.Value &&
 			len(wi.body) > 0 &&
 			shouldRecordBodyOfContentType(wi.Header()) {
 			span.SetAttribute("http.response.body", string(wi.body))
 		}
 
-		if h.dataCaptureConfig.GetHttpHeaders().GetResponse().GetValue() {
+		if h.dataCaptureConfig.HttpHeaders.Response.Value {
 			// Sets an attribute per each response header.
 			setAttributesFromHeaders("response", wi.Header(), span)
 		}

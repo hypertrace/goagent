@@ -29,6 +29,23 @@ func (s *Span) SetAttribute(key string, value interface{}) {
 	s.Attributes[key] = value
 }
 
+func (s *Span) ReadAttribute(key string) interface{} {
+	s.mux.Lock() // avoids race conditions
+	defer s.mux.Unlock()
+
+	val, ok := s.Attributes[key]
+	if ok {
+		delete(s.Attributes, key)
+		return val
+	}
+
+	return nil
+}
+
+func (s *Span) RemainingAttributes() int {
+	return len(s.Attributes)
+}
+
 func (s *Span) IsNoop() bool {
 	return s.Noop
 }

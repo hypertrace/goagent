@@ -111,6 +111,7 @@ func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnP
 		span.SetAttribute(key, value)
 	}
 
+	span.SetAttribute("db.statement", query)
 	defer span.End()
 
 	tx, err := conn.PrepareContext(ctx, query)

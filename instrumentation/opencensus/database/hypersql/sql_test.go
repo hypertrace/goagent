@@ -1,6 +1,6 @@
 package hypersql
 
-// highly inspired by https://github.com/openzipkin-contrib/zipkin-go-sql/blob/master/driver_test.go
+// highly inspired in https://github.com/openzipkin-contrib/zipkin-go-sql/blob/master/driver_test.go
 
 import (
 	"context"

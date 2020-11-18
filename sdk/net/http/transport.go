@@ -34,7 +34,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		span.SetAttribute(key, value)
 	}
 
-	if rt.dataCaptureConfig.GetHttpHeaders().GetRequest().GetValue() {
+	if rt.dataCaptureConfig.HttpHeaders.Request.Value {
 		setAttributesFromHeaders("request", req.Header, span)
 	}
 
@@ -42,7 +42,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// is in the recording accept list. Notice in here we rely on the fact that
 	// the content type is not streamable, otherwise we could end up in a very
 	// expensive parsing of a big body in memory.
-	if rt.dataCaptureConfig.GetHttpBody().GetRequest().GetValue() && shouldRecordBodyOfContentType(req.Header) {
+	if rt.dataCaptureConfig.HttpBody.Request.Value && shouldRecordBodyOfContentType(req.Header) {
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			return rt.delegate.RoundTrip(req)
@@ -62,7 +62,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Notice, parsing a streamed content in memory can be expensive.
-	if rt.dataCaptureConfig.GetHttpBody().GetResponse().GetValue() && shouldRecordBodyOfContentType(res.Header) {
+	if rt.dataCaptureConfig.HttpBody.Response.Value && shouldRecordBodyOfContentType(res.Header) {
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return res, nil
@@ -76,7 +76,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 	}
 
-	if rt.dataCaptureConfig.GetHttpHeaders().GetResponse().GetValue() {
+	if rt.dataCaptureConfig.HttpHeaders.Response.Value {
 		// Sets an attribute per each response header.
 		setAttributesFromHeaders("response", res.Header, span)
 	}

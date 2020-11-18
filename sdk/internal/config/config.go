@@ -13,13 +13,13 @@ var cfgMux = &sync.Mutex{}
 
 // InitConfig initializes the config with default values
 func InitConfig(c *config.AgentConfig) {
+	cfgMux.Lock()
+	defer cfgMux.Unlock()
+
 	if cfg != nil {
 		log.Println("config already initialized, ignoring new config.")
 		return
 	}
-
-	cfgMux.Lock()
-	defer cfgMux.Unlock()
 
 	// The reason why we clone the message instead of reusing the one passed by the user
 	// is because user might decide to change values in runtime and that is undesirable

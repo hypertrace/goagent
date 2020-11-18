@@ -71,7 +71,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	span := spans[0]
 
 	// We make sure we read all attributes and covered them with tests
-	assert.Zero(t, span.RemainingAttributes())
+	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }
 
 func TestClientRequestHeadersAreCapturedAccordingly(t *testing.T) {

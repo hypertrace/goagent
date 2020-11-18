@@ -147,5 +147,5 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 	} else {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	assert.Zero(t, span.RemainingAttributes())
+	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }

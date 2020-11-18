@@ -55,11 +55,11 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	ih.ServeHTTP(w, r)
 	assert.Equal(t, "test_response_body", w.Body.String())
 
-	spans := ih.spans
-	assert.Equal(t, 1, len(spans))
+	assert.Equal(t, 1, len(ih.spans))
 
-	assert.Equal(t, "http://traceable.ai/foo?user_id=1", spans[0].ReadAttribute("http.url").(string))
-	assert.Zero(t, spans[0].RemainingAttributes())
+	span := ih.spans[0]
+	assert.Equal(t, "http://traceable.ai/foo?user_id=1", span.ReadAttribute("http.url").(string))
+	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }
 
 func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {

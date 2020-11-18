@@ -4,17 +4,16 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/net/hyperhttp"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/net/hyperhttp/examples"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
-	"go.opentelemetry.io/otel/api/global"
 )
 
 type message struct {
@@ -22,14 +21,11 @@ type message struct {
 }
 
 func main() {
-	flusher := examples.InitTracer("http-client")
-	defer flusher()
+	cfg := config.Load()
+	cfg.ServiceName = config.String("http-client")
 
-	ctx, span := global.TraceProvider().Tracer("ai.traceable.goagent").Start(
-		context.Background(),
-		"bootstrap-span",
-	)
-	defer span.End()
+	closer := opentelemetry.Init(cfg)
+	defer closer()
 
 	client := http.Client{
 		Transport: otelhttp.NewTransport(
@@ -38,7 +34,6 @@ func main() {
 	}
 
 	req, err := http.NewRequest("GET", "http://localhost:8081/foo", bytes.NewBufferString(`{"name":"Dave"}`))
-	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		log.Fatalf("failed to create the request: %v", err)

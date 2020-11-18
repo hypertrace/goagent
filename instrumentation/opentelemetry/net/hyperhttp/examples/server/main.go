@@ -11,14 +11,18 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/net/hyperhttp"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/net/hyperhttp/examples"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 )
 
 func main() {
-	flusher := examples.InitTracer("http-server")
-	defer flusher()
+	cfg := config.Load()
+	cfg.ServiceName = config.String("http-server")
+
+	closer := opentelemetry.Init(cfg)
+	defer closer()
 
 	r := mux.NewRouter()
 	r.Handle("/foo", otelhttp.NewHandler(

@@ -8,11 +8,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opencensus"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc"
-	"github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc/examples"
 	pb "github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc/examples/helloworld"
 	"go.opencensus.io/plugin/ocgrpc"
-	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 )
 
@@ -22,15 +22,11 @@ const (
 )
 
 func main() {
-	closer := examples.InitTracer("grpc-client")
-	defer closer()
+	cfg := config.Load()
+	cfg.ServiceName = config.String("grpc-client")
 
-	ctx, span := trace.StartSpan(
-		context.Background(),
-		"client-bootstrap",
-		trace.WithSampler(trace.AlwaysSample()),
-	)
-	defer span.End()
+	closer := opencensus.Init(cfg)
+	defer closer()
 
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(
@@ -50,7 +46,7 @@ func main() {
 	if len(os.Args) > 1 {
 		name = os.Args[1]
 	}
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := client.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {

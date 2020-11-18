@@ -13,7 +13,6 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc"
 	pb "github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc/examples/helloworld"
 	"go.opencensus.io/plugin/ocgrpc"
-	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 )
 
@@ -28,13 +27,6 @@ func main() {
 
 	closer := opencensus.Init(cfg)
 	defer closer()
-
-	ctx, span := trace.StartSpan(
-		context.Background(),
-		"client-bootstrap",
-		trace.WithSampler(trace.AlwaysSample()),
-	)
-	defer span.End()
 
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(
@@ -54,7 +46,7 @@ func main() {
 	if len(os.Args) > 1 {
 		name = os.Args[1]
 	}
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := client.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {

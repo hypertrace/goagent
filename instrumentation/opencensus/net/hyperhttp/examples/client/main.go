@@ -4,7 +4,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,7 +14,6 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/opencensus"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/net/hyperhttp"
 	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/trace"
 )
 
 type message struct {
@@ -29,13 +27,6 @@ func main() {
 	closer := opencensus.Init(cfg)
 	defer closer()
 
-	ctx, span := trace.StartSpan(
-		context.Background(),
-		"client-bootstrap",
-		trace.WithSampler(trace.AlwaysSample()),
-	)
-	defer span.End()
-
 	client := http.Client{
 		Transport: &ochttp.Transport{
 			Base: hyperhttp.WrapTransport(http.DefaultTransport),
@@ -43,7 +34,6 @@ func main() {
 	}
 
 	req, err := http.NewRequest("GET", "http://localhost:8081/foo", bytes.NewBufferString(`{"name":"Dave"}`))
-	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		log.Fatalf("failed to create the request: %v", err)

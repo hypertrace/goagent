@@ -8,8 +8,9 @@ import (
 	"log"
 	"net"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opencensus"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc"
-	"github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc/examples"
 	pb "github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc/examples/helloworld"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
@@ -31,7 +32,10 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 }
 
 func main() {
-	closer := examples.InitTracer("grpc-server")
+	cfg := config.Load()
+	cfg.ServiceName = config.String("grpc-server")
+
+	closer := opencensus.Init(cfg)
 	defer closer()
 
 	lis, err := net.Listen("tcp", port)

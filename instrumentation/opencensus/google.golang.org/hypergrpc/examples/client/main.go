@@ -8,8 +8,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opencensus"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc"
-	"github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc/examples"
 	pb "github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc/examples/helloworld"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/trace"
@@ -22,7 +23,10 @@ const (
 )
 
 func main() {
-	closer := examples.InitTracer("grpc-client")
+	cfg := config.Load()
+	cfg.ServiceName = config.String("grpc-client")
+
+	closer := opencensus.Init(cfg)
 	defer closer()
 
 	ctx, span := trace.StartSpan(

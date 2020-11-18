@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples"
 	pb "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
-	"go.opencensus.io/trace"
 	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
@@ -23,15 +23,11 @@ const (
 )
 
 func main() {
-	closer := examples.InitTracer("grpc-client")
-	defer closer()
+	cfg := config.Load()
+	cfg.ServiceName = config.String("grpc-client")
 
-	ctx, span := trace.StartSpan(
-		context.Background(),
-		"client-bootstrap",
-		trace.WithSampler(trace.AlwaysSample()),
-	)
-	defer span.End()
+	closer := opentelemetry.Init(cfg)
+	defer closer()
 
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(
@@ -40,7 +36,7 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(
 			hypergrpc.WrapUnaryClientInterceptor(
-				otelgrpc.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+				otelgrpc.UnaryClientInterceptor(global.TraceProvider().Tracer("org.hypertrace.goagent")),
 			),
 		),
 	)
@@ -55,7 +51,7 @@ func main() {
 	if len(os.Args) > 1 {
 		name = os.Args[1]
 	}
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := client.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {

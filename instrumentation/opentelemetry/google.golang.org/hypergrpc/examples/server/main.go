@@ -8,8 +8,9 @@ import (
 	"log"
 	"net"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples"
 	pb "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
 	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
 	"go.opentelemetry.io/otel/api/global"
@@ -32,7 +33,10 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 }
 
 func main() {
-	closer := examples.InitTracer("grpc-server")
+	cfg := config.Load()
+	cfg.ServiceName = config.String("grpc-server")
+
+	closer := opentelemetry.Init(cfg)
 	defer closer()
 
 	lis, err := net.Listen("tcp", port)
@@ -42,7 +46,7 @@ func main() {
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
 			hypergrpc.WrapUnaryServerInterceptor(
-				otelgrpc.UnaryServerInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+				otelgrpc.UnaryServerInterceptor(global.Tracer("ai.traceable")),
 			),
 		),
 	)

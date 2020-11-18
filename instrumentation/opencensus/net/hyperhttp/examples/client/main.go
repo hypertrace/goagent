@@ -11,8 +11,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opencensus"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/net/hyperhttp"
-	"github.com/hypertrace/goagent/instrumentation/opencensus/net/hyperhttp/examples"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 )
@@ -22,7 +23,10 @@ type message struct {
 }
 
 func main() {
-	closer := examples.InitTracer("http-client")
+	cfg := config.Load()
+	cfg.ServiceName = config.String("http-client")
+
+	closer := opencensus.Init(cfg)
 	defer closer()
 
 	ctx, span := trace.StartSpan(

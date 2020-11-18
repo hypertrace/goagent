@@ -10,14 +10,18 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opencensus"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/net/hyperhttp"
-	"github.com/hypertrace/goagent/instrumentation/opencensus/net/hyperhttp/examples"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
 )
 
 func main() {
-	closer := examples.InitTracer("http-server")
+	cfg := config.Load()
+	cfg.ServiceName = config.String("http-server")
+
+	closer := opencensus.Init(cfg)
 	defer closer()
 
 	r := mux.NewRouter()

@@ -11,8 +11,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/net/hyperhttp"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/net/hyperhttp/examples"
 	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
 	"go.opentelemetry.io/otel/api/global"
 )
@@ -22,8 +23,11 @@ type message struct {
 }
 
 func main() {
-	flusher := examples.InitTracer("http-client")
-	defer flusher()
+	cfg := config.Load()
+	cfg.ServiceName = config.String("http-client")
+
+	closer := opentelemetry.Init(cfg)
+	defer closer()
 
 	ctx, span := global.TraceProvider().Tracer("ai.traceable.goagent").Start(
 		context.Background(),

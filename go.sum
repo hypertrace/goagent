@@ -1,8 +1,6 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 contrib.go.opencensus.io/exporter/zipkin v0.1.2 h1:YqE293IZrKtqPnpwDPH/lOqTWD/s3Iwabycam74JV3g=
 contrib.go.opencensus.io/exporter/zipkin v0.1.2/go.mod h1:mP5xM3rrgOjpn79MM8fZbj3gsxcuytSqtH0dxSWW1RE=
-contrib.go.opencensus.io/integrations/ocsql v0.1.6 h1:9qmZJBlnMtffShflmfhW4EZK7M+CujIDG4bEwUrg+ms=
-contrib.go.opencensus.io/integrations/ocsql v0.1.6/go.mod h1:8DsSdjz3F+APR+0z0WkU1aRorQCFfRxvqjUUPMbF3fE=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DataDog/sketches-go v0.0.1 h1:RtG+76WKgZuz6FIaGsjoPePmadDBkuD/KC6+ZWu78b8=
 github.com/DataDog/sketches-go v0.0.1/go.mod h1:Q5DbzQ+3AkgGwymQO7aZFNP7ns2lZKGtvRBzRXfdi60=
@@ -101,8 +99,6 @@ go.opentelemetry.io/contrib/instrumentation/net/http v0.11.0 h1:ufewgDRmtrrdDpPg
 go.opentelemetry.io/contrib/instrumentation/net/http v0.11.0/go.mod h1:SBUSwgw/714EVSKHaAttjlJqbBv1YkUi+qdaN1oxMGE=
 go.opentelemetry.io/otel v0.11.0 h1:IN2tzQa9Gc4ZVKnTaMbPVcHjvzOdg5n9QfnmlqiET7E=
 go.opentelemetry.io/otel v0.11.0/go.mod h1:G8UCk+KooF2HLkgo8RHX9epABH/aRGYET7gQOqBVdB0=
-go.opentelemetry.io/otel/exporters/stdout v0.11.0 h1:5Hn/XKgq7aCJQWGacF093Ts1VpJuiJkwC75c1PqHTPE=
-go.opentelemetry.io/otel/exporters/stdout v0.11.0/go.mod h1:XP4gbV2Ikc7/ZyTGtwrA7/FzrhWJr3nfRU+LRvhxY24=
 go.opentelemetry.io/otel/exporters/trace/zipkin v0.11.0 h1:3F1Fp5jYRPQK9jg1VEV7Kr1AI0U5sMieH2wL9SDcTMQ=
 go.opentelemetry.io/otel/exporters/trace/zipkin v0.11.0/go.mod h1:JuFs9e72mfov6GVmz8KR4sU/j1APSZtwDVC2qH+3tEQ=
 go.opentelemetry.io/otel/sdk v0.11.0 h1:bkDMymVj6gIkPfgC5ci5atq0OYbfUHSn8NvsmyfyMq4=

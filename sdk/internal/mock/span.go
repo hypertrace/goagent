@@ -10,7 +10,9 @@ import (
 var _ sdk.Span = &Span{}
 
 type Span struct {
+	Name       string
 	Attributes map[string]interface{}
+	err        error
 	Noop       bool
 	mux        *sync.Mutex
 }
@@ -46,6 +48,10 @@ func (s *Span) RemainingAttributes() int {
 	return len(s.Attributes)
 }
 
+func (s *Span) SetError(ctx context.Context, err error) {
+	s.err = err
+}
+
 func (s *Span) IsNoop() bool {
 	return s.Noop
 }
@@ -54,6 +60,11 @@ type spanKey string
 
 func SpanFromContext(ctx context.Context) sdk.Span {
 	return ctx.Value(spanKey("span")).(*Span)
+}
+
+func StartSpan(ctx context.Context, name string) (context.Context, sdk.Span, func()) {
+	s := &Span{Name: name}
+	return ContextWithSpan(ctx, s), s, func() {}
 }
 
 func ContextWithSpan(ctx context.Context, s sdk.Span) context.Context {

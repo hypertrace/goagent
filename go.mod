@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
-	contrib.go.opencensus.io/integrations/ocsql v0.1.6
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v1.4.2
 	github.com/mattn/go-sqlite3 v1.14.4
@@ -15,7 +14,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc v0.11.0
 	go.opentelemetry.io/contrib/instrumentation/net/http v0.11.0
 	go.opentelemetry.io/otel v0.11.0
-	go.opentelemetry.io/otel/exporters/stdout v0.11.0
 	go.opentelemetry.io/otel/exporters/trace/zipkin v0.11.0
 	go.opentelemetry.io/otel/sdk v0.11.0
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect

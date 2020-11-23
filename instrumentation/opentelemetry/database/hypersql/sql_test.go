@@ -52,7 +52,7 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "sql/query", spans[0].Name)
+	assert.Equal(t, "db:query", spans[0].Name)
 
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", attrs.Get("db.statement").AsString())
@@ -82,7 +82,7 @@ func TestExecSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "sql/exec", span.Name)
+	assert.Equal(t, "db:exec", span.Name)
 
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.False(t, attrs.Has("error"))
@@ -122,11 +122,11 @@ func TestTxWithCommitSuccess(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 5, len(spans))
 
-	assert.Equal(t, "sql/exec", spans[0].Name)
-	assert.Equal(t, "sql/begin_transaction", spans[1].Name)
-	assert.Equal(t, "sql/prepare", spans[2].Name)
-	assert.Equal(t, "sql/exec", spans[3].Name)
-	assert.Equal(t, "sql/commit", spans[4].Name)
+	assert.Equal(t, "db:exec", spans[0].Name)
+	assert.Equal(t, "db:begin_transaction", spans[1].Name)
+	assert.Equal(t, "db:prepare", spans[2].Name)
+	assert.Equal(t, "db:exec", spans[3].Name)
+	assert.Equal(t, "db:commit", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
 		attrs := internal.LookupAttributes(spans[i].Attributes)
@@ -167,11 +167,11 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 5, len(spans))
 
-	assert.Equal(t, "sql/exec", spans[0].Name)
-	assert.Equal(t, "sql/begin_transaction", spans[1].Name)
-	assert.Equal(t, "sql/prepare", spans[2].Name)
-	assert.Equal(t, "sql/exec", spans[3].Name)
-	assert.Equal(t, "sql/rollback", spans[4].Name)
+	assert.Equal(t, "db:exec", spans[0].Name)
+	assert.Equal(t, "db:begin_transaction", spans[1].Name)
+	assert.Equal(t, "db:prepare", spans[2].Name)
+	assert.Equal(t, "db:exec", spans[3].Name)
+	assert.Equal(t, "db:rollback", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
 		attrs := internal.LookupAttributes(spans[i].Attributes)

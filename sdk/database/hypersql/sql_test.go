@@ -7,16 +7,27 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
+	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/internal/mock"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
-	"go.opencensus.io/trace"
 )
 
-func createDB(t *testing.T) (*sql.DB, func() []*trace.SpanData) {
-	flusher := internal.InitTracer()
+type spansBuffer struct {
+	spans []*mock.Span
+}
 
-	driverName, err := Register("sqlite3")
+func (sb *spansBuffer) StartSpan(ctx context.Context, name string) (context.Context, sdk.Span, func()) {
+	s := mock.NewSpan()
+	s.Name = name
+	sb.spans = append(sb.spans, s)
+	return mock.ContextWithSpan(ctx, s), s, func() {}
+}
+
+func createDB(t *testing.T) (*sql.DB, func() []*mock.Span) {
+	b := &spansBuffer{}
+
+	driverName, err := Register("sqlite3", b.StartSpan)
 	if err != nil {
 		t.Fatalf("unable to register driver")
 	}
@@ -26,7 +37,7 @@ func createDB(t *testing.T) (*sql.DB, func() []*trace.SpanData) {
 		t.Fatal(err)
 	}
 
-	return db, flusher
+	return db, func() []*mock.Span { return b.spans }
 }
 
 func TestQuerySuccess(t *testing.T) {
@@ -52,12 +63,12 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "db:query", spans[0].Name)
+	assert.Equal(t, "db:query", span.Name)
 
-	assert.Equal(t, "SELECT 1 WHERE 1 = ?", span.Attributes["db.statement"].(string))
-	assert.Equal(t, "sqlite", span.Attributes["db.system"].(string))
-	_, ok := span.Attributes["error"]
-	assert.False(t, ok)
+	assert.Equal(t, "SELECT 1 WHERE 1 = ?", span.ReadAttribute("db.statement").(string))
+	assert.Equal(t, "sqlite", span.ReadAttribute("db.system").(string))
+	assert.Nil(t, span.ReadAttribute("error"))
+	assert.Zero(t, span.RemainingAttributes())
 
 	db.Close()
 }
@@ -83,9 +94,7 @@ func TestExecSuccess(t *testing.T) {
 
 	span := spans[0]
 	assert.Equal(t, "db:exec", span.Name)
-
-	_, ok := span.Attributes["error"]
-	assert.False(t, ok)
+	assert.Nil(t, span.ReadAttribute("error"))
 }
 
 func TestTxWithCommitSuccess(t *testing.T) {
@@ -129,8 +138,7 @@ func TestTxWithCommitSuccess(t *testing.T) {
 	assert.Equal(t, "db:commit", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
-		_, ok := spans[i].Attributes["error"]
-		assert.False(t, ok)
+		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
 
 	db.Close()
@@ -174,8 +182,7 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 	assert.Equal(t, "db:rollback", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
-		_, ok := spans[i].Attributes["error"]
-		assert.False(t, ok)
+		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
 
 	db.Close()

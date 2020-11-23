@@ -36,7 +36,7 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(
 			hypergrpc.WrapUnaryClientInterceptor(
-				otelgrpc.UnaryClientInterceptor(global.TraceProvider().Tracer("org.hypertrace.goagent")),
+				otelgrpc.UnaryClientInterceptor(global.Tracer("org.hypertrace.goagent")),
 			),
 		),
 	)

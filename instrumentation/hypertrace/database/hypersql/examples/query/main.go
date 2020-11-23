@@ -35,11 +35,7 @@ func main() {
 	// Register our hypersql wrapper as a database driver.
 	sql.Register("ht-mysql", driver)
 
-	// Connect to a mysql database using the hypersql driver wrapper.
-	// ?interpolateParams=true will escape the variables for any requests
-	// and send ready-for-use queries to the server for github.com/go-sql-driver/mysql.
-	// This save us a meaningless span.
-	db, err := sql.Open("ht-mysql", "root:root@tcp(localhost)/?interpolateParams=true")
+	db, err := sql.Open("ht-mysql", "root:root@tcp(localhost)/")
 	if err != nil {
 		log.Fatalf("failed to connect the DB: %v", err)
 	}

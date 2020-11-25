@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +38,7 @@ func TestClientHelloWorldSuccess(t *testing.T) {
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+				otel.UnaryClientInterceptor(global.Tracer(opentelemetry.TracerDomain)),
 			),
 		),
 	)
@@ -111,7 +112,7 @@ func TestClientRegisterPersonFails(t *testing.T) {
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+				otel.UnaryClientInterceptor(global.Tracer(opentelemetry.TracerDomain)),
 			),
 		),
 	)
@@ -157,7 +158,7 @@ func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otel.UnaryClientInterceptor(global.TraceProvider().Tracer("ai.traceable")),
+				otel.UnaryClientInterceptor(global.Tracer(opentelemetry.TracerDomain)),
 			),
 		),
 	)

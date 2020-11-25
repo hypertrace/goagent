@@ -16,7 +16,7 @@ func TestIsNoop(t *testing.T) {
 	assert.True(t, span.IsNoop())
 
 	opentelemetry.Init(config.Load())
-	_, delegateSpan := global.Tracer("org.hypertrace.goagent").Start(context.Background(), "test_span")
+	_, delegateSpan := global.Tracer(opentelemetry.TracerDomain).Start(context.Background(), "test_span")
 	span = &opentelemetry.Span{delegateSpan}
 	assert.False(t, span.IsNoop())
 }

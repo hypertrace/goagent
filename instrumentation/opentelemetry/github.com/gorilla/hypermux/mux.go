@@ -12,14 +12,18 @@ import (
 
 func spanNameFormatter(operation string, r *http.Request) (spanName string) {
 	route := mux.CurrentRoute(r)
-	if route == nil {
-		return
+	if route != nil {
+		var err error
+		spanName, err = route.GetPathTemplate()
+		if err != nil {
+			spanName, _ = route.GetPathRegexp()
+		}
 	}
 
-	var err error
-	spanName, err = route.GetPathTemplate()
-	if err != nil {
-		spanName, _ = route.GetPathRegexp()
+	if spanName == "" {
+		// if somehow retrieving the path template or path regexp fails, we still
+		// want to use the method as fallback.
+		spanName = r.Method
 	}
 
 	return

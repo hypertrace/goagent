@@ -3,6 +3,7 @@ package internal
 import (
 	"log"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/propagation"
 	apitrace "go.opentelemetry.io/otel/api/trace"
@@ -32,7 +33,7 @@ func InitTracer() (apitrace.Tracer, func() []*trace.SpanData) {
 		propagation.WithInjectors(apitrace.B3{}),
 	))
 
-	return tp.Tracer("ai.traceable"), func() []*trace.SpanData {
+	return tp.Tracer(opentelemetry.TracerDomain), func() []*trace.SpanData {
 		return exporter.Flush()
 	}
 }

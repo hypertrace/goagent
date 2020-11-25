@@ -46,7 +46,7 @@ func main() {
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
 			hypergrpc.WrapUnaryServerInterceptor(
-				otelgrpc.UnaryServerInterceptor(global.Tracer("ai.traceable")),
+				otelgrpc.UnaryServerInterceptor(global.Tracer(opentelemetry.TracerDomain)),
 			),
 		),
 	)

@@ -12,7 +12,7 @@ import (
 // for use in a grpc.NewServer call.
 func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return sdkgrpc.WrapUnaryServerInterceptor(
-		otelgrpc.UnaryServerInterceptor(global.Tracer(domain)),
+		otelgrpc.UnaryServerInterceptor(global.Tracer(opentelemetry.TracerDomain)),
 		opentelemetry.SpanFromContext,
 	)
 }

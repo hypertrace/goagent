@@ -8,13 +8,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-const domain = "org.hypertrace.goagent"
-
 // UnaryClientInterceptor returns a grpc.UnaryClientInterceptor suitable
 // for use in a grpc.Dial call.
 func UnaryClientInterceptor() grpc.UnaryClientInterceptor {
 	return sdkgrpc.WrapUnaryClientInterceptor(
-		otelgrpc.UnaryClientInterceptor(global.Tracer(domain)),
+		otelgrpc.UnaryClientInterceptor(global.Tracer(opentelemetry.TracerDomain)),
 		opentelemetry.SpanFromContext,
 	)
 }

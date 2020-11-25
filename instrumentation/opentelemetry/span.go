@@ -28,6 +28,6 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 }
 
 func StartSpan(ctx context.Context, name string) (context.Context, sdk.Span, func()) {
-	ctx, span := global.Tracer("org.hypertrace.goagent").Start(ctx, name)
+	ctx, span := global.Tracer(TracerDomain).Start(ctx, name)
 	return ctx, &Span{span}, func() { span.End() }
 }

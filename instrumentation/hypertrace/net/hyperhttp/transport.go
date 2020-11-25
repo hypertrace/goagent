@@ -14,6 +14,6 @@ import (
 func NewTransport(base http.RoundTripper) http.RoundTripper {
 	return otelhttp.NewTransport(
 		sdkhttp.WrapTransport(base, opentelemetry.SpanFromContext),
-		otelhttp.WithTracer(global.Tracer(domain)),
+		otelhttp.WithTracer(global.Tracer(opentelemetry.TracerDomain)),
 	)
 }

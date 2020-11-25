@@ -135,6 +135,11 @@ In terminal 2 run the server:
 go run ./instrumentation/hypertrace/google.golang.org/grpc/examples/server/main.go
 ```
 
+## Other instrumentations
+
+- [database/hypersql](instrumentation/hypertrace/database/sql/hypersql)
+- [github.com/gorilla/hypermux](instrumentation/hypertrace/github.com/gorilla/hypermux)
+
 ## Contributing
 
 ### Running tests

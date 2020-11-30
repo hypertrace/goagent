@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/hypertrace/goagent/sdk"
@@ -12,6 +13,7 @@ var _ sdk.Span = &Span{}
 type Span struct {
 	Name       string
 	Attributes map[string]interface{}
+	Options    sdk.SpanOptions
 	err        error
 	Noop       bool
 	mux        *sync.Mutex
@@ -62,8 +64,9 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 	return ctx.Value(spanKey("span")).(*Span)
 }
 
-func StartSpan(ctx context.Context, name string) (context.Context, sdk.Span, func()) {
-	s := &Span{Name: name}
+func StartSpan(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
+	fmt.Println(opts)
+	s := &Span{Name: name, Options: *opts}
 	return ContextWithSpan(ctx, s), s, func() {}
 }
 

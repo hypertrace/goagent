@@ -1,4 +1,4 @@
-package opencensus_test
+package opencensus
 
 import (
 	"context"
@@ -6,16 +6,21 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/hypertrace/goagent/instrumentation/opencensus"
+	"github.com/hypertrace/goagent/sdk"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIsNoop(t *testing.T) {
 	_, unsampledSpan := trace.StartSpan(context.Background(), "test", trace.WithSampler(trace.NeverSample()))
-	span := &opencensus.Span{unsampledSpan}
+	span := &Span{unsampledSpan}
 	assert.True(t, span.IsNoop())
 
 	_, sampledSpan := trace.StartSpan(context.Background(), "test", trace.WithSampler(trace.AlwaysSample()))
-	span = &opencensus.Span{sampledSpan}
+	span = &Span{sampledSpan}
 	assert.False(t, span.IsNoop())
+}
+
+func TestMapSpanKind(t *testing.T) {
+	assert.Equal(t, mapSpanKind(sdk.Client), trace.SpanKindClient)
+	assert.Equal(t, mapSpanKind(sdk.Server), trace.SpanKindServer)
 }

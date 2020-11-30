@@ -17,9 +17,10 @@ type spansBuffer struct {
 	spans []*mock.Span
 }
 
-func (sb *spansBuffer) StartSpan(ctx context.Context, name string) (context.Context, sdk.Span, func()) {
+func (sb *spansBuffer) StartSpan(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
 	s := mock.NewSpan()
 	s.Name = name
+	s.Options = *opts
 	sb.spans = append(sb.spans, s)
 	return mock.ContextWithSpan(ctx, s), s, func() {}
 }
@@ -64,6 +65,7 @@ func TestQuerySuccess(t *testing.T) {
 
 	span := spans[0]
 	assert.Equal(t, "db:query", span.Name)
+	assert.Equal(t, sdk.Client, span.Options.Kind)
 
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", span.ReadAttribute("db.statement").(string))
 	assert.Equal(t, "sqlite", span.ReadAttribute("db.system").(string))
@@ -93,6 +95,7 @@ func TestExecSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
+	assert.Equal(t, sdk.Client, span.Options.Kind)
 	assert.Equal(t, "db:exec", span.Name)
 	assert.Nil(t, span.ReadAttribute("error"))
 }
@@ -138,6 +141,7 @@ func TestTxWithCommitSuccess(t *testing.T) {
 	assert.Equal(t, "db:commit", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
+		assert.Equal(t, sdk.Client, spans[i].Options.Kind)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
 
@@ -182,6 +186,7 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 	assert.Equal(t, "db:rollback", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
+		assert.Equal(t, sdk.Client, spans[i].Options.Kind)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
 

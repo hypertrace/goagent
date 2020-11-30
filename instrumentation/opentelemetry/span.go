@@ -27,7 +27,26 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 	return &Span{trace.SpanFromContext(ctx)}
 }
 
-func StartSpan(ctx context.Context, name string) (context.Context, sdk.Span, func()) {
-	ctx, span := global.Tracer(TracerDomain).Start(ctx, name)
+func StartSpan(ctx context.Context, name string, options *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
+	startOpts := []trace.StartOption{
+		trace.WithSpanKind(mapSpanKind(options.Kind)),
+	}
+
+	ctx, span := global.Tracer(TracerDomain).Start(ctx, name, startOpts...)
 	return ctx, &Span{span}, func() { span.End() }
+}
+
+func mapSpanKind(kind sdk.SpanKind) trace.SpanKind {
+	switch kind {
+	case sdk.Client:
+		return trace.SpanKindClient
+	case sdk.Server:
+		return trace.SpanKindServer
+	case sdk.Producer:
+		return trace.SpanKindProducer
+	case sdk.Consumer:
+		return trace.SpanKindConsumer
+	default:
+		return trace.SpanKindUnspecified
+	}
 }

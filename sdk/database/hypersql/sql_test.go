@@ -17,7 +17,7 @@ type spansBuffer struct {
 	spans []*mock.Span
 }
 
-func (sb *spansBuffer) StartSpan(ctx context.Context, name string) (context.Context, sdk.Span, func()) {
+func (sb *spansBuffer) StartSpan(ctx context.Context, name string, _ *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
 	s := mock.NewSpan()
 	s.Name = name
 	sb.spans = append(sb.spans, s)

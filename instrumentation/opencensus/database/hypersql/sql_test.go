@@ -52,7 +52,8 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "db:query", spans[0].Name)
+	assert.Equal(t, "db:query", span.Name)
+	assert.Equal(t, trace.SpanKindClient, span.SpanKind)
 
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", span.Attributes["db.statement"].(string))
 	assert.Equal(t, "sqlite", span.Attributes["db.system"].(string))
@@ -83,6 +84,7 @@ func TestExecSuccess(t *testing.T) {
 
 	span := spans[0]
 	assert.Equal(t, "db:exec", span.Name)
+	assert.Equal(t, trace.SpanKindClient, span.SpanKind)
 
 	_, ok := span.Attributes["error"]
 	assert.False(t, ok)
@@ -129,6 +131,7 @@ func TestTxWithCommitSuccess(t *testing.T) {
 	assert.Equal(t, "db:commit", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
+		assert.Equal(t, trace.SpanKindClient, spans[i].SpanKind)
 		_, ok := spans[i].Attributes["error"]
 		assert.False(t, ok)
 	}
@@ -174,6 +177,7 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 	assert.Equal(t, "db:rollback", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
+		assert.Equal(t, trace.SpanKindClient, spans[i].SpanKind)
 		_, ok := spans[i].Attributes["error"]
 		assert.False(t, ok)
 	}

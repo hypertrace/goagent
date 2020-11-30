@@ -29,14 +29,14 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 
 func StartSpan(ctx context.Context, name string, options *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
 	startOpts := []trace.StartOption{
-		trace.WithSpanKind(toOTelSpanKind(options.Kind)),
+		trace.WithSpanKind(mapSpanKind(options.Kind)),
 	}
 
 	ctx, span := global.Tracer(TracerDomain).Start(ctx, name, startOpts...)
 	return ctx, &Span{span}, func() { span.End() }
 }
 
-func toOTelSpanKind(kind sdk.SpanKind) trace.SpanKind {
+func mapSpanKind(kind sdk.SpanKind) trace.SpanKind {
 	switch kind {
 	case sdk.Client:
 		return trace.SpanKindClient

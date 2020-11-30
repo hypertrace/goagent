@@ -10,6 +10,7 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	apitrace "go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/sdk/export/trace"
 )
 
@@ -52,7 +53,8 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "db:query", spans[0].Name)
+	assert.Equal(t, "db:query", span.Name)
+	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind)
 
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", attrs.Get("db.statement").AsString())
@@ -83,6 +85,7 @@ func TestExecSuccess(t *testing.T) {
 
 	span := spans[0]
 	assert.Equal(t, "db:exec", span.Name)
+	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind)
 
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.False(t, attrs.Has("error"))
@@ -129,6 +132,7 @@ func TestTxWithCommitSuccess(t *testing.T) {
 	assert.Equal(t, "db:commit", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
+		assert.Equal(t, apitrace.SpanKindClient, spans[i].SpanKind)
 		attrs := internal.LookupAttributes(spans[i].Attributes)
 		assert.False(t, attrs.Has("error"))
 	}
@@ -174,6 +178,7 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 	assert.Equal(t, "db:rollback", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
+		assert.Equal(t, apitrace.SpanKindClient, spans[i].SpanKind)
 		attrs := internal.LookupAttributes(spans[i].Attributes)
 		assert.False(t, attrs.Has("error"))
 	}

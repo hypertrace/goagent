@@ -40,14 +40,14 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 
 func StartSpan(ctx context.Context, name string, options *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
 	startOpts := []trace.StartOption{
-		trace.WithSpanKind(toOCSpanKind(options.Kind)),
+		trace.WithSpanKind(mapSpanKind(options.Kind)),
 	}
 
 	ctx, span := trace.StartSpan(ctx, name, startOpts...)
 	return ctx, &Span{span}, span.End
 }
 
-func toOCSpanKind(kind sdk.SpanKind) int {
+func mapSpanKind(kind sdk.SpanKind) int {
 	switch kind {
 	case sdk.Client:
 		return trace.SpanKindClient

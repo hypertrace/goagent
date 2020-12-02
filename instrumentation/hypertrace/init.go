@@ -1,8 +1,9 @@
 package hypertrace
 
 import (
-	"fmt"
+	"crypto/tls"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/hypertrace/goagent/config"
@@ -21,12 +22,16 @@ const batchTimeoutInSecs = 200.0
 func Init(cfg *config.AgentConfig) func() {
 	sdkconfig.InitConfig(cfg)
 
-	protocol := "http"
-	if cfg.GetReporting().GetSecure().GetValue() {
-		protocol = "https"
-	}
-	reporterURL := fmt.Sprintf("%s://%s:9411/api/v2/spans", protocol, cfg.GetReporting().GetAddress().GetValue())
-	zipkinBatchExporter, err := zipkin.NewRawExporter(reporterURL, cfg.GetServiceName().GetValue())
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
+	}}
+
+	zipkinBatchExporter, err := zipkin.NewRawExporter(
+		cfg.GetReporting().GetEndpoint().GetValue(),
+		cfg.GetServiceName().GetValue(),
+		zipkin.WithClient(client),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

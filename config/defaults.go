@@ -25,8 +25,8 @@ var defaultConfig = AgentConfig{
 		},
 	},
 	Reporting: &Reporting{
-		Address: String("localhost"),
-		Secure:  Bool(false),
+		Endpoint: String("http://localhost:9411/api/v2/spans"),
+		Secure:   Bool(false),
 	},
 }
 

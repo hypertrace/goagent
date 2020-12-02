@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
@@ -14,11 +15,15 @@ import (
 // getBoolEnv returns the bool value for an env var and a confirmation
 // if the var exists
 func getBoolEnv(name string) (bool, bool) {
-	if val := os.Getenv(name); val != "" {
-		return val == "true", true
+	val := os.Getenv(name)
+	switch val {
+	case "true":
+		return true, true
+	case "false":
+		return false, true
+	default:
+		return false, false
 	}
-
-	return false, false
 }
 
 // getStringEnv returns the string value for an env var and a confirmation
@@ -29,6 +34,17 @@ func getStringEnv(name string) (string, bool) {
 	}
 
 	return "", false
+}
+
+// getInt32Env returns the int32 value for an env var and a confirmation
+// if the var exists
+func getInt32Env(name string) (int32, bool) {
+	if val := os.Getenv(name); val != "" {
+		intVal, err := strconv.Atoi(val)
+		return int32(intVal), err == nil
+	}
+
+	return 0, false
 }
 
 // loadFromFile loads the agent config from a file

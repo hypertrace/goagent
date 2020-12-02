@@ -1,6 +1,6 @@
 {
     "reporting": {
-        "address": "api.traceable.ai"
+        "endpoint": "http://api.traceable.ai:9411/api/v2/spans"
     },
     "dataCapture": {
         "httpBody": {

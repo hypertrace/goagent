@@ -25,7 +25,7 @@ func TestSourcesPrecedence(t *testing.T) {
 	assert.Equal(t, true, cfg.GetDataCapture().GetHttpBody().GetRequest().GetValue())
 
 	// config file take precedence over defaults
-	assert.Equal(t, "api.traceable.ai", cfg.GetReporting().GetAddress().GetValue())
+	assert.Equal(t, "http://api.traceable.ai:9411/api/v2/spans", cfg.GetReporting().GetEndpoint().GetValue())
 
 	// env vars take precedence over config file
 	assert.Equal(t, false, cfg.GetDataCapture().GetHttpHeaders().GetResponse().GetValue())
@@ -40,5 +40,5 @@ func TestYAMLLoadSuccess(t *testing.T) {
 	cfg := LoadFromFile("./testdata/config.yml")
 
 	// config file take precedence over defaults
-	assert.Equal(t, "35.233.143.122", cfg.GetReporting().GetAddress().GetValue())
+	assert.Equal(t, "http://35.233.143.122:9411/api/v2/spans", cfg.GetReporting().GetEndpoint().GetValue())
 }

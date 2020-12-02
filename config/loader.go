@@ -15,11 +15,15 @@ import (
 // getBoolEnv returns the bool value for an env var and a confirmation
 // if the var exists
 func getBoolEnv(name string) (bool, bool) {
-	if val := os.Getenv(name); val != "" {
-		return val == "true", true
+	val := os.Getenv(name)
+	switch val {
+	case "true":
+		return true, true
+	case "false":
+		return false, true
+	default:
+		return false, false
 	}
-
-	return false, false
 }
 
 // getStringEnv returns the string value for an env var and a confirmation

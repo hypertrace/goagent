@@ -97,6 +97,9 @@ Parse PROTO_FILE and generate output value objects`)
 		c += "// loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.\n"
 		c += fmt.Sprintf("func (x *%s) loadFromEnv(prefix string, defaultValues *%s) {\n", m.Name, m.Name)
 		for _, mf := range m.Fields {
+			if mf.Label != "" {
+				continue
+			}
 			fieldName := toPublicFieldName(mf.Name)
 			envPrefix := strings.ToUpper(strcase.ToSnake(mf.Name))
 			if strings.HasPrefix(mf.Type.Name(), "google.protobuf.") {

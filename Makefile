@@ -44,8 +44,6 @@ check-examples:
 	go build -o ./examples/grpc_server instrumentation/opencensus/google.golang.org/hypergrpc/examples/server/main.go && rm ./examples/grpc_server
 
 generate-config: # generates config object for Go
-	@echo "Verifying required submodules"
-	git submodule update --init --recursive
 	@echo "Compiling the proto file"
 	@cd config/agent-config; protoc --go_out=plugins=grpc,paths=source_relative:.. config.proto
 	@echo "Generating the loaders"

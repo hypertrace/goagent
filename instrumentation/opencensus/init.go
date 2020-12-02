@@ -21,7 +21,7 @@ func Init(cfg *config.AgentConfig) func() {
 	if cfg.GetReporting().GetSecure().GetValue() {
 		protocol = "https"
 	}
-	reporterURL := fmt.Sprintf("%s://%s:9411/api/v2/spans", protocol, cfg.GetReporting().GetAddress().GetValue())
+	reporterURL := fmt.Sprintf("%s://%s:9411/api/v2/spans", protocol, cfg.GetReporting().GetEndpoint().GetValue())
 	reporter := zipkinHTTP.NewReporter(reporterURL)
 
 	exporter := oczipkin.NewExporter(reporter, localEndpoint)

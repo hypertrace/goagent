@@ -3,6 +3,7 @@ package hypertrace
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/hypertrace/goagent/config"
@@ -25,7 +26,9 @@ func Init(cfg *config.AgentConfig) func() {
 	if cfg.GetReporting().GetSecure().GetValue() {
 		protocol = "https"
 	}
-	reporterURL := fmt.Sprintf("%s://%s:9411/api/v2/spans", protocol, cfg.GetReporting().GetAddress().GetValue())
+	endpointPieces := strings.SplitN(cfg.GetReporting().GetEndpoint().GetValue(), "://", 2)
+
+	reporterURL := fmt.Sprintf("%s://%s", protocol, endpointPieces[1])
 	zipkinBatchExporter, err := zipkin.NewRawExporter(reporterURL, cfg.GetServiceName().GetValue())
 	if err != nil {
 		log.Fatal(err)

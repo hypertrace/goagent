@@ -1,7 +1,8 @@
 package opencensus
 
 import (
-	"fmt"
+	"crypto/tls"
+	"net/http"
 
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
 	"github.com/hypertrace/goagent/config"
@@ -17,12 +18,12 @@ func Init(cfg *config.AgentConfig) func() {
 	sdkconfig.InitConfig(cfg)
 	localEndpoint, _ := zipkin.NewEndpoint(cfg.GetServiceName().GetValue(), "localhost")
 
-	protocol := "http"
-	if cfg.GetReporting().GetSecure().GetValue() {
-		protocol = "https"
-	}
-	reporterURL := fmt.Sprintf("%s://%s:9411/api/v2/spans", protocol, cfg.GetReporting().GetEndpoint().GetValue())
-	reporter := zipkinHTTP.NewReporter(reporterURL)
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
+	}}
+
+	reporter := zipkinHTTP.NewReporter(cfg.GetReporting().GetEndpoint().GetValue(), zipkinHTTP.Client(client))
 
 	exporter := oczipkin.NewExporter(reporter, localEndpoint)
 

@@ -1,7 +1,0 @@
-codecov:
-  require_ci_to_pass: false
-
-  ignore:
-    - "config"
-    - "examples"
-    - "tests"

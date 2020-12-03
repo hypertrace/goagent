@@ -13,9 +13,17 @@ cfg.ServiceName = config.String("myservice")
 cfg.DataCapture.HTTPHeaders.Request = config.Bool(true)
 ```
 
-Values can also be overriden by the environment variables, e.g. `HT_DATA_CAPTURE_HTTP_HEADERS_RESPONSE=false`.
+Values can also be overriden by the environment variables, e.g. `HT_DATA_CAPTURE_HTTP_HEADERS_RESPONSE=false`. You can check a list of the supported environment variables [here](https://github.com/hypertrace/agent-config/blob/main/ENV_VARS.md)
 
-The location for the config file can also be overriden by passing the path in `HT_CONFIG_FILE` environment variable.
+The location for the config file can also be overriden by passing the path in `HT_CONFIG_FILE` environment variable or you can set the location in code by using
+
+```go
+// loads the config from the config file tbd.json and env vars
+cfg := config.LoadFromFile("path/to/file.yml")
+...
+```
+
+Supported formats for config files are YAML and JSON.
 
 ## Default Values
 

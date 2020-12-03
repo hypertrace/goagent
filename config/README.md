@@ -18,7 +18,7 @@ Values can also be overriden by the environment variables, e.g. `HT_DATA_CAPTURE
 The location for the config file can also be overriden by passing the path in `HT_CONFIG_FILE` environment variable or you can set the location in code by using
 
 ```go
-// loads the config from the config file tbd.json and env vars
+// loads the config from the specified file and env vars
 cfg := config.LoadFromFile("path/to/file.yml")
 ...
 ```

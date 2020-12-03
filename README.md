@@ -7,6 +7,20 @@
 
 ## Getting started
 
+Setting up Go Agent can be done with a few lines:
+
+```go
+func main() {
+    cfg := config.Load()
+    cfg.ServiceName = config.String("myservice")
+
+    shutdown := hypertrace.Init(cfg)
+    defer shutdown
+}
+```
+
+Config values can be declared in config file, env variables or code. For further information about config check [this section](config/README.md).
+
 ## Package net/hyperhttp
 
 ### HTTP server

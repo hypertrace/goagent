@@ -1,0 +1,4 @@
+ignore:
+  - "config"
+  - "examples"
+  - "tests"

@@ -48,11 +48,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span.SetAttribute("http.url", r.URL.String())
 
 	// Sets an attribute per each request header.
-	if h.dataCaptureConfig.GetHttpHeaders().Request.Value {
+	if h.dataCaptureConfig.HttpHeaders.Request.Value {
 		setAttributesFromHeaders("request", r.Header, span)
 	}
 
-	if h.dataCaptureConfig.HttpBody.Request.Value && shouldRecordBodyOfContentType(r.Header) {
+	// nil check for body is important as this block turns the body into another
+	// object that isn't nil and that will leverage the "Observer effect".
+	if r.Body != nil && h.dataCaptureConfig.HttpBody.Request.Value && shouldRecordBodyOfContentType(r.Header) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return

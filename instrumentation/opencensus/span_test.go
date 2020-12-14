@@ -2,6 +2,7 @@ package opencensus
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"go.opencensus.io/trace"
@@ -23,4 +24,22 @@ func TestIsNoop(t *testing.T) {
 func TestMapSpanKind(t *testing.T) {
 	assert.Equal(t, mapSpanKind(sdk.Client), trace.SpanKindClient)
 	assert.Equal(t, mapSpanKind(sdk.Server), trace.SpanKindServer)
+}
+
+func TestGenerateAttributeSuccess(t *testing.T) {
+	const attrKey = "test_key"
+	tCases := []struct {
+		value        interface{}
+		expectedAttr interface{}
+	}{
+		{value: true, expectedAttr: trace.BoolAttribute(attrKey, true)},
+		{value: int64(1), expectedAttr: trace.Int64Attribute(attrKey, 1)},
+		{value: float64(1.2), expectedAttr: trace.Float64Attribute(attrKey, 1.2)},
+		{value: "abc", expectedAttr: trace.StringAttribute(attrKey, "abc")},
+		{value: errors.New("xyz"), expectedAttr: trace.StringAttribute(attrKey, "xyz")},
+	}
+
+	for _, tCase := range tCases {
+		assert.Equal(t, tCase.expectedAttr, generateAttribute(attrKey, tCase.value))
+	}
 }

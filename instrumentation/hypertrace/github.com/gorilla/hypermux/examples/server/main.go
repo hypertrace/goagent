@@ -18,14 +18,14 @@ import (
 
 func main() {
 	cfg := config.Load()
-	cfg.ServiceName = config.String("http-server")
+	cfg.ServiceName = config.String("http-mux-server")
 
 	flusher := hypertrace.Init(cfg)
 	defer flusher()
 
 	r := mux.NewRouter()
 	r.Use(hypermux.NewMiddleware()) // here we use the mux middleware
-	r.Handle(http.HandlerFunc(fooHandler))
+	r.HandleFunc("/foo", http.HandlerFunc(fooHandler))
 	log.Fatal(http.ListenAndServe(":8081", r))
 }
 

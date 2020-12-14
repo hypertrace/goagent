@@ -12,6 +12,7 @@ import (
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
@@ -52,6 +53,10 @@ func Init(cfg *config.AgentConfig) func() {
 	)
 	otel.SetTracerProvider(tp)
 
+	// TODO: support configurable propagation
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	// TODO: use batcher instead of this hack:
 	return func() {
 		// This is a sad temporary solution for the lack of flusher in the batcher interface.
 		// What we do here is that we wait for `batchTimeout` seconds as that is the time configured

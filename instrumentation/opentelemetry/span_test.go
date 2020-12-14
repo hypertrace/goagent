@@ -2,6 +2,7 @@ package opentelemetry
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/hypertrace/goagent/config"
@@ -27,8 +28,17 @@ func TestIsNoop(t *testing.T) {
 }
 
 func TestMapSpanKind(t *testing.T) {
-	assert.Equal(t, mapSpanKind(sdk.Client), trace.SpanKindClient)
-	assert.Equal(t, mapSpanKind(sdk.Server), trace.SpanKindServer)
-	assert.Equal(t, mapSpanKind(sdk.Producer), trace.SpanKindProducer)
-	assert.Equal(t, mapSpanKind(sdk.Consumer), trace.SpanKindConsumer)
+	assert.Equal(t, trace.SpanKindClient, mapSpanKind(sdk.Client))
+	assert.Equal(t, trace.SpanKindServer, mapSpanKind(sdk.Server))
+	assert.Equal(t, trace.SpanKindProducer, mapSpanKind(sdk.Producer))
+	assert.Equal(t, trace.SpanKindConsumer, mapSpanKind(sdk.Consumer))
+}
+
+func TestSetAttributeSuccess(t *testing.T) {
+	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	s.SetAttribute("test_key_1", true)
+	s.SetAttribute("test_key_2", int64(1))
+	s.SetAttribute("test_key_3", float64(1.2))
+	s.SetAttribute("test_key_4", "abc")
+	s.SetAttribute("test_key_4", errors.New("xyz"))
 }

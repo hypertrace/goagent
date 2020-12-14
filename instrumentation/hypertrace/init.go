@@ -1,6 +1,7 @@
 package hypertrace
 
 import (
+	"context"
 	"crypto/tls"
 	"log"
 	"net/http"
@@ -8,7 +9,7 @@ import (
 
 	"github.com/hypertrace/goagent/config"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -36,17 +37,22 @@ func Init(cfg *config.AgentConfig) func() {
 		log.Fatal(err)
 	}
 
-	tp, err := sdktrace.NewProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
-		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeoutInSecs*time.Millisecond)),
-		sdktrace.WithResource(
-			resource.New(semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue())),
-		),
+	resources, err := resource.New(context.Background(), resource.WithAttributes(
+		semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue())),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	global.SetTraceProvider(tp)
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeoutInSecs*time.Millisecond)),
+		sdktrace.WithResource(resources),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	otel.SetTracerProvider(tp)
 
 	return func() {
 		// This is a sad temporary solution for the lack of flusher in the batcher interface.

@@ -2,6 +2,7 @@ package opencensus
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hypertrace/goagent/sdk"
 	"go.opencensus.io/trace"
@@ -17,20 +18,26 @@ func (s *Span) IsNoop() bool {
 	return !s.IsRecordingEvents()
 }
 
-func (s *Span) SetAttribute(key string, value interface{}) {
+func generateAttribute(key string, value interface{}) trace.Attribute {
 	switch v := value.(type) {
 	case bool:
-		s.Span.AddAttributes(trace.BoolAttribute(key, v))
+		return trace.BoolAttribute(key, v)
 	case int64:
-		s.Span.AddAttributes(trace.Int64Attribute(key, v))
+		return trace.Int64Attribute(key, v)
 	case float64:
-		s.Span.AddAttributes(trace.Float64Attribute(key, v))
+		return trace.Float64Attribute(key, v)
 	case string:
-		s.Span.AddAttributes(trace.StringAttribute(key, v))
+		return trace.StringAttribute(key, v)
+	default:
+		return trace.StringAttribute(key, fmt.Sprintf("%v", v))
 	}
 }
 
-func (s *Span) SetError(ctx context.Context, err error) {
+func (s *Span) SetAttribute(key string, value interface{}) {
+	s.Span.AddAttributes(generateAttribute(key, value))
+}
+
+func (s *Span) SetError(err error) {
 	s.Span.AddAttributes(trace.StringAttribute("error", err.Error()))
 }
 

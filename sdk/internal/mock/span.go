@@ -50,7 +50,7 @@ func (s *Span) RemainingAttributes() int {
 	return len(s.Attributes)
 }
 
-func (s *Span) SetError(ctx context.Context, err error) {
+func (s *Span) SetError(err error) {
 	s.err = err
 }
 

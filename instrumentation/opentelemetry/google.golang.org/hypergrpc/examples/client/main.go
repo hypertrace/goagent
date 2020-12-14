@@ -12,8 +12,7 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc"
 	pb "github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
-	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -36,7 +35,7 @@ func main() {
 		grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(
 			hypergrpc.WrapUnaryClientInterceptor(
-				otelgrpc.UnaryClientInterceptor(global.Tracer(opentelemetry.TracerDomain)),
+				otelgrpc.UnaryClientInterceptor(),
 			),
 		),
 	)

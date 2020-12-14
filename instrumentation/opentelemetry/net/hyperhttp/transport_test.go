@@ -12,10 +12,9 @@ import (
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	"github.com/stretchr/testify/assert"
-	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/propagation"
-	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
@@ -54,7 +53,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	span := spans[0]
 	assert.Equal(t, span.Name, "POST")
-	assert.Equal(t, span.SpanKind, apitrace.SpanKindClient)
+	assert.Equal(t, span.SpanKind, trace.SpanKindClient)
 
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
@@ -184,7 +183,7 @@ func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// We make sure the context is being injected.
-		ctx := propagation.ExtractHTTP(context.Background(), global.Propagators(), req.Header)
+		ctx := b3.B3{}.Extract(context.Background(), req.Header)
 		_, extractedSpan := tracer.Start(ctx, "test2")
 		defer extractedSpan.End()
 		assert.Equal(t, span.SpanContext().TraceID, extractedSpan.SpanContext().TraceID)

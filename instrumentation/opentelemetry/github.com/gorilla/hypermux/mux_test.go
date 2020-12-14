@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
-	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/trace"
 	"gotest.tools/assert"
 )
 
@@ -72,7 +72,7 @@ func TestSpanNameIsSetCorrectly(t *testing.T) {
 
 	span := spans[0]
 	assert.Equal(t, "/things/{thing_id}", span.Name)
-	assert.Equal(t, span.SpanKind, apitrace.SpanKindServer)
+	assert.Equal(t, span.SpanKind, trace.SpanKindServer)
 
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())

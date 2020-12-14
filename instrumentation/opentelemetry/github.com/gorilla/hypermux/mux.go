@@ -6,8 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
-	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func spanNameFormatter(operation string, r *http.Request) (spanName string) {
@@ -35,7 +34,6 @@ func NewMiddleware() mux.MiddlewareFunc {
 		return otelhttp.NewHandler(
 			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext),
 			"",
-			otelhttp.WithTracer(global.Tracer(opentelemetry.TracerDomain)),
 			otelhttp.WithSpanNameFormatter(spanNameFormatter),
 		)
 	}

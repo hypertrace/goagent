@@ -10,8 +10,8 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/stretchr/testify/assert"
-	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
-	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func TestMain(m *testing.M) {
@@ -41,7 +41,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	assert.Equal(t, "test_name", spans[0].Name)
-	assert.Equal(t, apitrace.SpanKindServer, spans[0].SpanKind)
+	assert.Equal(t, trace.SpanKindServer, spans[0].SpanKind)
 
 	attrs := internal.LookupAttributes(spans[0].Attributes)
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", attrs.Get("http.url").AsString())

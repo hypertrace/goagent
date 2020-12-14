@@ -1,16 +1,16 @@
 package internal
 
 import (
-	"log"
+	"context"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/propagation"
-	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
+	apitrace "go.opentelemetry.io/otel/trace"
 )
 
 // InitTracer initializes the tracer and returns a flusher of the reported
@@ -19,19 +19,16 @@ import (
 func InitTracer() (apitrace.Tracer, func() []*trace.SpanData) {
 	exporter := &Recorder{}
 
-	tp, err := sdktrace.NewProvider(
+	resources, _ := resource.New(context.Background(), resource.WithAttributes(semconv.ServiceNameKey.String("TestService")))
+
+	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
 		sdktrace.WithSyncer(exporter),
-		sdktrace.WithResource(resource.New(semconv.ServiceNameKey.String("TestService"))))
-	if err != nil {
-		log.Fatal(err)
-	}
+		sdktrace.WithResource(resources),
+	)
 
-	global.SetTraceProvider(tp)
-	global.SetPropagators(propagation.New(
-		propagation.WithExtractors(apitrace.B3{}),
-		propagation.WithInjectors(apitrace.B3{}),
-	))
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(b3.B3{})
 
 	return tp.Tracer(opentelemetry.TracerDomain), func() []*trace.SpanData {
 		return exporter.Flush()

@@ -10,8 +10,8 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
-	apitrace "go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/sdk/export/trace"
+	apitrace "go.opentelemetry.io/otel/trace"
 )
 
 func createDB(t *testing.T) (*sql.DB, func() []*trace.SpanData) {

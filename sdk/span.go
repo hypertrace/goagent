@@ -9,7 +9,7 @@ type Span interface {
 	SetAttribute(key string, value interface{})
 
 	// SetError sets an error for the span.
-	SetError(ctx context.Context, err error)
+	SetError(err error)
 
 	// IsNoop tells whether the span is noop or not, useful for avoiding
 	// expensive recording.

@@ -12,7 +12,7 @@ import (
 
     "github.com/gorilla/mux"
     "github.com/hypertrace/goagent/instrumentation/net/hyperhttp"
-    otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func main() {
@@ -36,7 +36,7 @@ The client instrumentation relies on the `http.Transport` component of the HTTP 
 import (
     "net/http"
     "github.com/hypertrace/goagent/instrumentation/net/hyperhttp"
-    otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // ...

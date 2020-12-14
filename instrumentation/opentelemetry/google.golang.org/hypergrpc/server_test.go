@@ -8,12 +8,11 @@ import (
 	reflect "reflect"
 	"testing"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	"github.com/stretchr/testify/assert"
-	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -83,9 +82,7 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(
-				otelgrpc.UnaryServerInterceptor(global.Tracer(opentelemetry.TracerDomain)),
-			),
+			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor()),
 		),
 	)
 	defer s.Stop()
@@ -152,9 +149,7 @@ func TestServerRegisterPersonFails(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(
-				otelgrpc.UnaryServerInterceptor(global.Tracer(opentelemetry.TracerDomain)),
-			),
+			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor()),
 		),
 	)
 	defer s.Stop()
@@ -191,7 +186,7 @@ func TestServerRegisterPersonFails(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, codes.InvalidArgument, span.StatusCode)
+	assert.Equal(t, otelcodes.Error, span.StatusCode)
 	assert.Equal(t, "invalid argument", span.StatusMessage)
 }
 
@@ -200,9 +195,7 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(
-				otelgrpc.UnaryServerInterceptor(global.Tracer(opentelemetry.TracerDomain)),
-			),
+			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor()),
 		),
 	)
 	defer s.Stop()
@@ -240,10 +233,10 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 }
 
 func BenchmarkServerRequestDefaultInterceptor(b *testing.B) {
-	tracer, _ := internal.InitTracer()
+	internal.InitTracer()
 
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor(tracer)),
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 	)
 	defer s.Stop()
 

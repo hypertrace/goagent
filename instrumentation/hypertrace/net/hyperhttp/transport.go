@@ -5,8 +5,7 @@ import (
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
-	otelhttp "go.opentelemetry.io/contrib/instrumentation/net/http"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // NewTransport wraps the provided http.RoundTripper with one that
@@ -14,6 +13,5 @@ import (
 func NewTransport(base http.RoundTripper) http.RoundTripper {
 	return otelhttp.NewTransport(
 		sdkhttp.WrapTransport(base, opentelemetry.SpanFromContext),
-		otelhttp.WithTracer(global.Tracer(opentelemetry.TracerDomain)),
 	)
 }

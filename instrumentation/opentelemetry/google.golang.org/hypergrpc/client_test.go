@@ -4,12 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	"github.com/stretchr/testify/assert"
-	otel "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -38,7 +37,7 @@ func TestClientHelloWorldSuccess(t *testing.T) {
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otel.UnaryClientInterceptor(global.Tracer(opentelemetry.TracerDomain)),
+				otelgrpc.UnaryClientInterceptor(),
 			),
 		),
 	)
@@ -112,7 +111,7 @@ func TestClientRegisterPersonFails(t *testing.T) {
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otel.UnaryClientInterceptor(global.Tracer(opentelemetry.TracerDomain)),
+				otelgrpc.UnaryClientInterceptor(),
 			),
 		),
 	)
@@ -134,7 +133,7 @@ func TestClientRegisterPersonFails(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, codes.InvalidArgument, span.StatusCode)
+	assert.Equal(t, otelcodes.Error, span.StatusCode)
 	assert.Equal(t, "invalid argument", span.StatusMessage)
 }
 
@@ -158,7 +157,7 @@ func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
 		grpc.WithInsecure(),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otel.UnaryClientInterceptor(global.Tracer(opentelemetry.TracerDomain)),
+				otelgrpc.UnaryClientInterceptor(),
 			),
 		),
 	)
@@ -182,7 +181,7 @@ func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
 }
 
 func BenchmarkClientRequestDefaultInterceptor(b *testing.B) {
-	tracer, _ := internal.InitTracer()
+	internal.InitTracer()
 
 	s := grpc.NewServer()
 	defer s.Stop()
@@ -199,7 +198,7 @@ func BenchmarkClientRequestDefaultInterceptor(b *testing.B) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otel.UnaryClientInterceptor(tracer)),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 	)
 	if err != nil {
 		b.Fatalf("failed to dial bufnet: %v", err)

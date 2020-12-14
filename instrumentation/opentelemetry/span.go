@@ -4,23 +4,27 @@ import (
 	"context"
 
 	"github.com/hypertrace/goagent/sdk"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/trace"
 )
 
-var _ sdk.Span = &Span{trace.NoopSpan{}}
+var _ sdk.Span = (*Span)(nil)
 
 type Span struct {
 	trace.Span
 }
 
-func (s *Span) SetError(ctx context.Context, err error) {
-	s.Span.RecordError(ctx, err)
+func (s *Span) SetAttribute(key string, value interface{}) {
+	s.Span.SetAttributes(label.Any(key, value))
+}
+
+func (s *Span) SetError(err error) {
+	s.Span.RecordError(err)
 }
 
 func (s *Span) IsNoop() bool {
-	_, ok := (s.Span).(trace.NoopSpan)
-	return ok
+	return !s.Span.IsRecording()
 }
 
 func SpanFromContext(ctx context.Context) sdk.Span {
@@ -28,11 +32,11 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 }
 
 func StartSpan(ctx context.Context, name string, options *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
-	startOpts := []trace.StartOption{
+	startOpts := []trace.SpanOption{
 		trace.WithSpanKind(mapSpanKind(options.Kind)),
 	}
 
-	ctx, span := global.Tracer(TracerDomain).Start(ctx, name, startOpts...)
+	ctx, span := otel.Tracer(TracerDomain).Start(ctx, name, startOpts...)
 	return ctx, &Span{span}, func() { span.End() }
 }
 

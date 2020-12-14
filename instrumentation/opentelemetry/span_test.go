@@ -7,16 +7,21 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
+func newNoopSpan() trace.Span {
+	_, noopSpan := trace.NewNoopTracerProvider().Tracer("noop").Start(context.Background(), "test_name")
+	return noopSpan
+}
+
 func TestIsNoop(t *testing.T) {
-	span := &Span{trace.NoopSpan{}}
+	span := &Span{newNoopSpan()}
 	assert.True(t, span.IsNoop())
 
 	Init(config.Load())
-	_, delegateSpan := global.Tracer(TracerDomain).Start(context.Background(), "test_span")
+	_, delegateSpan := otel.Tracer(TracerDomain).Start(context.Background(), "test_span")
 	span = &Span{delegateSpan}
 	assert.False(t, span.IsNoop())
 }

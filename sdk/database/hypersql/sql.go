@@ -32,7 +32,7 @@ func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQue
 
 	rows, err := conn.QueryContext(ctx, args)
 	if err != nil {
-		span.SetError(ctx, err)
+		span.SetError(err)
 	}
 
 	return rows, err
@@ -49,7 +49,7 @@ func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExec
 
 	rows, err := conn.ExecContext(ctx, args)
 	if err != nil {
-		span.SetError(ctx, err)
+		span.SetError(err)
 	}
 
 	return rows, err
@@ -66,7 +66,7 @@ func (in *interceptor) ConnQueryContext(ctx context.Context, conn driver.Queryer
 
 	rows, err := conn.QueryContext(ctx, query, args)
 	if err != nil {
-		span.SetError(ctx, err)
+		span.SetError(err)
 	}
 
 	return rows, err
@@ -83,7 +83,7 @@ func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerCo
 
 	rows, err := conn.ExecContext(ctx, query, args)
 	if err != nil {
-		span.SetError(ctx, err)
+		span.SetError(err)
 	}
 
 	return rows, err
@@ -99,7 +99,7 @@ func (in *interceptor) ConnBeginTx(ctx context.Context, conn driver.ConnBeginTx,
 
 	tx, err := conn.BeginTx(ctx, txOpts)
 	if err != nil {
-		span.SetError(ctx, err)
+		span.SetError(err)
 	}
 
 	return tx, err
@@ -115,14 +115,14 @@ func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnP
 
 	tx, err := conn.PrepareContext(ctx, query)
 	if err != nil {
-		span.SetError(ctx, err)
+		span.SetError(err)
 	}
 
 	return tx, err
 }
 
 func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
-	ctx, span, end := in.startSpan(ctx, "db:commit", &sdk.SpanOptions{Kind: sdk.Client})
+	_, span, end := in.startSpan(ctx, "db:commit", &sdk.SpanOptions{Kind: sdk.Client})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -131,14 +131,14 @@ func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
 
 	err := tx.Commit()
 	if err != nil {
-		span.SetError(ctx, err)
+		span.SetError(err)
 	}
 
 	return err
 }
 
 func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
-	ctx, span, end := in.startSpan(ctx, "db:rollback", &sdk.SpanOptions{Kind: sdk.Client})
+	_, span, end := in.startSpan(ctx, "db:rollback", &sdk.SpanOptions{Kind: sdk.Client})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -147,7 +147,7 @@ func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 
 	err := tx.Rollback()
 	if err != nil {
-		span.SetError(ctx, err)
+		span.SetError(err)
 	}
 
 	return err

@@ -2,6 +2,7 @@ package opencensus
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hypertrace/goagent/sdk"
 	"go.opencensus.io/trace"
@@ -27,10 +28,12 @@ func (s *Span) SetAttribute(key string, value interface{}) {
 		s.Span.AddAttributes(trace.Float64Attribute(key, v))
 	case string:
 		s.Span.AddAttributes(trace.StringAttribute(key, v))
+	default:
+		s.Span.AddAttributes(trace.StringAttribute(key, fmt.Sprintf("%v", v)))
 	}
 }
 
-func (s *Span) SetError(ctx context.Context, err error) {
+func (s *Span) SetError(err error) {
 	s.Span.AddAttributes(trace.StringAttribute("error", err.Error()))
 }
 

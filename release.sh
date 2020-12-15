@@ -46,6 +46,8 @@ if [[ "$MAJOR" == "0" && "$MINOR" == "0" && "$PATCH" == "0" ]]; then
     exit 1
 fi
 
+# TODO: add a check for making sure incremental version.
+
 if [ ! -z "$(git status --porcelain)" ]; then 
     echo "You have uncommitted files. Commit or stash them first."
     exit 1

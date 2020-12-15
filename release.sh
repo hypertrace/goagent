@@ -33,7 +33,16 @@ fi
 
 VERSION=$1
 if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-    echo "Invalid version $VERSION. It should follow semver."
+    echo "Invalid version \"$VERSION\". It should follow semver."
+    exit 1
+fi
+
+MAJOR="$(cut -d'.' -f1 <<<"$VERSION")"
+MINOR="$(cut -d'.' -f2 <<<"$VERSION")"
+PATCH="$(cut -d'.' -f3 <<<"$VERSION")"
+
+if [[ "$MAJOR" == "0" && "$MINOR" == "0" && "$PATCH" == "0" ]]; then
+    echo "Version cannot be \"0.0.0\"."
     exit 1
 fi
 
@@ -46,7 +55,7 @@ echo "Fetching remote tags..."
 git fetch --tags
 
 if [ ! -z "$(git tag -l "$VERSION")" ]; then 
-    echo "Version $VERSION already exists."
+    echo "Version \"$VERSION\" already exists."
     exit 1
 fi
 
@@ -62,9 +71,6 @@ git commit -m "chore(version): changes version to $VERSION"
 
 git tag -a "$VERSION" -m "Version $VERSION"
 
-MAJOR="$(cut -d'.' -f1 <<<"$VERSION")"
-MINOR="$(cut -d'.' -f2 <<<"$VERSION")"
-PATCH="$(cut -d'.' -f3 <<<"$VERSION")"
 NEW_VERSION="$MAJOR.$MINOR.$(($PATCH+1))-dev"
 
 write_version_file $NEW_VERSION $VERSION_FILE

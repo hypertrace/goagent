@@ -41,10 +41,10 @@ func Init(cfg *config.AgentConfig) func() {
 	}
 
 	resources, err := resource.New(context.Background(), resource.WithAttributes(
-		semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue())),
+		semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue()),
 		semconv.TelemetrySDKNameKey.String("hypertrace"),
 		semconv.TelemetrySDKVersionKey.String(version.Version),
-	)
+	))
 	if err != nil {
 		log.Fatal(err)
 	}

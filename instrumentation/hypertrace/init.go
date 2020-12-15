@@ -9,6 +9,7 @@ import (
 
 	"github.com/hypertrace/goagent/config"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
+	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/propagation"
@@ -39,8 +40,10 @@ func Init(cfg *config.AgentConfig) func() {
 	}
 
 	resources, err := resource.New(context.Background(), resource.WithAttributes(
-		semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue())),
-	)
+		semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue()),
+		semconv.TelemetrySDKNameKey.String("hypertrace"),
+		semconv.TelemetrySDKVersionKey.String(version.Version),
+	))
 	if err != nil {
 		log.Fatal(err)
 	}

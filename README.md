@@ -169,3 +169,7 @@ for unit tests only
 ```bash
 make test-unit
 ```
+
+### Releasing
+
+Run `./release.sh <version_number>`.

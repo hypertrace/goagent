@@ -78,8 +78,17 @@ NEW_VERSION="$MAJOR.$MINOR.$(($PATCH+1))-dev"
 write_version_file $NEW_VERSION $VERSION_FILE
 git add $VERSION_FILE
 
-git commit -m "chore(version): prepares for next version $NEW_VERSION"
+git commit -m "chore(version): prepares for next version $NEW_VERSION."
 
-git push origin $MAIN_BRANCH || { rollback_changes $VERSION ; echo "Failed to push to $MAIN_BRANCH" ; exit 1 }
+set +e
+git push origin $MAIN_BRANCH
+PUSH_RESULT_CODE=$?
+set -e
+
+if [ "$PUSH_RESULT_CODE" != "0" ]; then
+    rollback_changes $VERSION
+    echo "Failed to push to $MAIN_BRANCH"
+    exit 1
+fi
 
 git push --tags

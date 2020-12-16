@@ -179,7 +179,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			requestBody:                    "test_request_body",
 			responseBody:                   "test_response_body",
 			requestContentType:             "application/x-www-form-urlencoded",
-			responseContentType:            "Application/JSON",
+			responseContentType:            "application/json; charset=utf-8",
 			shouldHaveRecordedRequestBody:  true,
 			shouldHaveRecordedResponseBody: true,
 		},

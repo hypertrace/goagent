@@ -6,7 +6,7 @@ import (
 )
 
 // contentTypeAllowList is the list of allowed content types in lowercase
-var contentTypeAllowList = []string{
+var contentTypeAllowListLowerCase = []string{
 	"application/json",
 	"application/x-www-form-urlencoded",
 }
@@ -23,7 +23,7 @@ func shouldRecordBodyOfContentType(h http.Header) bool {
 	}
 
 	for _, contentTypeValue := range contentTypeValues {
-		for _, contentTypeAllowed := range contentTypeAllowList {
+		for _, contentTypeAllowedLowerCase := range contentTypeAllowListLowerCase {
 			// userland code can set joint headers directly instead of adding
 			// them for example
 			//
@@ -38,7 +38,7 @@ func shouldRecordBodyOfContentType(h http.Header) bool {
 			//    header.Add("content-type", "charset=utf-8")
 			// ```
 			// hence we need to inspect it by using contains.
-			if strings.Contains(strings.ToLower(contentTypeValue), contentTypeAllowed) {
+			if strings.Contains(strings.ToLower(contentTypeValue), contentTypeAllowedLowerCase) {
 				return true
 			}
 		}

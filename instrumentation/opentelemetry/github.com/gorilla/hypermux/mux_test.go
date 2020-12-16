@@ -28,12 +28,13 @@ func findAvailablePort() (int, error) {
 	return 0, errors.New("failed to find an available port")
 }
 
-func TestSpanNameIsSetCorrectly(t *testing.T) {
+func TestSpanRecordedCorrectly(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/things/{thing_id}", func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("content-type", "application/json")
+		rw.Header().Add("content-type", "application/json")
+		rw.Header().Add("content-type", "charset=utf-8")
 		rw.Header().Set("request_id", "xyz123abc")
 		rw.WriteHeader(202)
 		rw.Write([]byte(`{"id":123}`))
@@ -74,10 +75,13 @@ func TestSpanNameIsSetCorrectly(t *testing.T) {
 	assert.Equal(t, "/things/{thing_id}", span.Name)
 	assert.Equal(t, span.SpanKind, trace.SpanKindServer)
 
+	fmt.Println(span.Attributes)
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.Api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
 	assert.Equal(t, "xyz123abc", attrs.Get("http.response.header.Request_id").AsString())
 	assert.Equal(t, `{"id":123}`, attrs.Get("http.response.body").AsString())
+	assert.Equal(t, "application/json", attrs.Get("http.response.header.Content-Type[0]").AsString())
+	assert.Equal(t, "charset=utf-8", attrs.Get("http.response.header.Content-Type[1]").AsString())
 }

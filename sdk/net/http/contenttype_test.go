@@ -7,7 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestKeyLookupSuccessOnSet(t *testing.T) {
+func TestRecordingDecissionReturnsFalseOnNoContentType(t *testing.T) {
+	assert.Equal(t, false, shouldRecordBodyOfContentType(http.Header{"A": []string{"B"}}))
+}
+
+func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
 	tCases := []struct {
 		contentType  string
 		shouldRecord bool
@@ -27,7 +31,7 @@ func TestKeyLookupSuccessOnSet(t *testing.T) {
 	}
 }
 
-func TestKeyLookupSuccessOnAdd(t *testing.T) {
+func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 	tCases := []struct {
 		contentTypes []string
 		shouldRecord bool
@@ -37,6 +41,7 @@ func TestKeyLookupSuccessOnAdd(t *testing.T) {
 		{[]string{"application/json", "charset=utf-8"}, true},
 		{[]string{"application/json; charset=utf-8"}, true},
 		{[]string{"application/x-www-form-urlencoded"}, true},
+		{[]string{"charset=utf-8", "application/json"}, true},
 	}
 
 	for _, tCase := range tCases {

@@ -22,6 +22,12 @@ func shouldRecordBodyOfContentType(h http.Header) bool {
 		}
 	}
 
+	// we iterate all the values as userland code add the headers in the inverse order,
+	// e.g.
+	// ```
+	//    header.Add("content-type", "charset=utf-8")
+	//    header.Add("content-type", "application/json")
+	// ```
 	for _, contentTypeValue := range contentTypeValues {
 		for _, contentTypeAllowedLowerCase := range contentTypeAllowListLowerCase {
 			// userland code can set joint headers directly instead of adding

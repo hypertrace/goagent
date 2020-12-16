@@ -1,4 +1,6 @@
 // +build go1.14
+// http.Header.Values is available only in Go 1.14+. This API provides
+// full access to the list of headers.
 
 package http
 

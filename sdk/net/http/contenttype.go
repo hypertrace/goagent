@@ -15,12 +15,7 @@ var contentTypeAllowListLowerCase = []string{
 // to be recorded based on the content-type and the fact that body is
 // not streamed.
 func shouldRecordBodyOfContentType(h http.Header) bool {
-	var contentTypeValues []string
-	for key, values := range h {
-		if http.CanonicalHeaderKey(key) == "Content-Type" {
-			contentTypeValues = values
-		}
-	}
+	var contentTypeValues = h["Content-Type"] // "Content-Type" is the canonical key
 
 	// we iterate all the values as userland code add the headers in the inverse order,
 	// e.g.

@@ -25,7 +25,7 @@ jobs:
       
       - name: run tests
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.35.0
+          wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.35.0
           make deps
           make deps-ci
           make lint

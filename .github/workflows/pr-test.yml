@@ -23,13 +23,16 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       
-      - name: run tests
+      - name: download dependencies
         run: |
-          wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.35.0
           make deps
           make deps-ci
-          make lint
-          CGO_ENABLED=1 go test -coverprofile=coverage.txt -v ./...
+      
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@v1
+
+      - name: run tests
+        run: CGO_ENABLED=1 go test -coverprofile=coverage.txt -v ./...
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

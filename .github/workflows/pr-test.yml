@@ -25,8 +25,9 @@ jobs:
       
       - name: run tests
         run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.35.0 
           make deps
-          make deps-ci 
+          make deps-ci
           make lint
           CGO_ENABLED=1 go test -coverprofile=coverage.txt -v ./...
 

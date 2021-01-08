@@ -27,6 +27,7 @@ jobs:
         run: |
           make deps
           make deps-ci 
+          GO111MODULE=off go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
           make lint
           CGO_ENABLED=1 go test -coverprofile=coverage.txt -v ./...
 

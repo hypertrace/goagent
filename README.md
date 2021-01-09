@@ -1,6 +1,6 @@
 # Go Agent
 
-[![CircleCI](https://circleci.com/gh/hypertrace/goagent/tree/main.svg?style=svg)](https://circleci.com/gh/hypertrace/goagent/tree/main)
+![test](https://github.com/hypertrace/goagent/workflows/test/badge.svg)
 [![codecov](https://codecov.io/gh/hypertrace/goagent/branch/master/graph/badge.svg)](https://codecov.io/gh/hypertrace/goagent)
 
 `goagent` provides a set of complementary instrumentation features for collecting relevant data to be processed by [Hypertrace](https://hypertrace.org).

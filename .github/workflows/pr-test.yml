@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
   pull_request:
 
 jobs:
@@ -26,15 +29,14 @@ jobs:
       - name: download dependencies
         run: |
           make deps
-          make deps-ci
       
-      - name: golangci-lint
+      - name: Lint files
         uses: golangci/golangci-lint-action@v2
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
           version: v1.29
 
-      - name: run tests
+      - name: Run tests
         run: CGO_ENABLED=1 go test -coverprofile=coverage.txt -v ./...
 
       - name: Upload coverage to Codecov
@@ -46,3 +48,4 @@ jobs:
 
       - name: check examples
         run: make check-examples
+        

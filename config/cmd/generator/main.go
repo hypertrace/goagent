@@ -100,7 +100,7 @@ Parse PROTO_FILE and generate output value objects`)
 			if mf.Label != "" {
 				continue
 			}
-			fieldName := toPublicFieldName(mf.Name)
+			fieldName := toPublicFieldName(strcase.ToCamel(mf.Name))
 			envPrefix := strings.ToUpper(strcase.ToSnake(mf.Name))
 			if strings.HasPrefix(mf.Type.Name(), "google.protobuf.") {
 				_type := mf.Type.Name()[16 : len(mf.Type.Name())-5] // 16 = len("google.protobuf.")

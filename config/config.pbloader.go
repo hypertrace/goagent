@@ -86,6 +86,16 @@ func (x *Opa) loadFromEnv(prefix string, defaultValues *Opa) {
 			x.PollPeriodSeconds = &wrappers.Int32Value{Value: defaultValues.PollPeriodSeconds.Value}
 		}
 	}
+	if val, ok := getBoolEnv(prefix + "ENABLED"); ok {
+		x.Enabled = &wrappers.BoolValue{Value: val}
+	} else if x.Enabled == nil {
+		// when there is no value to set we still prefer to initialize the variable to avoid
+		// `nil` checks in the consumers.
+		x.Enabled = new(wrappers.BoolValue)
+		if defaultValues != nil && defaultValues.Enabled != nil {
+			x.Enabled = &wrappers.BoolValue{Value: defaultValues.Enabled.Value}
+		}
+	}
 }
 
 // loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.
@@ -130,4 +140,14 @@ func (x *DataCapture) loadFromEnv(prefix string, defaultValues *DataCapture) {
 		x.RpcBody = new(Message)
 	}
 	x.RpcBody.loadFromEnv(prefix+"RPC_BODY_", defaultValues.RpcBody)
+	if val, ok := getInt32Env(prefix + "BODY_MAX_SIZE_BYTES"); ok {
+		x.BodyMaxSizeBytes = &wrappers.Int32Value{Value: val}
+	} else if x.BodyMaxSizeBytes == nil {
+		// when there is no value to set we still prefer to initialize the variable to avoid
+		// `nil` checks in the consumers.
+		x.BodyMaxSizeBytes = new(wrappers.Int32Value)
+		if defaultValues != nil && defaultValues.BodyMaxSizeBytes != nil {
+			x.BodyMaxSizeBytes = &wrappers.Int32Value{Value: defaultValues.BodyMaxSizeBytes.Value}
+		}
+	}
 }

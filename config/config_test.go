@@ -35,10 +35,22 @@ func TestSourcesPrecedence(t *testing.T) {
 
 }
 
-func TestYAMLLoadSuccess(t *testing.T) {
+func TestCamelYAMLLoadSuccess(t *testing.T) {
 	// loads the config
-	cfg := LoadFromFile("./testdata/config.yml")
+	cfg := LoadFromFile("./testdata/config_camel.yml")
 
 	// config file take precedence over defaults
+	assert.Equal(t, "camel_service", cfg.GetServiceName().GetValue())
 	assert.Equal(t, "http://35.233.143.122:9411/api/v2/spans", cfg.GetReporting().GetEndpoint().GetValue())
+	assert.Equal(t, true, cfg.GetDataCapture().GetHttpHeaders().GetRequest().GetValue())
+}
+
+func TestSnakeYAMLLoadSuccess(t *testing.T) {
+	// loads the config
+	cfg := LoadFromFile("./testdata/config_snake.yml")
+
+	// config file take precedence over defaults
+	assert.Equal(t, "snake_service", cfg.GetServiceName().GetValue())
+	assert.Equal(t, "http://35.233.143.122:9411/api/v2/spans", cfg.GetReporting().GetEndpoint().GetValue())
+	assert.Equal(t, true, cfg.GetDataCapture().GetHttpHeaders().GetRequest().GetValue())
 }

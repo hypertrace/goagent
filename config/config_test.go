@@ -40,7 +40,7 @@ func TestCamelYAMLLoadSuccess(t *testing.T) {
 	cfg := LoadFromFile("./testdata/config_camel.yml")
 
 	// config file take precedence over defaults
-	assert.Equal(t, "camel_service", cfg.GetServiceName().GetValue())
+	assert.Equal(t, "camelService", cfg.GetServiceName().GetValue())
 	assert.Equal(t, "http://35.233.143.122:9411/api/v2/spans", cfg.GetReporting().GetEndpoint().GetValue())
 	assert.Equal(t, true, cfg.GetDataCapture().GetHttpHeaders().GetRequest().GetValue())
 }

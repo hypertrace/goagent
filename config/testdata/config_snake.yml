@@ -1,0 +1,6 @@
+service_name: snake_service
+reporting:
+  endpoint: "http://35.233.143.122:9411/api/v2/spans"
+data_capture:
+  http_headers:
+    response: false

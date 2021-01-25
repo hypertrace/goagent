@@ -1,3 +1,4 @@
+serviceName: camelService
 reporting:
   endpoint: "http://35.233.143.122:9411/api/v2/spans"
 dataCapture:

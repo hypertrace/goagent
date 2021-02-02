@@ -133,15 +133,15 @@ func TestClientRequestHeadersAreCapturedAccordingly(t *testing.T) {
 
 		span := spans[0]
 		if tCase.captureHTTPHeadersRequestConfig {
-			assert.Equal(t, "abc123xyz", span.ReadAttribute("http.request.header.Api_key").(string))
+			assert.Equal(t, "abc123xyz", span.ReadAttribute("http.request.header.api_key").(string))
 		} else {
 			assert.Nil(t, span.ReadAttribute("http.request.header.Api_key"))
 		}
 
 		if tCase.captureHTTPHeadersResponseConfig {
-			assert.Equal(t, "xyz123abc", span.ReadAttribute("http.response.header.Request_id").(string))
+			assert.Equal(t, "xyz123abc", span.ReadAttribute("http.response.header.request_id").(string))
 		} else {
-			assert.Nil(t, span.ReadAttribute("http.response.header.Request_id"))
+			assert.Nil(t, span.ReadAttribute("http.response.header.request_id"))
 		}
 	}
 }

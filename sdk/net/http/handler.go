@@ -54,7 +54,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// nil check for body is important as this block turns the body into another
 	// object that isn't nil and that will leverage the "Observer effect".
-	if r.Body != nil && h.dataCaptureConfig.HttpBody.Request.Value && shouldRecordBodyOfContentType(r.Header) {
+	if r.Body != nil && h.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{r.Header}) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return
@@ -77,7 +77,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if h.dataCaptureConfig.HttpBody.Response.Value &&
 			len(wi.body) > 0 &&
-			shouldRecordBodyOfContentType(wi.Header()) {
+			ShouldRecordBodyOfContentType(headerMapAccessor{wi.Header()}) {
 			span.SetAttribute("http.response.body", string(wi.body))
 		}
 

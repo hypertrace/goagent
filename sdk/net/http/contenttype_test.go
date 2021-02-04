@@ -8,7 +8,7 @@ import (
 )
 
 func TestRecordingDecissionReturnsFalseOnNoContentType(t *testing.T) {
-	assert.Equal(t, false, shouldRecordBodyOfContentType(http.Header{"A": []string{"B"}}))
+	assert.Equal(t, false, ShouldRecordBodyOfContentType(headerMapAccessor{http.Header{"A": []string{"B"}}}))
 }
 
 func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
@@ -27,7 +27,7 @@ func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
 	for _, tCase := range tCases {
 		h := http.Header{}
 		h.Set("Content-Type", tCase.contentType)
-		assert.Equal(t, tCase.shouldRecord, shouldRecordBodyOfContentType(h))
+		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
 }
 
@@ -49,6 +49,6 @@ func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 		for _, header := range tCase.contentTypes {
 			h.Add("Content-Type", header)
 		}
-		assert.Equal(t, tCase.shouldRecord, shouldRecordBodyOfContentType(h))
+		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
 }

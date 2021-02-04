@@ -1,7 +1,6 @@
 package http
 
 import (
-	"net/http"
 	"strings"
 )
 
@@ -14,8 +13,8 @@ var contentTypeAllowListLowerCase = []string{
 // shouldRecordBodyOfContentType checks if the body is meant
 // to be recorded based on the content-type and the fact that body is
 // not streamed.
-func shouldRecordBodyOfContentType(h http.Header) bool {
-	var contentTypeValues = h["Content-Type"] // "Content-Type" is the canonical key
+func ShouldRecordBodyOfContentType(h HeaderAccessor) bool {
+	var contentTypeValues = h.Lookup("Content-Type") // "Content-Type" is the canonical key
 
 	// we iterate all the values as userland code add the headers in the inverse order,
 	// e.g.

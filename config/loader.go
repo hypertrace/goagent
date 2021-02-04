@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
@@ -34,6 +35,14 @@ func getStringEnv(name string) (string, bool) {
 	}
 
 	return "", false
+}
+
+func getArrayStringEnv(name string) ([]string, bool) {
+	if val := os.Getenv(name); val != "" {
+		return strings.Split(val, ","), true
+	}
+
+	return nil, false
 }
 
 // getInt32Env returns the int32 value for an env var and a confirmation

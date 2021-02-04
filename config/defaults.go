@@ -6,6 +6,7 @@ import (
 
 // defaultConfig holds the default config values for agent.
 var defaultConfig = AgentConfig{
+	PropagationFormats: []PropagationFormat{PropagationFormat_TRACECONTEXT},
 	DataCapture: &DataCapture{
 		HttpHeaders: &Message{
 			Request:  Bool(true),

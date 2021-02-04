@@ -24,6 +24,26 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 		x.DataCapture = new(DataCapture)
 	}
 	x.DataCapture.loadFromEnv(prefix+"DATA_CAPTURE_", defaultValues.DataCapture)
+	if rawVals, ok := getArrayStringEnv(prefix + "PROPAGATION_FORMATS"); ok {
+		vals := []PropagationFormat{}
+		for _, rawVal := range rawVals {
+			vals = append(vals, PropagationFormat(PropagationFormat_value[rawVal]))
+		}
+		x.PropagationFormats = vals
+	} else if len(defaultValues.PropagationFormats) != 0 {
+		x.PropagationFormats = defaultValues.PropagationFormats
+	}
+
+	if val, ok := getBoolEnv(prefix + "ENABLED"); ok {
+		x.Enabled = &wrappers.BoolValue{Value: val}
+	} else if x.Enabled == nil {
+		// when there is no value to set we still prefer to initialize the variable to avoid
+		// `nil` checks in the consumers.
+		x.Enabled = new(wrappers.BoolValue)
+		if defaultValues != nil && defaultValues.Enabled != nil {
+			x.Enabled = &wrappers.BoolValue{Value: defaultValues.Enabled.Value}
+		}
+	}
 }
 
 // loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.

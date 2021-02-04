@@ -49,3 +49,13 @@ func TestGetStringEnv(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "my_value", stringVal)
 }
+
+func TestGetArrayStringEnv(t *testing.T) {
+	_, ok := getArrayStringEnv("my_vowels")
+	assert.False(t, ok)
+
+	os.Setenv("my_vowels", "a,b")
+	vals, ok := getArrayStringEnv("my_vowels")
+	assert.True(t, ok)
+	assert.Equal(t, []string{"a", "b"}, vals)
+}

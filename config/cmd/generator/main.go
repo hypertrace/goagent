@@ -55,6 +55,16 @@ func (pi *protobufImportModuleProvider) Provide(module string) (io.Reader, error
 	return r, nil
 }
 
+func isEnum(pf pbparser.ProtoFile, name string) bool {
+	for _, e := range pf.Enums {
+		if e.Name == name {
+			return true
+		}
+	}
+
+	return false
+}
+
 func main() {
 	var outDir = flag.String("o", ".", "OUT_DIR for the generated code.")
 	flag.Parse()
@@ -97,12 +107,38 @@ Parse PROTO_FILE and generate output value objects`)
 		c += "// loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.\n"
 		c += fmt.Sprintf("func (x *%s) loadFromEnv(prefix string, defaultValues *%s) {\n", m.Name, m.Name)
 		for _, mf := range m.Fields {
-			if mf.Label != "" {
+			if mf.Label == "oneof" {
+				// currently we don't have a way to handle oneof labels
+				// in env vars.
 				continue
 			}
 			fieldName := toPublicFieldName(strcase.ToCamel(mf.Name))
 			envPrefix := strings.ToUpper(strcase.ToSnake(mf.Name))
-			if strings.HasPrefix(mf.Type.Name(), "google.protobuf.") {
+			if mf.Label == "repeated" {
+				c += fmt.Sprintf(
+					"    if rawVals, ok := getArrayStringEnv(prefix + \"%s\"); ok {\n",
+					strings.ToUpper(mf.Name),
+				)
+
+				if namedType, ok := mf.Type.(pbparser.NamedDataType); ok {
+					if isEnum(pf, namedType.Name()) {
+						c += fmt.Sprintf(`
+						vals := []%s{}
+						for _, rawVal := range rawVals {
+							vals = append(vals, %s(%s_value[rawVal]))
+						}
+					`, namedType.Name(), namedType.Name(), namedType.Name())
+					} else {
+						// unsupported
+						c += "vals = nil"
+					}
+
+					c += fmt.Sprintf("        x.%s = vals\n", fieldName)
+				}
+				c += fmt.Sprintf("    } else if len(defaultValues.%s) != 0 {\n", fieldName)
+				c += fmt.Sprintf("        x.%s = defaultValues.%s\n", fieldName, fieldName)
+				c += fmt.Sprintf("    }\n\n")
+			} else if strings.HasPrefix(mf.Type.Name(), "google.protobuf.") {
 				_type := mf.Type.Name()[16 : len(mf.Type.Name())-5] // 16 = len("google.protobuf.")
 				c += fmt.Sprintf(
 					"    if val, ok := get%sEnv(prefix + \"%s\"); ok {\n",

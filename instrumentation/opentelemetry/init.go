@@ -11,6 +11,7 @@ import (
 	"github.com/hypertrace/goagent/config"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/propagation"
@@ -20,6 +21,22 @@ import (
 )
 
 const batchTimeoutInMillisecs = 200.0
+
+func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
+	var propagators []propagation.TextMapPropagator
+	for _, format := range formats {
+		switch format {
+		case config.PropagationFormat_B3:
+			propagators = append(propagators, b3.B3{})
+		case config.PropagationFormat_TRACECONTEXT:
+			propagators = append(propagators, propagation.TraceContext{})
+		}
+	}
+	if len(propagators) == 0 {
+		return propagation.TraceContext{}
+	}
+	return propagation.NewCompositeTextMapPropagator(propagators...)
+}
 
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately
 // on a termination signal.
@@ -56,8 +73,7 @@ func Init(cfg *config.AgentConfig) func() {
 	)
 	otel.SetTracerProvider(tp)
 
-	// TODO: support configurable propagation
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
 	// TODO: use batcher instead of this hack:
 	return func() {

@@ -122,8 +122,7 @@ Parse PROTO_FILE and generate output value objects`)
 
 				if namedType, ok := mf.Type.(pbparser.NamedDataType); ok {
 					if isEnum(pf, namedType.Name()) {
-						c += fmt.Sprintf(`
-						vals := []%s{}
+						c += fmt.Sprintf(`		vals := []%s{}
 						for _, rawVal := range rawVals {
 							vals = append(vals, %s(%s_value[rawVal]))
 						}
@@ -135,7 +134,7 @@ Parse PROTO_FILE and generate output value objects`)
 
 					c += fmt.Sprintf("        x.%s = vals\n", fieldName)
 				}
-				c += fmt.Sprintf("    } else if len(defaultValues.%s) != 0 {\n", fieldName)
+				c += fmt.Sprintf("    } else if len(defaultValues.%s) > 0 {\n", fieldName)
 				c += fmt.Sprintf("        x.%s = defaultValues.%s\n", fieldName, fieldName)
 				c += fmt.Sprintf("    }\n\n")
 			} else if strings.HasPrefix(mf.Type.Name(), "google.protobuf.") {

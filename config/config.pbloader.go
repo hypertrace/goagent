@@ -25,13 +25,12 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 	}
 	x.DataCapture.loadFromEnv(prefix+"DATA_CAPTURE_", defaultValues.DataCapture)
 	if rawVals, ok := getArrayStringEnv(prefix + "PROPAGATION_FORMATS"); ok {
-
 		vals := []PropagationFormat{}
 		for _, rawVal := range rawVals {
 			vals = append(vals, PropagationFormat(PropagationFormat_value[rawVal]))
 		}
 		x.PropagationFormats = vals
-	} else if len(rawVals) == 0 && len(defaultValues.PropagationFormats) != 0 {
+	} else if len(defaultValues.PropagationFormats) != 0 {
 		x.PropagationFormats = defaultValues.PropagationFormats
 	}
 

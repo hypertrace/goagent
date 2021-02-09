@@ -8,14 +8,14 @@ import (
 	"github.com/hypertrace/goagent/sdk"
 )
 
-func setAttributesFromHeaders(_type string, headers http.Header, span sdk.Span) {
-	for key, values := range headers {
+func SetAttributesFromHeaders(_type string, headers HeaderAccessor, span sdk.Span) {
+	headers.ForEachHeader(func(key string, values []string) error {
 		if len(values) == 1 {
 			span.SetAttribute(
 				fmt.Sprintf("http.%s.header.%s", _type, strings.ToLower(key)),
 				values[0],
 			)
-			continue
+			return nil
 		}
 
 		for index, value := range values {
@@ -24,5 +24,10 @@ func setAttributesFromHeaders(_type string, headers http.Header, span sdk.Span) 
 				value,
 			)
 		}
-	}
+		return nil
+	})
+}
+
+func setAttributesFromHeaders(_type string, headers http.Header, span sdk.Span) {
+	SetAttributesFromHeaders(_type, headerMapAccessor{headers}, span)
 }

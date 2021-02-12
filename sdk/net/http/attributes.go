@@ -33,5 +33,7 @@ func setAttributesFromHeaders(_type string, headers http.Header, span sdk.Span, 
 
 func setSpanAttribute(span sdk.Span, filterAttributes map[string](string), key string, value string) {
 	span.SetAttribute(key, value)
-	filterAttributes[key] = value
+	if filterAttributes != nil {
+		filterAttributes[key] = value
+	}
 }

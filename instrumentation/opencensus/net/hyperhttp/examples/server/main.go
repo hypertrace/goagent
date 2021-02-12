@@ -13,6 +13,7 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/opencensus"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/net/hyperhttp"
+	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
 )
@@ -27,7 +28,7 @@ func main() {
 	r := mux.NewRouter()
 	r.Handle("/foo", &ochttp.Handler{
 		Propagation: &b3.HTTPFormat{},
-		Handler:     hyperhttp.WrapHandler(http.HandlerFunc(fooHandler)),
+		Handler:     hyperhttp.WrapHandler(http.HandlerFunc(fooHandler), &sdkhttp.Options{}),
 	})
 	log.Fatal(http.ListenAndServe(":8081", r))
 }

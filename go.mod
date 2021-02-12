@@ -5,6 +5,7 @@ go 1.14
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/gorilla/mux v1.6.2
 	github.com/kr/pretty v0.1.0 // indirect

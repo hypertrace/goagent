@@ -9,6 +9,6 @@ import (
 
 // WrapTransport returns a new http.RoundTripper that should be passed to
 // the OpenCensus *ochttp.Transport
-func WrapTransport(delegate http.RoundTripper, options *sdkhttp.Options) http.RoundTripper {
-	return sdkhttp.WrapTransport(delegate, opencensus.SpanFromContext, options)
+func WrapTransport(delegate http.RoundTripper) http.RoundTripper {
+	return sdkhttp.WrapTransport(delegate, opencensus.SpanFromContext)
 }

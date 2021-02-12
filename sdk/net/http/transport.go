@@ -2,13 +2,11 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk"
-	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 )
@@ -20,13 +18,10 @@ type roundTripper struct {
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
 	dataCaptureConfig        *config.DataCapture
-	requestFilters           []filter.Filter
 }
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	span := rt.spanFromContextRetriever(req.Context())
-	filterAttributes := make(map[string]string)
-
 	if span.IsNoop() {
 		// isNoop means either the span is not sampled or there was no span
 		// in the request context which means this RoundTripper is not used
@@ -36,11 +31,13 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	for key, value := range rt.defaultAttributes {
-		setSpanAttribute(span, filterAttributes, key, value)
+		span.SetAttribute(key, value)
 	}
 
 	if rt.dataCaptureConfig.HttpHeaders.Request.Value {
-		setAttributesFromHeaders("request", req.Header, span, filterAttributes)
+		setAttributesFromHeaders("request", req.Header, span,
+			// no filtering for client instrumentation
+			nil)
 	}
 
 	// Only records the body if it is not empty and the content type header
@@ -55,19 +52,10 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		defer req.Body.Close()
 
 		if len(body) > 0 {
-			setSpanAttribute(span, filterAttributes, "http.request.body", string(body))
+			span.SetAttribute("http.request.body", string(body))
 		}
 
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	}
-
-	for _, f := range rt.requestFilters {
-		if f.Evaluate(filterAttributes, span) {
-			return &http.Response{
-				Status:     fmt.Sprintf("403 blocked by request filter %s", f.Id()),
-				StatusCode: http.StatusForbidden,
-			}, nil
-		}
 	}
 
 	res, err := rt.delegate.RoundTrip(req)
@@ -84,7 +72,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		defer res.Body.Close()
 
 		if len(body) > 0 {
-			setSpanAttribute(span, filterAttributes, "http.response.body", string(body))
+			span.SetAttribute("http.response.body", string(body))
 		}
 
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -92,7 +80,9 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	if rt.dataCaptureConfig.HttpHeaders.Response.Value {
 		// Sets an attribute per each response header.
-		setAttributesFromHeaders("response", res.Header, span, filterAttributes)
+		setAttributesFromHeaders("response", res.Header, span,
+			// no filtering for client instrumentation
+			nil)
 	}
 
 	return res, err
@@ -100,11 +90,11 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // WrapTransport returns a new http.RoundTripper that should be wrapped
 // by an instrumented http.RoundTripper
-func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext, options *Options) http.RoundTripper {
+func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext) http.RoundTripper {
 	defaultAttributes := make(map[string]string)
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
 
-	return &roundTripper{delegate, defaultAttributes, spanFromContextRetriever, internalconfig.GetConfig().GetDataCapture(), options.RequestFilters}
+	return &roundTripper{delegate, defaultAttributes, spanFromContextRetriever, internalconfig.GetConfig().GetDataCapture()}
 }

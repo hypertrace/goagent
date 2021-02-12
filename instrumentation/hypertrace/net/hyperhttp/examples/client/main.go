@@ -13,7 +13,6 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/net/hyperhttp"
-	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
 )
 
 type message struct {
@@ -28,7 +27,7 @@ func main() {
 	defer flusher()
 
 	client := http.Client{
-		Transport: hyperhttp.NewTransport(http.DefaultTransport, &sdkhttp.Options{}),
+		Transport: hyperhttp.NewTransport(http.DefaultTransport),
 	}
 
 	req, err := http.NewRequest("GET", "http://localhost:8081/foo", bytes.NewBufferString(`{"name":"Dave"}`))

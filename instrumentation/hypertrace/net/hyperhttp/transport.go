@@ -10,7 +10,7 @@ import (
 
 // NewTransport wraps the provided http.RoundTripper with one that
 // starts a span and injects the span context into the outbound request headers.
-func NewTransport(base http.RoundTripper, options *sdkhttp.Options) http.RoundTripper {
+func NewTransport(base http.RoundTripper) http.RoundTripper {
 	return otelhttp.NewTransport(
 		sdkhttp.WrapTransport(base, opentelemetry.SpanFromContext),
 	)

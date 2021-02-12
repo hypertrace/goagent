@@ -9,6 +9,7 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
+	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
@@ -28,7 +29,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	ih := &ochttp.Handler{Handler: WrapHandler(h)}
+	ih := &ochttp.Handler{Handler: WrapHandler(h, &sdkhttp.Options{})}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("api_key", "xyz123abc")
@@ -94,7 +95,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			ih := &ochttp.Handler{Handler: WrapHandler(h)}
+			ih := &ochttp.Handler{Handler: WrapHandler(h, &sdkhttp.Options{})}
 
 			r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader(tCase.requestBody))
 			r.Header.Add("content-type", tCase.requestContentType)
@@ -127,7 +128,7 @@ func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
 
-	ih := &ochttp.Handler{Handler: WrapHandler(h)}
+	ih := &ochttp.Handler{Handler: WrapHandler(h, &sdkhttp.Options{})}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("X-B3-TraceId", "1f46165474d11ee5836777d85df2cdab")

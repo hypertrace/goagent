@@ -31,7 +31,7 @@ func TestServerRequestWithNilBodyIsntChanged(t *testing.T) {
 		assert.Nil(t, r.Body)
 	})
 
-	wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 	wh.dataCaptureConfig = &config.DataCapture{
 		HttpHeaders: &config.Message{
 			Request:  config.Bool(false),
@@ -62,7 +62,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 	wh.dataCaptureConfig = &config.DataCapture{
 		HttpHeaders: &config.Message{
 			Request:  config.Bool(false),
@@ -108,7 +108,7 @@ func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {
 			rw.WriteHeader(202)
 		})
 
-		wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+		wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 		ih := &mockHandler{baseHandler: wh}
 		wh.dataCaptureConfig = &config.DataCapture{
 			HttpHeaders: &config.Message{
@@ -202,7 +202,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+			wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 			wh.dataCaptureConfig = &config.DataCapture{
 				HttpBody: &config.Message{
 					Request:  config.Bool(tCase.captureHTTPBodyConfig),

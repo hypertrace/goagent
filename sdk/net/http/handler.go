@@ -2,12 +2,14 @@ package http
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 )
@@ -17,21 +19,28 @@ type handler struct {
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
 	dataCaptureConfig        *config.DataCapture
+	requestFilters           []filter.Filter
+}
+
+// Options for HTTP handler instrumentation
+type Options struct {
+	RequestFilters []filter.Filter
 }
 
 // WrapHandler wraps an uninstrumented handler (e.g. a handleFunc) and returns a new one
 // that should be used as base to an instrumented handler
-func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext) http.Handler {
+func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, options *Options) http.Handler {
 	defaultAttributes := make(map[string]string)
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
-
-	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture()}
+	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), options.RequestFilters}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span := h.spanFromContextRetriever(r.Context())
+	filterAttributes := make(map[string]string)
+
 	if span.IsNoop() {
 		// isNoop means either the span is not sampled or there was no span
 		// in the request context which means this Handler is not used
@@ -43,13 +52,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for key, value := range h.defaultAttributes {
 		span.SetAttribute(key, value)
+		filterAttributes[key] = value
 	}
 
-	span.SetAttribute("http.url", r.URL.String())
+	setSpanAttribute(span, filterAttributes, "http.url", r.URL.String())
 
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {
-		setAttributesFromHeaders("request", r.Header, span)
+		setAttributesFromHeaders("request", r.Header, span, filterAttributes)
 	}
 
 	// nil check for body is important as this block turns the body into another
@@ -64,10 +74,18 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Only records the body if it is not empty and the content type
 		// header is not streamable
 		if len(body) > 0 {
-			span.SetAttribute("http.request.body", string(body))
+			setSpanAttribute(span, filterAttributes, "http.request.body", string(body))
 
 		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	}
+
+	for _, f := range h.requestFilters {
+		if f.Evaluate(filterAttributes, span) {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(fmt.Sprintf("403 - Blocked by request filter %s", f.Id())))
+			return
+		}
 	}
 
 	// create http.ResponseWriter interceptor for tracking status code
@@ -78,12 +96,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if h.dataCaptureConfig.HttpBody.Response.Value &&
 			len(wi.body) > 0 &&
 			ShouldRecordBodyOfContentType(headerMapAccessor{wi.Header()}) {
-			span.SetAttribute("http.response.body", string(wi.body))
+			setSpanAttribute(span, filterAttributes, "http.response.body", string(wi.body))
 		}
 
 		if h.dataCaptureConfig.HttpHeaders.Response.Value {
 			// Sets an attribute per each response header.
-			setAttributesFromHeaders("response", wi.Header(), span)
+			setAttributesFromHeaders("response", wi.Header(), span, filterAttributes)
 		}
 	}()
 

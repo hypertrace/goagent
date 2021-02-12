@@ -9,9 +9,9 @@ import (
 )
 
 // NewHandler wraps the passed handler, functioning like middleware.
-func NewHandler(base http.Handler, operation string) http.Handler {
+func NewHandler(base http.Handler, operation string, options *sdkhttp.Options) http.Handler {
 	return otelhttp.NewHandler(
-		sdkhttp.WrapHandler(base, opentelemetry.SpanFromContext),
+		sdkhttp.WrapHandler(base, opentelemetry.SpanFromContext, options),
 		operation,
 	)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/net/hyperhttp"
+	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
@@ -28,6 +29,7 @@ func main() {
 	r.Handle("/foo", otelhttp.NewHandler(
 		hyperhttp.WrapHandler(
 			http.HandlerFunc(fooHandler),
+			&sdkhttp.Options{},
 		),
 		"/foo",
 	))

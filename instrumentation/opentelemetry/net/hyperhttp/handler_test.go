@@ -9,6 +9,7 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
+	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
@@ -28,7 +29,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
+	ih := otelhttp.NewHandler(WrapHandler(h, &sdkhttp.Options{}), "test_name")
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("api_key", "xyz123abc")
@@ -94,7 +95,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
+			ih := otelhttp.NewHandler(WrapHandler(h, &sdkhttp.Options{}), "test_name")
 
 			r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader(tCase.requestBody))
 			r.Header.Add("content-type", tCase.requestContentType)
@@ -122,7 +123,7 @@ func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
 
-	ih := otelhttp.NewHandler(WrapHandler(h), "test_name")
+	ih := otelhttp.NewHandler(WrapHandler(h, &sdkhttp.Options{}), "test_name")
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
 	r.Header.Add("X-B3-TraceId", "1f46165474d11ee5836777d85df2cdab")

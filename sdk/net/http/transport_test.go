@@ -34,7 +34,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+	rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext, &Options{}).(*roundTripper)
 	rt.dataCaptureConfig = &config.DataCapture{
 		HttpHeaders: &config.Message{
 			Request:  config.Bool(false),
@@ -95,7 +95,7 @@ func TestClientRequestHeadersAreCapturedAccordingly(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+		rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext, &Options{}).(*roundTripper)
 		rt.dataCaptureConfig = &config.DataCapture{
 			HttpHeaders: &config.Message{
 				Request:  config.Bool(tCase.captureHTTPHeadersRequestConfig),
@@ -161,7 +161,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 	expectedErr := errors.New("roundtrip error")
 	client := &http.Client{
 		Transport: &mockTransport{
-			baseRoundTripper: WrapTransport(failingTransport{expectedErr}, mock.SpanFromContext),
+			baseRoundTripper: WrapTransport(failingTransport{expectedErr}, mock.SpanFromContext, &Options{}),
 		},
 	}
 
@@ -234,7 +234,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+			rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext, &Options{}).(*roundTripper)
 			rt.dataCaptureConfig = &config.DataCapture{
 				HttpBody: &config.Message{
 					Request:  config.Bool(tCase.captureHTTPBodyConfig),

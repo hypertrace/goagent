@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
+	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
@@ -30,7 +31,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	client := &http.Client{
 		Transport: &ochttp.Transport{
-			Base: WrapTransport(http.DefaultTransport),
+			Base: WrapTransport(http.DefaultTransport, &sdkhttp.Options{}),
 		},
 	}
 
@@ -78,7 +79,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 	expectedErr := errors.New("roundtrip error")
 	client := &http.Client{
 		Transport: &ochttp.Transport{
-			Base: WrapTransport(failingTransport{expectedErr}),
+			Base: WrapTransport(failingTransport{expectedErr}, &sdkhttp.Options{}),
 		},
 	}
 
@@ -138,7 +139,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			client := &http.Client{
 				Transport: &ochttp.Transport{
-					Base: WrapTransport(http.DefaultTransport),
+					Base: WrapTransport(http.DefaultTransport, &sdkhttp.Options{}),
 				},
 			}
 
@@ -191,7 +192,7 @@ func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
 
 	client := &http.Client{
 		Transport: &ochttp.Transport{
-			Base: WrapTransport(http.DefaultTransport),
+			Base: WrapTransport(http.DefaultTransport, &sdkhttp.Options{}),
 		},
 	}
 

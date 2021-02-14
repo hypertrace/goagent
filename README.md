@@ -151,7 +151,7 @@ go run ./instrumentation/hypertrace/google.golang.org/grpc/examples/server/main.
 
 ## Other instrumentations
 
-- [database/hypersql](instrumentation/hypertrace/database/sql/hypersql)
+- [database/hypersql](instrumentation/hypertrace/database/hypersql)
 - [github.com/gorilla/hypermux](instrumentation/hypertrace/github.com/gorilla/hypermux)
 
 ## Contributing

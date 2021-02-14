@@ -1,8 +1,8 @@
-package hypersql
+package sql
 
 import (
 	"context"
-	"database/sql"
+	stdSQL "database/sql"
 	"database/sql/driver"
 	"fmt"
 	"sync"
@@ -157,7 +157,7 @@ func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 // it relies on reflection to obtain information about the driver
 // hidden by driver.Driver interface.
 // While using reflection represents an overhead, we only using when
-// bootstraping the driver and not anymore after that hence the trade-off
+// bootstrapping the driver and not anymore after that hence the trade-off
 // is acceptable. More so when the other alternative is to do typecast
 // across different drivers which will also create a runtime dependency or
 // rely on the name assigned to driverName which might not be standard.
@@ -204,10 +204,10 @@ func Wrap(d driver.Driver, startSpan sdk.StartSpan) driver.Driver {
 
 // Register initializes and registers the hypersql wrapped database driver
 // identified by its driverName. On success it
-// returns the generated driverName to use when calling sql.Open.
+// returns the generated driverName to use when calling hypersql.Open.
 func Register(driverName string, startSpan sdk.StartSpan) (string, error) {
 	// retrieve the driver implementation we need to wrap with instrumentation
-	db, err := sql.Open(driverName, "")
+	db, err := stdSQL.Open(driverName, "")
 	if err != nil {
 		return "", err
 	}
@@ -219,7 +219,7 @@ func Register(driverName string, startSpan sdk.StartSpan) (string, error) {
 	regMu.Lock()
 	defer regMu.Unlock()
 
-	hyperDriverName := fmt.Sprintf("hyper-%s-%d", driverName, len(sql.Drivers()))
-	sql.Register(hyperDriverName, Wrap(dri, startSpan))
+	hyperDriverName := fmt.Sprintf("hyper-%s-%d", driverName, len(stdSQL.Drivers()))
+	stdSQL.Register(hyperDriverName, Wrap(dri, startSpan))
 	return hyperDriverName, nil
 }

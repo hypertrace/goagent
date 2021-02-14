@@ -4,17 +4,17 @@ import (
 	"database/sql/driver"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
-	sqlsdk "github.com/hypertrace/goagent/sdk/database/hypersql"
+	sdkSQL "github.com/hypertrace/goagent/sdk/database/sql"
 )
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.
 func Wrap(d driver.Driver) driver.Driver {
-	return sqlsdk.Wrap(d, opentelemetry.StartSpan)
+	return sdkSQL.Wrap(d, opentelemetry.StartSpan)
 }
 
 // Register initializes and registers the hypersql wrapped database driver
 // identified by its driverName. On success it
-// returns the generated driverName to use when calling sql.Open.
+// returns the generated driverName to use when calling hypersql.Open.
 func Register(driverName string) (string, error) {
-	return sqlsdk.Register(driverName, opentelemetry.StartSpan)
+	return sdkSQL.Register(driverName, opentelemetry.StartSpan)
 }

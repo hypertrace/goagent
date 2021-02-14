@@ -1,4 +1,4 @@
 package opentelemetry
 
-// TracerDomain represents the tracer name for the hypertrace instrumentation
+// TracerDomain represents the tracer name for the Hypertrace instrumentation
 const TracerDomain = "org.hypertrace.goagent"

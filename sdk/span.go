@@ -1,6 +1,9 @@
 package sdk
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Span is an interface that accept attributed and can be
 // distinguished as noop
@@ -33,7 +36,8 @@ const (
 
 // SpanOptions describes the options for starting a span
 type SpanOptions struct {
-	Kind SpanKind
+	Kind      SpanKind
+	Timestamp time.Time
 }
 
 // StartSpan creates a span and injects into a context, returning a span ender function

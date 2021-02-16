@@ -2,6 +2,7 @@ package opentelemetry
 
 import (
 	"context"
+	"time"
 
 	"github.com/hypertrace/goagent/sdk"
 	"go.opentelemetry.io/otel"
@@ -31,9 +32,15 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 	return &Span{trace.SpanFromContext(ctx)}
 }
 
-func StartSpan(ctx context.Context, name string, options *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
+func StartSpan(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
 	startOpts := []trace.SpanOption{
-		trace.WithSpanKind(mapSpanKind(options.Kind)),
+		trace.WithSpanKind(mapSpanKind(opts.Kind)),
+	}
+
+	if opts.Timestamp.IsZero() {
+		startOpts = append(startOpts, trace.WithTimestamp(time.Now()))
+	} else {
+		startOpts = append(startOpts, trace.WithTimestamp(opts.Timestamp))
 	}
 
 	ctx, span := otel.Tracer(TracerDomain).Start(ctx, name, startOpts...)

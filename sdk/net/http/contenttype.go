@@ -10,7 +10,7 @@ var contentTypeAllowListLowerCase = []string{
 	"application/x-www-form-urlencoded",
 }
 
-// shouldRecordBodyOfContentType checks if the body is meant
+// ShouldRecordBodyOfContentType checks if the body is meant
 // to be recorded based on the content-type and the fact that body is
 // not streamed.
 func ShouldRecordBodyOfContentType(h HeaderAccessor) bool {

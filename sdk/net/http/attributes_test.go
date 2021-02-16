@@ -12,7 +12,7 @@ func TestSetScalarAttributeSuccess(t *testing.T) {
 	h := http.Header{}
 	h.Set("key_1", "value_1")
 	span := mock.NewSpan()
-	setAttributesFromHeaders("request", h, span)
+	SetAttributesFromHeaders("request", headerMapAccessor{h}, span)
 	assert.Equal(t, "value_1", span.ReadAttribute("http.request.header.key_1").(string))
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
@@ -25,7 +25,7 @@ func TestSetMultivalueAttributeSuccess(t *testing.T) {
 	h.Add("key_1", "value_2")
 
 	span := mock.NewSpan()
-	setAttributesFromHeaders("response", h, span)
+	SetAttributesFromHeaders("response", headerMapAccessor{h}, span)
 
 	assert.Equal(t, "value_1", span.ReadAttribute("http.response.header.key_1[0]").(string))
 	assert.Equal(t, "value_2", span.ReadAttribute("http.response.header.key_1[1]").(string))

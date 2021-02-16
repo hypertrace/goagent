@@ -2,12 +2,12 @@ package http
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/hypertrace/goagent/sdk"
 )
 
+// SetAttributesFromHeaders set attributes into span from a HeaderAccessor
 func SetAttributesFromHeaders(_type string, headers HeaderAccessor, span sdk.Span) {
 	headers.ForEachHeader(func(key string, values []string) error {
 		if len(values) == 1 {
@@ -26,8 +26,4 @@ func SetAttributesFromHeaders(_type string, headers HeaderAccessor, span sdk.Spa
 		}
 		return nil
 	})
-}
-
-func setAttributesFromHeaders(_type string, headers http.Header, span sdk.Span) {
-	SetAttributesFromHeaders(_type, headerMapAccessor{headers}, span)
 }

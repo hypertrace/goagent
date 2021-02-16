@@ -49,7 +49,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {
-		setAttributesFromHeaders("request", r.Header, span)
+		SetAttributesFromHeaders("request", NewHeaderMapAccessor(r.Header), span)
 	}
 
 	// nil check for body is important as this block turns the body into another
@@ -83,7 +83,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if h.dataCaptureConfig.HttpHeaders.Response.Value {
 			// Sets an attribute per each response header.
-			setAttributesFromHeaders("response", wi.Header(), span)
+			SetAttributesFromHeaders("response", headerMapAccessor{wi.Header()}, span)
 		}
 	}()
 

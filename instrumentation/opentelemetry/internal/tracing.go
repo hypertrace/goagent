@@ -16,7 +16,7 @@ import (
 // InitTracer initializes the tracer and returns a flusher of the reported
 // spans for further inspection. Its main purpose is to declare a tracer
 // for TESTING.
-func InitTracer() (apitrace.Tracer, func() []*trace.SpanData) {
+func InitTracer() (apitrace.Tracer, func() []*trace.SpanSnapshot) {
 	exporter := &Recorder{}
 
 	resources, _ := resource.New(context.Background(), resource.WithAttributes(semconv.ServiceNameKey.String("TestService")))
@@ -30,7 +30,7 @@ func InitTracer() (apitrace.Tracer, func() []*trace.SpanData) {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(b3.B3{})
 
-	return tp.Tracer(opentelemetry.TracerDomain), func() []*trace.SpanData {
+	return tp.Tracer(opentelemetry.TracerDomain), func() []*trace.SpanSnapshot {
 		return exporter.Flush()
 	}
 }

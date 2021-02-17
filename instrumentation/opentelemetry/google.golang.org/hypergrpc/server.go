@@ -2,7 +2,7 @@ package hypergrpc
 
 import (
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
-	sdkgrpc "github.com/hypertrace/goagent/sdk/google.golang.org/grpc"
+	sdkgrpc "github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc"
 	"google.golang.org/grpc"
 )
 

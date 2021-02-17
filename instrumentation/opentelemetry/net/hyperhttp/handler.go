@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
-	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
+	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 
 // WrapHandler returns a new round tripper instrumented that relies on the

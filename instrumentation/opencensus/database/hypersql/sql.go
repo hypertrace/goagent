@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 
 	"github.com/hypertrace/goagent/instrumentation/opencensus"
-	sdkSQL "github.com/hypertrace/goagent/sdk/database/sql"
+	sdkSQL "github.com/hypertrace/goagent/sdk/instrumentation/database/sql"
 )
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.

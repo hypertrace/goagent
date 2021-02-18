@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,16 +18,12 @@ type handler struct {
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
 	dataCaptureConfig        *config.DataCapture
-	urlFilters               []filter.URLFilter
-	headersFilters           []filter.HeadersFilter
-	bodyFilters              []filter.BodyFilter
+	requestFilter            filter.Filter
 }
 
 // Options for HTTP handler instrumentation
 type Options struct {
-	URLFilters     []filter.URLFilter
-	HeadersFilters []filter.HeadersFilter
-	BodyFilters    []filter.BodyFilter
+	RequestFilter filter.Filter
 }
 
 // WrapHandler wraps an uninstrumented handler (e.g. a handleFunc) and returns a new one
@@ -38,7 +33,7 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, opt
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
-	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), options.URLFilters, options.HeadersFilters, options.BodyFilters}
+	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), options.RequestFilter}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -60,13 +55,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.String()
 	span.SetAttribute("http.url", url)
 
-	// run url filters
-	for _, urlEvaluator := range h.urlFilters {
-		if urlEvaluator(url) {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(fmt.Sprintf("403 - Blocked by URL filter")))
-			return
-		}
+	// run filters on URL
+	if h.requestFilter.EvaluateURL(span, url) {
+		w.WriteHeader(http.StatusForbidden)
+		return
 	}
 
 	headers := r.Header
@@ -75,17 +67,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		SetAttributesFromHeaders("request", NewHeaderMapAccessor(r.Header), span)
 	}
 
-	// run header filters
-	for _, headerEvaluator := range h.headersFilters {
-		if headerEvaluator(headers) {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(fmt.Sprintf("403 - Blocked by header filter")))
-			return
-		}
+	// run filters on headers
+	if h.requestFilter.EvaluateHeaders(span, headers) {
+		w.WriteHeader(http.StatusForbidden)
+		return
 	}
 
 	shouldRecordBody := h.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{r.Header})
-	shouldFilterByBody := len(h.bodyFilters) > 0
+	shouldFilterByBody := len(h.requestFilter.BodyEvaluators) > 0
 
 	// nil check for body is important as this block turns the body into another
 	// object that isn't nil and that will leverage the "Observer effect".
@@ -100,16 +89,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// header is not streamable
 		if shouldRecordBody && len(body) > 0 {
 			span.SetAttribute("http.request.body", string(body))
-
 		}
 
 		// run body filters
-		for _, bodyEvaluator := range h.bodyFilters {
-			if bodyEvaluator(body) {
-				w.WriteHeader(http.StatusForbidden)
-				w.Write([]byte(fmt.Sprintf("403 - Blocked by body filter")))
-				return
-			}
+		if h.requestFilter.EvaluateBody(span, body) {
+			w.WriteHeader(http.StatusForbidden)
+			return
 		}
 
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))

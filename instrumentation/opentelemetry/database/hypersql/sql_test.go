@@ -14,7 +14,7 @@ import (
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
-func createDB(t *testing.T) (*sql.DB, func() []*trace.SpanData) {
+func createDB(t *testing.T) (*sql.DB, func() []*trace.SpanSnapshot) {
 	_, flusher := internal.InitTracer()
 
 	driverName, err := Register("sqlite3")

@@ -8,7 +8,7 @@ import (
 	"net"
 	reflect "reflect"
 
-	"github.com/hypertrace/goagent/sdk/google.golang.org/grpc/internal/helloworld"
+	"github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc/internal/helloworld"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

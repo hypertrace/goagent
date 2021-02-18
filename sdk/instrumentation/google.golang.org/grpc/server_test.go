@@ -4,32 +4,34 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hypertrace/goagent/sdk/google.golang.org/grpc/internal/helloworld"
+	"github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc/internal/helloworld"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
-func makeMockUnaryClientInterceptor(mockSpans *[]*mock.Span) grpc.UnaryClientInterceptor {
-	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+func makeMockUnaryServerInterceptor(mockSpans *[]*mock.Span) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		span := mock.NewSpan()
 		ctx = mock.ContextWithSpan(ctx, span)
 		*mockSpans = append(*mockSpans, span)
-		return invoker(ctx, method, req, reply, cc, opts...)
+		return handler(ctx, req)
 	}
 }
 
-func TestUnaryClientHelloWorldSuccess(t *testing.T) {
+func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 	spans := []*mock.Span{}
+	mockUnaryInterceptor := makeMockUnaryServerInterceptor(&spans)
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext),
+		),
+	)
 	defer s.Stop()
 
-	helloworld.RegisterGreeterServer(s, &server{
-		replyHeader:  metadata.Pairs("test_header_key", "test_header_value"),
-		replyTrailer: metadata.Pairs("test_trailer_key", "test_trailer_value"),
-	})
+	helloworld.RegisterGreeterServer(s, &server{})
 
 	dialer := createDialer(s)
 
@@ -39,12 +41,6 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(
-			WrapUnaryClientInterceptor(
-				makeMockUnaryClientInterceptor(&spans),
-				mock.SpanFromContext,
-			),
-		),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -53,13 +49,10 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 
 	client := helloworld.NewGreeterClient(conn)
 
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key_1", "test_value_1"))
-	_, err = client.SayHello(
-		ctx,
-		&helloworld.HelloRequest{
-			Name: "Cuchi",
-		},
-	)
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
+	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
+		Name: "Pupo",
+	})
 	if err != nil {
 		t.Fatalf("call to Register failed: %v", err)
 	}
@@ -71,12 +64,9 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 	assert.Equal(t, "grpc", span.ReadAttribute("rpc.system").(string))
 	assert.Equal(t, "helloworld.Greeter", span.ReadAttribute("rpc.service").(string))
 	assert.Equal(t, "SayHello", span.ReadAttribute("rpc.method").(string))
-	assert.Equal(t, "test_value_1", span.ReadAttribute("rpc.request.metadata.test_key_1").(string))
-	assert.Equal(t, "test_header_value", span.ReadAttribute("rpc.response.metadata.test_header_key").(string))
-	assert.Equal(t, "test_trailer_value", span.ReadAttribute("rpc.response.metadata.test_trailer_key").(string))
-	assert.Equal(t, "application/grpc", span.ReadAttribute("rpc.response.metadata.content-type").(string))
+	assert.Equal(t, "test_value", span.ReadAttribute("rpc.request.metadata.test_key").(string))
 
-	expectedBody := "{\"name\":\"Cuchi\"}"
+	expectedBody := "{\"name\":\"Pupo\"}"
 	actualBody := span.ReadAttribute("rpc.request.body").(string)
 	if ok, err := jsonEqual(expectedBody, actualBody); err == nil {
 		assert.True(t, ok, "incorrect request body:\nwant %s,\nhave %s", expectedBody, actualBody)
@@ -84,28 +74,24 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expectedBody = "{\"message\":\"Hello Cuchi\"}"
+	expectedBody = "{\"message\":\"Hello Pupo\"}"
 	actualBody = span.ReadAttribute("rpc.response.body").(string)
 	if ok, err := jsonEqual(expectedBody, actualBody); err == nil {
 		assert.True(t, ok, "incorrect response body:\nwant %s,\nhave %s", expectedBody, actualBody)
 	} else {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
-	_ = span.ReadAttribute("container_id") // needed in containarized envs
-	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }
 
-func TestClientHandlerHelloWorldSuccess(t *testing.T) {
+func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 	mockHandler := &mockHandler{}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.StatsHandler(WrapStatsHandler(mockHandler, mock.SpanFromContext)),
+	)
 	defer s.Stop()
 
-	helloworld.RegisterGreeterServer(s, &server{
-		replyHeader:  metadata.Pairs("test_header_key", "test_header_value"),
-		replyTrailer: metadata.Pairs("test_trailer_key", "test_trailer_value"),
-	})
+	helloworld.RegisterGreeterServer(s, &server{})
 
 	dialer := createDialer(s)
 
@@ -115,7 +101,7 @@ func TestClientHandlerHelloWorldSuccess(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
-		grpc.WithStatsHandler(WrapStatsHandler(mockHandler, mock.SpanFromContext)),
+		grpc.WithUserAgent("test_agent"),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -124,13 +110,11 @@ func TestClientHandlerHelloWorldSuccess(t *testing.T) {
 
 	client := helloworld.NewGreeterClient(conn)
 
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key_1", "test_value_1"))
-	_, err = client.SayHello(
-		ctx,
-		&helloworld.HelloRequest{
-			Name: "Cuchi",
-		},
-	)
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
+
+	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
+		Name: "Pupo",
+	})
 	if err != nil {
 		t.Fatalf("call to Register failed: %v", err)
 	}
@@ -142,11 +126,13 @@ func TestClientHandlerHelloWorldSuccess(t *testing.T) {
 	assert.Equal(t, "grpc", span.ReadAttribute("rpc.system").(string))
 	assert.Equal(t, "helloworld.Greeter", span.ReadAttribute("rpc.service").(string))
 	assert.Equal(t, "SayHello", span.ReadAttribute("rpc.method").(string))
-	assert.Equal(t, "test_value_1", span.ReadAttribute("rpc.request.metadata.test_key_1").(string))
-	assert.Equal(t, "test_header_value", span.ReadAttribute("rpc.response.metadata.test_header_key").(string))
-	assert.Equal(t, "test_trailer_value", span.ReadAttribute("rpc.response.metadata.test_trailer_key").(string))
+	assert.Equal(t, "test_value", span.ReadAttribute("rpc.request.metadata.test_key").(string))
 
-	expectedBody := "{\"name\":\"Cuchi\"}"
+	assert.Equal(t, "bufnet", span.ReadAttribute("rpc.request.metadata.:authority").(string))
+	assert.Equal(t, "application/grpc", span.ReadAttribute("rpc.request.metadata.content-type").(string))
+	assert.Contains(t, span.ReadAttribute("rpc.request.metadata.user-agent").(string), "test_agent")
+
+	expectedBody := "{\"name\":\"Pupo\"}"
 	actualBody := span.ReadAttribute("rpc.request.body").(string)
 	if ok, err := jsonEqual(expectedBody, actualBody); err == nil {
 		assert.True(t, ok, "incorrect request body:\nwant %s,\nhave %s", expectedBody, actualBody)
@@ -154,11 +140,14 @@ func TestClientHandlerHelloWorldSuccess(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expectedBody = "{\"message\":\"Hello Cuchi\"}"
+	expectedBody = "{\"message\":\"Hello Pupo\"}"
 	actualBody = span.ReadAttribute("rpc.response.body").(string)
 	if ok, err := jsonEqual(expectedBody, actualBody); err == nil {
 		assert.True(t, ok, "incorrect response body:\nwant %s,\nhave %s", expectedBody, actualBody)
 	} else {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
+	_ = span.ReadAttribute("container_id") // needed in containarized envs
+	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }

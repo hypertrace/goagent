@@ -1,4 +1,4 @@
-package hypersql
+package sql
 
 import (
 	"reflect"

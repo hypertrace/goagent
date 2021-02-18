@@ -72,7 +72,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	headers := r.Header
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {
-		setAttributesFromHeaders("request", headers, span)
+		SetAttributesFromHeaders("request", NewHeaderMapAccessor(r.Header), span)
 	}
 
 	// run header filters
@@ -128,7 +128,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if h.dataCaptureConfig.HttpHeaders.Response.Value {
 			// Sets an attribute per each response header.
-			setAttributesFromHeaders("response", wi.Header(), span)
+			SetAttributesFromHeaders("response", headerMapAccessor{wi.Header()}, span)
 		}
 	}()
 

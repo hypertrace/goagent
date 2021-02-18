@@ -96,6 +96,7 @@ func TestServerHelloWorldSuccess(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
+		grpc.WithBlock(),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)

@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/hypertrace/goagent/instrumentation/opencensus"
-	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
+	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 
 // WrapTransport returns a new http.RoundTripper that should be passed to

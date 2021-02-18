@@ -2,7 +2,7 @@ package hypergrpc
 
 import (
 	"github.com/hypertrace/goagent/instrumentation/opencensus"
-	"github.com/hypertrace/goagent/sdk/google.golang.org/grpc"
+	"github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc/stats"
 )

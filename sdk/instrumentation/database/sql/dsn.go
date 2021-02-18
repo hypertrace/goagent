@@ -1,4 +1,4 @@
-package hypersql
+package sql
 
 // Highly inspired in https://github.com/go-sql-driver/mysql/blob/d2e52fca0b/dsn.go
 

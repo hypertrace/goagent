@@ -9,7 +9,7 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
-	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
+	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"

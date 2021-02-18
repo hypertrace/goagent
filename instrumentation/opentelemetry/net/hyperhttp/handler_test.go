@@ -9,7 +9,7 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
-	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
+	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"

@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
-	sdkhttp "github.com/hypertrace/goagent/sdk/net/http"
+	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"go.opentelemetry.io/otel/trace"
 	"gotest.tools/assert"
 )

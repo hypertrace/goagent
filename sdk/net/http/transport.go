@@ -35,9 +35,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	if rt.dataCaptureConfig.HttpHeaders.Request.Value {
-		setAttributesFromHeaders("request", req.Header, span,
-			// no filtering for client instrumentation
-			nil)
+		setAttributesFromHeaders("request", req.Header, span)
 	}
 
 	// Only records the body if it is not empty and the content type header
@@ -80,9 +78,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	if rt.dataCaptureConfig.HttpHeaders.Response.Value {
 		// Sets an attribute per each response header.
-		setAttributesFromHeaders("response", res.Header, span,
-			// no filtering for client instrumentation
-			nil)
+		setAttributesFromHeaders("response", res.Header, span)
 	}
 
 	return res, err

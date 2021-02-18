@@ -1,17 +1,10 @@
 package filter
 
-import (
-	"github.com/hypertrace/goagent/sdk"
-)
+// URLFilter filters based on request URL
+type URLFilter func(URL string) bool
 
-// Filter is the interface that evaluates
-// whether server request should be blocked based
-// on request span attributes.
-type Filter interface {
-	Id() string
+// HeadersFilter filters based on request headers
+type HeadersFilter func(headers map[string][]string) bool
 
-	// Evaluate evaluates whether request
-	// represented with given request span attributes should be filtered(blocked)
-	// The filter may add attributes to provided span
-	Evaluate(requestSpanAttributes map[string]string, span sdk.Span) bool
-}
+// BodyFilter filters based on request body
+type BodyFilter func(body []byte) bool

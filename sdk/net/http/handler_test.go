@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/sdk/filter"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -237,4 +238,127 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestServerRequestFilter(t *testing.T) {
+	tCases := map[string]struct {
+		url          string
+		headerKeys   []string
+		headerValues []string
+		body         string
+		options      *Options
+		blocked      bool
+	}{
+		"no filters": {
+			options: &Options{},
+			blocked: false,
+		},
+		"all filters no match, verify filter arguments": {
+			url:          "http://localhost/foo",
+			headerKeys:   []string{"content-type"},
+			headerValues: []string{"application/json"},
+			body:         "haha",
+			options: &Options{
+				URLFilters: []filter.URLFilter{
+					func(url string) bool {
+						assert.Equal(t, "http://localhost/foo", url)
+						return false
+					},
+				},
+				HeadersFilters: []filter.HeadersFilter{
+					func(headers map[string][]string) bool {
+						assert.Equal(t, 1, len(headers))
+						assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
+						return false
+					},
+				},
+				BodyFilters: []filter.BodyFilter{
+					func(body []byte) bool {
+						assert.Equal(t, []byte("haha"), body)
+						return false
+					},
+				},
+			},
+		},
+		"url filter match": {
+			url: "http://localhost/foo",
+			options: &Options{
+				URLFilters: []filter.URLFilter{
+					func(url string) bool {
+						return false
+					},
+					func(url string) bool {
+						return true
+					},
+					func(url string) bool {
+						assert.Fail(t, "Should not be called")
+						return false
+					},
+				},
+			},
+			blocked: true,
+		},
+		"headers filters match": {
+			url: "http://localhost/foo",
+			options: &Options{
+				HeadersFilters: []filter.HeadersFilter{
+					func(headers map[string][]string) bool {
+						return false
+					},
+					func(headers map[string][]string) bool {
+						return true
+					},
+					func(headers map[string][]string) bool {
+						assert.Fail(t, "Should not be called")
+						return false
+					},
+				},
+			},
+			blocked: true,
+		},
+		"body filters match": {
+			url:  "http://localhost/foo",
+			body: "haha",
+			options: &Options{
+				BodyFilters: []filter.BodyFilter{
+					func(body []byte) bool {
+						return false
+					},
+					func(body []byte) bool {
+						return true
+					},
+					func(body []byte) bool {
+						assert.Fail(t, "Should not be called")
+						return false
+					},
+				},
+			},
+			blocked: true,
+		},
+	}
+
+	for name, tCase := range tCases {
+		t.Run(name, func(t *testing.T) {
+			h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				rw.WriteHeader(http.StatusOK)
+			})
+
+			wh, _ := WrapHandler(h, mock.SpanFromContext, tCase.options).(*handler)
+			ih := &mockHandler{baseHandler: wh}
+			r, _ := http.NewRequest("POST", tCase.url, strings.NewReader(tCase.body))
+			for i := 0; i < len(tCase.headerKeys); i++ {
+				r.Header.Add(tCase.headerKeys[i], tCase.headerValues[i])
+			}
+
+			w := httptest.NewRecorder()
+
+			ih.ServeHTTP(w, r)
+			if !tCase.blocked {
+				assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+			} else {
+				assert.Equal(t, http.StatusForbidden, w.Result().StatusCode)
+			}
+		})
+	}
+
 }

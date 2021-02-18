@@ -19,12 +19,16 @@ type handler struct {
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
 	dataCaptureConfig        *config.DataCapture
-	requestFilters           []filter.Filter
+	urlFilters               []filter.URLFilter
+	headersFilters           []filter.HeadersFilter
+	bodyFilters              []filter.BodyFilter
 }
 
 // Options for HTTP handler instrumentation
 type Options struct {
-	RequestFilters []filter.Filter
+	URLFilters     []filter.URLFilter
+	HeadersFilters []filter.HeadersFilter
+	BodyFilters    []filter.BodyFilter
 }
 
 // WrapHandler wraps an uninstrumented handler (e.g. a handleFunc) and returns a new one
@@ -34,12 +38,11 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, opt
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
-	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), options.RequestFilters}
+	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), options.URLFilters, options.HeadersFilters, options.BodyFilters}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span := h.spanFromContextRetriever(r.Context())
-	filterAttributes := make(map[string]string)
 
 	if span.IsNoop() {
 		// isNoop means either the span is not sampled or there was no span
@@ -52,19 +55,41 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for key, value := range h.defaultAttributes {
 		span.SetAttribute(key, value)
-		filterAttributes[key] = value
 	}
 
-	setSpanAttribute(span, filterAttributes, "http.url", r.URL.String())
+	url := r.URL.String()
+	span.SetAttribute("http.url", url)
 
+	// run url filters
+	for _, urlEvaluator := range h.urlFilters {
+		if urlEvaluator(url) {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(fmt.Sprintf("403 - Blocked by URL filter")))
+			return
+		}
+	}
+
+	headers := r.Header
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {
-		setAttributesFromHeaders("request", r.Header, span, filterAttributes)
+		setAttributesFromHeaders("request", headers, span)
 	}
+
+	// run header filters
+	for _, headerEvaluator := range h.headersFilters {
+		if headerEvaluator(headers) {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(fmt.Sprintf("403 - Blocked by header filter")))
+			return
+		}
+	}
+
+	shouldRecordBody := h.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{r.Header})
+	shouldFilterByBody := len(h.bodyFilters) > 0
 
 	// nil check for body is important as this block turns the body into another
 	// object that isn't nil and that will leverage the "Observer effect".
-	if r.Body != nil && h.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{r.Header}) {
+	if r.Body != nil && (shouldRecordBody || shouldFilterByBody) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return
@@ -73,19 +98,21 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// Only records the body if it is not empty and the content type
 		// header is not streamable
-		if len(body) > 0 {
-			setSpanAttribute(span, filterAttributes, "http.request.body", string(body))
+		if shouldRecordBody && len(body) > 0 {
+			span.SetAttribute("http.request.body", string(body))
 
 		}
+
+		// run body filters
+		for _, bodyEvaluator := range h.bodyFilters {
+			if bodyEvaluator(body) {
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte(fmt.Sprintf("403 - Blocked by body filter")))
+				return
+			}
+		}
+
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-	}
-
-	for _, f := range h.requestFilters {
-		if f.Evaluate(filterAttributes, span) {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(fmt.Sprintf("403 - Blocked by request filter %s", f.Id())))
-			return
-		}
 	}
 
 	// create http.ResponseWriter interceptor for tracking status code
@@ -96,12 +123,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if h.dataCaptureConfig.HttpBody.Response.Value &&
 			len(wi.body) > 0 &&
 			ShouldRecordBodyOfContentType(headerMapAccessor{wi.Header()}) {
-			setSpanAttribute(span, filterAttributes, "http.response.body", string(wi.body))
+			span.SetAttribute("http.response.body", string(wi.body))
 		}
 
 		if h.dataCaptureConfig.HttpHeaders.Response.Value {
 			// Sets an attribute per each response header.
-			setAttributesFromHeaders("response", wi.Header(), span, filterAttributes)
+			setAttributesFromHeaders("response", wi.Header(), span)
 		}
 	}()
 

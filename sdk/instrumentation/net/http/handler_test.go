@@ -9,7 +9,6 @@ import (
 
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk"
-	"github.com/hypertrace/goagent/sdk/filter"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -260,25 +259,19 @@ func TestServerRequestFilter(t *testing.T) {
 			headerValues: []string{"application/json"},
 			body:         "haha",
 			options: &Options{
-				filter.Filter{
-					URLEvaluators: []func(span sdk.Span, url string) bool{
-						func(span sdk.Span, url string) bool {
-							assert.Equal(t, "http://localhost/foo", url)
-							return false
-						},
+				Filter: mock.Filter{
+					URLEvaluator: func(span sdk.Span, url string) bool {
+						assert.Equal(t, "http://localhost/foo", url)
+						return false
 					},
-					HeadersEvaluators: []func(span sdk.Span, headers map[string][]string) bool{
-						func(span sdk.Span, headers map[string][]string) bool {
-							assert.Equal(t, 1, len(headers))
-							assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
-							return false
-						},
+					HeadersEvaluator: func(span sdk.Span, headers map[string][]string) bool {
+						assert.Equal(t, 1, len(headers))
+						assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
+						return false
 					},
-					BodyEvaluators: []func(span sdk.Span, body []byte) bool{
-						func(span sdk.Span, body []byte) bool {
-							assert.Equal(t, []byte("haha"), body)
-							return false
-						},
+					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+						assert.Equal(t, []byte("haha"), body)
+						return false
 					},
 				},
 			},
@@ -286,11 +279,9 @@ func TestServerRequestFilter(t *testing.T) {
 		"url filter match": {
 			url: "http://localhost/foo",
 			options: &Options{
-				filter.Filter{
-					URLEvaluators: []func(span sdk.Span, url string) bool{
-						func(span sdk.Span, url string) bool {
-							return true
-						},
+				Filter: mock.Filter{
+					URLEvaluator: func(span sdk.Span, url string) bool {
+						return true
 					},
 				},
 			},
@@ -299,25 +290,23 @@ func TestServerRequestFilter(t *testing.T) {
 		"headers filters match": {
 			url: "http://localhost/foo",
 			options: &Options{
-				filter.Filter{
-					HeadersEvaluators: []func(span sdk.Span, headers map[string][]string) bool{
-						func(span sdk.Span, headers map[string][]string) bool {
-							return true
-						},
+				Filter: mock.Filter{
+					HeadersEvaluator: func(span sdk.Span, headers map[string][]string) bool {
+						return true
 					},
 				},
 			},
 			blocked: true,
 		},
 		"body filters match": {
-			url:  "http://localhost/foo",
-			body: "haha",
+			url:          "http://localhost/foo",
+			headerKeys:   []string{"content-type"},
+			headerValues: []string{"application/json"},
+			body:         "haha",
 			options: &Options{
-				filter.Filter{
-					BodyEvaluators: []func(span sdk.Span, body []byte) bool{
-						func(span sdk.Span, body []byte) bool {
-							return true
-						},
+				Filter: mock.Filter{
+					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+						return true
 					},
 				},
 			},

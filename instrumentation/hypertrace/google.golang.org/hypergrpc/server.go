@@ -9,9 +9,10 @@ import (
 
 // UnaryServerInterceptor returns a grpc.UnaryServerInterceptor suitable
 // for use in a grpc.NewServer call.
-func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func UnaryServerInterceptor(options *sdkgrpc.Options) grpc.UnaryServerInterceptor {
 	return sdkgrpc.WrapUnaryServerInterceptor(
 		otelgrpc.UnaryServerInterceptor(),
 		opentelemetry.SpanFromContext,
+		options,
 	)
 }

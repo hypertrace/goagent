@@ -33,6 +33,7 @@ import (
 
     "github.com/gorilla/mux"
     "github.com/hypertrace/goagent/instrumentation/hypertrace/net/hyperhttp"
+    sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 
 func main() {
@@ -42,11 +43,29 @@ func main() {
     r.Handle("/foo/{bar}", hyperhttp.NewHandler(
         fooHandler,
         "/foo/{bar}",
+        // See Options section
+        &sdkhttp.Options{}
     ))
 
     // ...
 }
 ```
+
+#### Options
+##### Filter
+[Filtering](sdk/filter/README.md) can be added as part of Options. Multiple filters can be added and they will be run in sequence until a filter returns true (request is blocked), or all filters are run.
+
+```go
+
+// ...
+
+&sdkhttp.Options {
+  Filter: filter.NewMultiFilter(filter1, filter2)
+}
+
+// ...
+
+````
 
 ### HTTP client
 
@@ -97,10 +116,26 @@ The server instrumentation relies on the `grpc.UnaryServerInterceptor` component
 
 server := grpc.NewServer(
     grpc.UnaryInterceptor(
-        hypergrpc.UnaryServerInterceptor(),
+        hypergrpc.UnaryServerInterceptor(&sdkgrpc.Options{}),
     ),
 )
 ```
+
+#### Options
+##### Filter
+[Filtering](sdk/filter/README.md) can be added as part of Options. Multiple filters can be added and they will be run in sequence until a filter returns true (request is blocked), or all filters are run.
+
+```go
+
+// ...
+
+&sdkhttp.Options {
+  Filter: filter.NewMultiFilter(filter1, filter2)
+}
+
+// ...
+
+````
 
 ### GRPC client
 
@@ -140,13 +175,13 @@ func main() {
 In terminal 1 run the client:
 
 ```bash
-go run ./instrumentation/hypertrace/google.golang.org/grpc/examples/client/main.go
+go run ./instrumentation/hypertrace/google.golang.org/hypergrpc/examples/client/main.go
 ```
 
 In terminal 2 run the server:
 
 ```bash
-go run ./instrumentation/hypertrace/google.golang.org/grpc/examples/server/main.go
+go run ./instrumentation/hypertrace/google.golang.org/hypergrpc/examples/server/main.go
 ```
 
 ## Other instrumentations

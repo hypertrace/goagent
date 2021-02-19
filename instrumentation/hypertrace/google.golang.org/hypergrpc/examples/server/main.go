@@ -12,6 +12,7 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc"
 	pb "github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc/examples/helloworld"
+	sdkgrpc "github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc"
 	"google.golang.org/grpc"
 )
 
@@ -42,7 +43,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(hypergrpc.UnaryServerInterceptor()),
+		grpc.UnaryInterceptor(hypergrpc.UnaryServerInterceptor(&sdkgrpc.Options{})),
 	)
 
 	pb.RegisterGreeterServer(s, &server{})

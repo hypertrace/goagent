@@ -2,7 +2,7 @@ package filter
 
 import "github.com/hypertrace/goagent/sdk"
 
-// Filter evaluates whether request should be blocked
+// Filter evaluates whether request should be blocked, `true` blocks the request and `false` continues it.
 type Filter interface {
 	EvaluateURL(span sdk.Span, url string) bool
 	EvaluateHeaders(span sdk.Span, headers map[string][]string) bool

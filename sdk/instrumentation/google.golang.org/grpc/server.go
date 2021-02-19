@@ -6,17 +6,27 @@ import (
 
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/stats"
+	"google.golang.org/grpc/status"
 )
+
+// Options for gRPC instrumentation
+type Options struct {
+	Filter filter.Filter
+}
 
 // WrapUnaryServerInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON
 func WrapUnaryServerInterceptor(
 	delegateInterceptor grpc.UnaryServerInterceptor,
 	spanFromContext sdk.SpanFromContext,
+	options *Options,
 ) grpc.UnaryServerInterceptor {
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
@@ -38,7 +48,7 @@ func WrapUnaryServerInterceptor(
 			ctx,
 			req,
 			info,
-			wrapHandler(info.FullMethod, handler, spanFromContext, defaultAttributes, internalconfig.GetConfig().GetDataCapture()),
+			wrapHandler(info.FullMethod, handler, spanFromContext, defaultAttributes, internalconfig.GetConfig().GetDataCapture(), options),
 		)
 	}
 }
@@ -49,6 +59,7 @@ func wrapHandler(
 	spanFromContext sdk.SpanFromContext,
 	defaultAttributes map[string]string,
 	dataCaptureConfig *config.DataCapture,
+	options *Options,
 ) grpc.UnaryHandler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		span := spanFromContext(ctx)
@@ -59,6 +70,12 @@ func wrapHandler(
 			// round tripper.
 			return delegateHandler(ctx, req)
 		}
+
+		var filter filter.Filter = filter.NoOpFilter{}
+		if options != nil && options.Filter != nil {
+			filter = options.Filter
+		}
+
 		for key, value := range defaultAttributes {
 			span.SetAttribute(key, value)
 		}
@@ -71,10 +88,20 @@ func wrapHandler(
 		if dataCaptureConfig.RpcBody.Request.Value &&
 			len(reqBody) > 0 && err == nil {
 			span.SetAttribute("rpc.request.body", string(reqBody))
+
+			if filter.EvaluateBody(span, reqBody) {
+				return nil, status.Error(codes.PermissionDenied, "Permission Denied")
+			}
 		}
 
 		if dataCaptureConfig.RpcMetadata.Request.Value {
 			setAttributesFromRequestIncomingMetadata(ctx, span)
+
+			if md, ok := metadata.FromIncomingContext(ctx); ok {
+				if filter.EvaluateHeaders(span, md) {
+					return nil, status.Error(codes.PermissionDenied, "Permission Denied")
+				}
+			}
 		}
 
 		res, err := delegateHandler(ctx, req)

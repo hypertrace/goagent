@@ -8,10 +8,7 @@ type FooURLFilter struct {
 }
 
 func (FooURLFilter) EvaluateURL(span sdk.Span, url string) bool {
-	if strings.Contains(url, "foo") {
-		return true
-	}
-	return false
+	return strings.Contains(url, "foo")
 }
 
 func (FooURLFilter) EvaluateHeaders(span sdk.Span, headers map[string][]string) bool {

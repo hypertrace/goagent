@@ -33,14 +33,16 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 }
 
 func StartSpan(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
-	startOpts := []trace.SpanOption{
-		trace.WithSpanKind(mapSpanKind(opts.Kind)),
-	}
+	startOpts := []trace.SpanOption{}
 
-	if opts.Timestamp.IsZero() {
-		startOpts = append(startOpts, trace.WithTimestamp(time.Now()))
-	} else {
-		startOpts = append(startOpts, trace.WithTimestamp(opts.Timestamp))
+	if opts != nil {
+		startOpts = append(startOpts, trace.WithSpanKind(mapSpanKind(opts.Kind)))
+
+		if opts.Timestamp.IsZero() {
+			startOpts = append(startOpts, trace.WithTimestamp(time.Now()))
+		} else {
+			startOpts = append(startOpts, trace.WithTimestamp(opts.Timestamp))
+		}
 	}
 
 	ctx, span := otel.Tracer(TracerDomain).Start(ctx, name, startOpts...)

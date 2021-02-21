@@ -45,9 +45,11 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 	return &Span{trace.FromContext(ctx)}
 }
 
-func StartSpan(ctx context.Context, name string, options *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
-	startOpts := []trace.StartOption{
-		trace.WithSpanKind(mapSpanKind(options.Kind)),
+func StartSpan(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
+	startOpts := []trace.StartOption{}
+
+	if opts != nil {
+		startOpts = append(startOpts, trace.WithSpanKind(mapSpanKind(opts.Kind)))
 	}
 
 	ctx, span := trace.StartSpan(ctx, name, startOpts...)

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/semconv"
 )
 
-const batchTimeoutInMillisecs = 200.0
+var batchTimeout = time.Duration(200) * time.Millisecond
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
 	var propagators []propagation.TextMapPropagator
@@ -68,19 +68,14 @@ func Init(cfg *config.AgentConfig) func() {
 
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
-		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeoutInMillisecs*time.Millisecond)),
+		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeout)),
 		sdktrace.WithResource(resources),
 	)
 	otel.SetTracerProvider(tp)
 
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
-	// TODO: use batcher instead of this hack:
 	return func() {
-		// This is a sad temporary solution for the lack of flusher in the batcher interface.
-		// What we do here is that we wait for `batchTimeout` seconds as that is the time configured
-		// in the batcher and hence we make sure spans had time to be flushed.
-		// In next versions the flush functionality is finally added and we will use it.
-		<-time.After(batchTimeoutInMillisecs * 1.5 * time.Millisecond)
+		tp.Shutdown(context.Background())
 	}
 }

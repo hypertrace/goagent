@@ -2,7 +2,10 @@ package opentelemetry
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/hypertrace/goagent/config"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +20,30 @@ func ExampleInit() {
 
 	shutdown := Init(cfg)
 	defer shutdown()
+}
+
+func TestShutdownFlushesAllSpans(t *testing.T) {
+	requestIsReceived := false
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		requestIsReceived = true
+	}))
+	defer srv.Close()
+
+	cfg := config.Load()
+	cfg.ServiceName = config.String("my_example_svc")
+	cfg.Reporting.Endpoint = config.String(srv.URL)
+
+	// By doing this we make sure a batching isn't happening
+	batchTimeout = time.Duration(10) * time.Second
+
+	shutdown := Init(cfg)
+
+	_, _, spanEnder := StartSpan(context.Background(), "my_span", nil)
+	spanEnder()
+
+	assert.False(t, requestIsReceived)
+	shutdown()
+	assert.True(t, requestIsReceived)
 }
 
 type carrier struct {

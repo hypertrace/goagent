@@ -29,10 +29,10 @@ func spanNameFormatter(operation string, r *http.Request) (spanName string) {
 }
 
 // NewMiddleware sets up a handler to start tracing the incoming requests.
-func NewMiddleware() mux.MiddlewareFunc {
+func NewMiddleware(options *sdkhttp.Options) mux.MiddlewareFunc {
 	return func(delegate http.Handler) http.Handler {
 		return otelhttp.NewHandler(
-			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext),
+			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options),
 			"",
 			otelhttp.WithSpanNameFormatter(spanNameFormatter),
 		)

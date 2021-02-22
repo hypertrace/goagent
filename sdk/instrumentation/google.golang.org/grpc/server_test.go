@@ -4,11 +4,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
 	"github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc/internal/helloworld"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func makeMockUnaryServerInterceptor(mockSpans *[]*mock.Span) grpc.UnaryServerInterceptor {
@@ -26,7 +30,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext),
+			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{}),
 		),
 	)
 	defer s.Stop()
@@ -80,6 +84,79 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 		assert.True(t, ok, "incorrect response body:\nwant %s,\nhave %s", expectedBody, actualBody)
 	} else {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestServerInterceptorFilter(t *testing.T) {
+	tCases := map[string]struct {
+		expectedFilterResult bool
+		multiFilter          *filter.MultiFilter
+	}{
+		"no filter": {
+			expectedFilterResult: false,
+			multiFilter:          filter.NewMultiFilter(),
+		},
+		"headers filter": {
+			expectedFilterResult: true,
+			multiFilter: filter.NewMultiFilter(mock.Filter{
+				HeadersEvaluator: func(span sdk.Span, headers map[string][]string) bool {
+					assert.Equal(t, []string{"test_value"}, headers["test_key"])
+					return true
+				},
+			}),
+		},
+		"body filter": {
+			expectedFilterResult: true,
+			multiFilter: filter.NewMultiFilter(mock.Filter{
+				BodyEvaluator: func(span sdk.Span, body []byte) bool {
+					assert.Equal(t, "{\"name\":\"Pupo\"}", string(body))
+					return true
+				},
+			}),
+		},
+	}
+
+	spans := []*mock.Span{}
+	mockUnaryInterceptor := makeMockUnaryServerInterceptor(&spans)
+
+	for name, tCase := range tCases {
+		t.Run(name, func(t *testing.T) {
+			// wrap interceptor with filter
+			s := grpc.NewServer(
+				grpc.UnaryInterceptor(
+					WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{Filter: tCase.multiFilter}),
+				),
+			)
+			defer s.Stop()
+
+			helloworld.RegisterGreeterServer(s, &server{})
+
+			dialer := createDialer(s)
+
+			ctx := context.Background()
+			conn, err := grpc.DialContext(
+				ctx,
+				"bufnet",
+				grpc.WithContextDialer(dialer),
+				grpc.WithInsecure(),
+			)
+			if err != nil {
+				t.Fatalf("failed to dial bufnet: %v", err)
+			}
+			defer conn.Close()
+
+			client := helloworld.NewGreeterClient(conn)
+
+			ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
+			_, err = client.SayHello(ctx, &helloworld.HelloRequest{
+				Name: "Pupo",
+			})
+			if tCase.expectedFilterResult {
+				assert.Equal(t, codes.PermissionDenied, status.Code(err))
+			} else {
+				assert.Nil(t, err)
+			}
+		})
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/config"
+	"github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +32,7 @@ func TestServerRequestWithNilBodyIsntChanged(t *testing.T) {
 		assert.Nil(t, r.Body)
 	})
 
-	wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 	wh.dataCaptureConfig = &config.DataCapture{
 		HttpHeaders: &config.Message{
 			Request:  config.Bool(false),
@@ -62,7 +63,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 	wh.dataCaptureConfig = &config.DataCapture{
 		HttpHeaders: &config.Message{
 			Request:  config.Bool(false),
@@ -108,7 +109,7 @@ func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {
 			rw.WriteHeader(202)
 		})
 
-		wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+		wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 		ih := &mockHandler{baseHandler: wh}
 		wh.dataCaptureConfig = &config.DataCapture{
 			HttpHeaders: &config.Message{
@@ -202,7 +203,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			wh, _ := WrapHandler(h, mock.SpanFromContext).(*handler)
+			wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 			wh.dataCaptureConfig = &config.DataCapture{
 				HttpBody: &config.Message{
 					Request:  config.Bool(tCase.captureHTTPBodyConfig),
@@ -234,6 +235,105 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				assert.Equal(t, tCase.responseBody, span.ReadAttribute("http.response.body").(string))
 			} else {
 				assert.Nil(t, span.ReadAttribute("http.response.body"))
+			}
+		})
+	}
+}
+
+func TestServerRequestFilter(t *testing.T) {
+	tCases := map[string]struct {
+		url          string
+		headerKeys   []string
+		headerValues []string
+		body         string
+		options      *Options
+		blocked      bool
+	}{
+		"no filters": {
+			options: &Options{},
+			blocked: false,
+		},
+		"all filters no match, verify filter arguments": {
+			url:          "http://localhost/foo",
+			headerKeys:   []string{"content-type"},
+			headerValues: []string{"application/json"},
+			body:         "haha",
+			options: &Options{
+				Filter: mock.Filter{
+					URLEvaluator: func(span sdk.Span, url string) bool {
+						assert.Equal(t, "http://localhost/foo", url)
+						return false
+					},
+					HeadersEvaluator: func(span sdk.Span, headers map[string][]string) bool {
+						assert.Equal(t, 1, len(headers))
+						assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
+						return false
+					},
+					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+						assert.Equal(t, []byte("haha"), body)
+						return false
+					},
+				},
+			},
+		},
+		"url filter match": {
+			url: "http://localhost/foo",
+			options: &Options{
+				Filter: mock.Filter{
+					URLEvaluator: func(span sdk.Span, url string) bool {
+						return true
+					},
+				},
+			},
+			blocked: true,
+		},
+		"headers filters match": {
+			url: "http://localhost/foo",
+			options: &Options{
+				Filter: mock.Filter{
+					HeadersEvaluator: func(span sdk.Span, headers map[string][]string) bool {
+						return true
+					},
+				},
+			},
+			blocked: true,
+		},
+		"body filters match": {
+			url:          "http://localhost/foo",
+			headerKeys:   []string{"content-type"},
+			headerValues: []string{"application/json"},
+			body:         "haha",
+			options: &Options{
+				Filter: mock.Filter{
+					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+						return true
+					},
+				},
+			},
+			blocked: true,
+		},
+	}
+
+	for name, tCase := range tCases {
+		t.Run(name, func(t *testing.T) {
+			h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				rw.WriteHeader(http.StatusOK)
+			})
+
+			wh, _ := WrapHandler(h, mock.SpanFromContext, tCase.options).(*handler)
+			ih := &mockHandler{baseHandler: wh}
+			r, _ := http.NewRequest("POST", tCase.url, strings.NewReader(tCase.body))
+			for i := 0; i < len(tCase.headerKeys); i++ {
+				r.Header.Add(tCase.headerKeys[i], tCase.headerValues[i])
+			}
+
+			w := httptest.NewRecorder()
+
+			ih.ServeHTTP(w, r)
+			if !tCase.blocked {
+				assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+			} else {
+				assert.Equal(t, http.StatusForbidden, w.Result().StatusCode)
 			}
 		})
 	}

@@ -9,6 +9,6 @@ import (
 
 // WrapHandler returns a new http.Handler that should be passed to
 // the *ochttp.Handler
-func WrapHandler(delegate http.Handler) http.Handler {
-	return sdkhttp.WrapHandler(delegate, opencensus.SpanFromContext)
+func WrapHandler(delegate http.Handler, options *sdkhttp.Options) http.Handler {
+	return sdkhttp.WrapHandler(delegate, opencensus.SpanFromContext, options)
 }

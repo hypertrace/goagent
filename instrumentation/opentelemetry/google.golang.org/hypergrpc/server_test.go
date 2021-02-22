@@ -10,6 +10,7 @@ import (
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
+	sdkgrpc "github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -82,7 +83,7 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor()),
+			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor(), &sdkgrpc.Options{}),
 		),
 	)
 	defer s.Stop()
@@ -149,7 +150,7 @@ func TestServerRegisterPersonFails(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor()),
+			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor(), &sdkgrpc.Options{}),
 		),
 	)
 	defer s.Stop()
@@ -195,7 +196,7 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor()),
+			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor(), &sdkgrpc.Options{}),
 		),
 	)
 	defer s.Stop()

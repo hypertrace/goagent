@@ -45,7 +45,8 @@ check-examples:
 
 generate-config: # generates config object for Go
 	@echo "Compiling the proto file"
-	@cd config/agent-config; protoc --go_out=plugins=grpc,paths=source_relative:.. config.proto
+	@# use protoc v3.13 and protoc-gen-go v1.25.0
+	@cd config/agent-config; protoc --go_out=paths=source_relative:.. config.proto
 	@echo "Generating the loaders"
 	@cd config; go run cmd/generator/main.go agent-config/config.proto
 	@echo "Done."

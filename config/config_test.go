@@ -54,3 +54,33 @@ func TestSnakeYAMLLoadSuccess(t *testing.T) {
 	assert.Equal(t, "http://35.233.143.122:9411/api/v2/spans", cfg.GetReporting().GetEndpoint().GetValue())
 	assert.Equal(t, true, cfg.GetDataCapture().GetHttpHeaders().GetRequest().GetValue())
 }
+
+func TestConfigLoadFromEnvOverridesWithEnv(t *testing.T) {
+	cfg := &AgentConfig{
+		ServiceName: String("my_service"),
+	}
+	assert.Equal(t, "my_service", cfg.GetServiceName().Value)
+
+	os.Setenv("HT_SERVICE_NAME", "my_other_service")
+
+	cfg.LoadFromEnv()
+	assert.Equal(t, "my_other_service", cfg.GetServiceName().Value)
+}
+
+func TestConfigLoadIsNotOverridenByDefaults(t *testing.T) {
+	cfg := &AgentConfig{
+		DataCapture: &DataCapture{
+			RpcMetadata: &Message{
+				Request: Bool(false),
+			},
+		},
+	}
+
+	assert.Equal(t, false, cfg.DataCapture.RpcMetadata.Request.Value)
+
+	cfg.LoadFromEnv()
+	// we verify here the value isn't overridden by default value (true)
+	assert.Equal(t, false, cfg.DataCapture.RpcMetadata.Request.Value)
+	// we verify default value is used for undefined value (true)
+	assert.Equal(t, true, cfg.DataCapture.RpcMetadata.Response.Value)
+}

@@ -70,17 +70,17 @@ func TestConfigLoadFromEnvOverridesWithEnv(t *testing.T) {
 func TestConfigLoadIsNotOverridenByDefaults(t *testing.T) {
 	cfg := &AgentConfig{
 		DataCapture: &DataCapture{
-			HttpHeaders: &Message{
+			RpcMetadata: &Message{
 				Request: Bool(false),
 			},
 		},
 	}
 
-	assert.Equal(t, false, cfg.DataCapture.HttpHeaders.Request.Value)
+	assert.Equal(t, false, cfg.DataCapture.RpcMetadata.Request.Value)
 
 	cfg.LoadFromEnv()
 	// we verify here the value isn't overridden by default value (true)
-	assert.Equal(t, false, cfg.DataCapture.HttpHeaders.Request.Value)
+	assert.Equal(t, false, cfg.DataCapture.RpcMetadata.Request.Value)
 	// we verify default value is used for undefined value (true)
-	assert.Equal(t, true, cfg.DataCapture.HttpHeaders.Response.Value)
+	assert.Equal(t, true, cfg.DataCapture.RpcMetadata.Response.Value)
 }

@@ -79,7 +79,7 @@ func TestConfigLoadIsNotOverridenByDefaults(t *testing.T) {
 	assert.Equal(t, false, cfg.DataCapture.HttpHeaders.Request.Value)
 
 	cfg.LoadFromEnv()
-	// we verify here the value isn't overriden by default value (true)
+	// we verify here the value isn't overridden by default value (true)
 	assert.Equal(t, false, cfg.DataCapture.HttpHeaders.Request.Value)
 	// we verify default value is used for undefined value (true)
 	assert.Equal(t, true, cfg.DataCapture.HttpHeaders.Response.Value)

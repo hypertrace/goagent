@@ -50,3 +50,4 @@ generate-config: # generates config object for Go
 	@echo "Generating the loaders"
 	@cd config; go run cmd/generator/main.go agent-config/config.proto
 	@echo "Done."
+

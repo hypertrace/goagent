@@ -22,6 +22,18 @@ func ExampleInit() {
 	defer shutdown()
 }
 
+func ExampleInitWithResources() {
+	cfg := config.Load()
+	cfg.ServiceName = config.String("my_example_svc")
+	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
+	cfg.Reporting.Endpoint = config.String("http://api.traceable.ai:9411/api/v2/spans")
+
+	shutdown := InitWithResources(cfg, map[string]interface{}{
+		"example": "InitWithResources",
+	})
+	defer shutdown()
+}
+
 func TestShutdownFlushesAllSpans(t *testing.T) {
 	requestIsReceived := false
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

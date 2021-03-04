@@ -21,6 +21,8 @@ func main() {
 
 Config values can be declared in config file, env variables or code. For further information about config check [this section](config/README.md).
 
+Immutable resource information for the env can be added by calling `hypertrace.InitWithResources(cfg)`
+
 ## Package net/hyperhttp
 
 ### HTTP server

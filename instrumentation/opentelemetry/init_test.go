@@ -178,3 +178,9 @@ func TestPropagationFormats(t *testing.T) {
 	_, ok = c.m["traceparent"]
 	assert.True(t, ok)
 }
+
+func TestTraceReporterType(t *testing.T) {
+	cfg := config.Load()
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
+	Init(cfg)
+}

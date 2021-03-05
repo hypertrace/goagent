@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/label"
+
 	"crypto/tls"
 
 	"github.com/hypertrace/goagent/config"
@@ -57,11 +59,10 @@ func Init(cfg *config.AgentConfig) func() {
 		log.Fatal(err)
 	}
 
-	resources, err := resource.New(context.Background(), resource.WithAttributes(
-		semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue()),
-		semconv.TelemetrySDKNameKey.String("hypertrace"),
-		semconv.TelemetrySDKVersionKey.String(version.Version),
-	))
+	resources, err := resource.New(
+		context.Background(),
+		resource.WithAttributes(makeResources(cfg)...),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,4 +79,17 @@ func Init(cfg *config.AgentConfig) func() {
 	return func() {
 		tp.Shutdown(context.Background())
 	}
+}
+
+func makeResources(cfg *config.AgentConfig) []label.KeyValue {
+	retValues := []label.KeyValue{
+		semconv.ServiceNameKey.String(cfg.GetServiceName().GetValue()),
+		semconv.TelemetrySDKNameKey.String("hypertrace"),
+		semconv.TelemetrySDKVersionKey.String(version.Version),
+	}
+
+	for k, v := range cfg.ResourceAttributes {
+		retValues = append(retValues, label.String(k, v))
+	}
+	return retValues
 }

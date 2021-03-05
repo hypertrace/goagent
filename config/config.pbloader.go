@@ -30,7 +30,7 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 			vals = append(vals, PropagationFormat(PropagationFormat_value[rawVal]))
 		}
 		x.PropagationFormats = vals
-	} else if len(defaultValues.PropagationFormats) != 0 {
+	} else if len(defaultValues.PropagationFormats) > 0 {
 		x.PropagationFormats = defaultValues.PropagationFormats
 	}
 
@@ -43,6 +43,31 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 		if defaultValues != nil && defaultValues.Enabled != nil {
 			x.Enabled = &wrappers.BoolValue{Value: defaultValues.Enabled.Value}
 		}
+	}
+	if defaultValues != nil && len(defaultValues.ResourceAttributes) > 0 {
+		if x.ResourceAttributes == nil {
+			x.ResourceAttributes = make(map[string]string)
+		}
+		for k, v := range defaultValues.ResourceAttributes {
+			// defaults should not override existing resources unless empty
+			if _, ok := x.ResourceAttributes[k]; !ok {
+				x.ResourceAttributes[k] = v
+			}
+		}
+	}
+
+}
+
+// PutResourceAttributes sets values in the ResourceAttributes map.
+func (x *AgentConfig) PutResourceAttributes(m map[string]string) {
+	if len(m) == 0 {
+		return
+	}
+	if x.ResourceAttributes == nil {
+		x.ResourceAttributes = make(map[string]string)
+	}
+	for k, v := range m {
+		x.ResourceAttributes[k] = v
 	}
 }
 
@@ -82,6 +107,10 @@ func (x *Reporting) loadFromEnv(prefix string, defaultValues *Reporting) {
 		x.Opa = new(Opa)
 	}
 	x.Opa.loadFromEnv(prefix+"OPA_", defaultValues.Opa)
+	if rawVal, ok := getStringEnv(prefix + "TRACE_REPORTER_TYPE"); ok {
+		x.TraceReporterType = TraceReporterType(TraceReporterType_value[rawVal])
+	}
+
 }
 
 // loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.

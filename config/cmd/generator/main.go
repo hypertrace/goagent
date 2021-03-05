@@ -1,5 +1,3 @@
-// +build ignore
-
 package main
 
 import (
@@ -8,6 +6,7 @@ import (
 	"go/format"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,6 +64,10 @@ func isEnum(pf pbparser.ProtoFile, name string) bool {
 	return false
 }
 
+func shouldSkipOtherLanguageAgent(typeName string) bool {
+	return strings.HasSuffix(typeName, "Agent") && !strings.HasPrefix(typeName, "Go")
+}
+
 func main() {
 	var outDir = flag.String("o", ".", "OUT_DIR for the generated code.")
 	flag.Parse()
@@ -104,16 +107,28 @@ Parse PROTO_FILE and generate output value objects`)
 	c += "import wrappers \"github.com/golang/protobuf/ptypes/wrappers\"\n\n"
 
 	for _, m := range pf.Messages {
+		if shouldSkipOtherLanguageAgent(m.Name) {
+			continue
+		}
+
+		mapFields := []pbparser.FieldElement{}
+
 		c += "// loadFromEnv loads the data from env vars, defaults and makes sure all values are initialized.\n"
 		c += fmt.Sprintf("func (x *%s) loadFromEnv(prefix string, defaultValues *%s) {\n", m.Name, m.Name)
 		for _, mf := range m.Fields {
+			if shouldSkipOtherLanguageAgent(mf.Type.Name()) {
+				continue
+			}
+
 			if mf.Label == "oneof" {
 				// currently we don't have a way to handle oneof labels
 				// in env vars.
 				continue
 			}
+
 			fieldName := toPublicFieldName(strcase.ToCamel(mf.Name))
 			envPrefix := strings.ToUpper(strcase.ToSnake(mf.Name))
+			fieldType := mf.Type.Name()
 			if mf.Label == "repeated" {
 				c += fmt.Sprintf(
 					"    if rawVals, ok := getArrayStringEnv(prefix + \"%s\"); ok {\n",
@@ -137,7 +152,7 @@ Parse PROTO_FILE and generate output value objects`)
 				c += fmt.Sprintf("    } else if len(defaultValues.%s) > 0 {\n", fieldName)
 				c += fmt.Sprintf("        x.%s = defaultValues.%s\n", fieldName, fieldName)
 				c += fmt.Sprintf("    }\n\n")
-			} else if strings.HasPrefix(mf.Type.Name(), "google.protobuf.") {
+			} else if strings.HasPrefix(fieldType, "google.protobuf.") {
 				_type := mf.Type.Name()[16 : len(mf.Type.Name())-5] // 16 = len("google.protobuf.")
 				c += fmt.Sprintf(
 					"    if val, ok := get%sEnv(prefix + \"%s\"); ok {\n",
@@ -154,22 +169,50 @@ Parse PROTO_FILE and generate output value objects`)
 				c += "        }\n"
 				c += "    }\n"
 			} else if namedType, ok := mf.Type.(pbparser.NamedDataType); ok {
-				c += fmt.Sprintf("    if x.%s == nil { x.%s = new(%s) }\n", fieldName, fieldName, namedType.Name())
-				c += fmt.Sprintf("    x.%s.loadFromEnv(prefix + \"%s_\", defaultValues.%s)\n", fieldName, envPrefix, fieldName)
+				if isEnum(pf, namedType.Name()) {
+					c += fmt.Sprintf(
+						"    if rawVal, ok := getStringEnv(prefix + \"%s\"); ok {\n",
+						envPrefix,
+					)
+					c += fmt.Sprintf("        x.%s = %s(%s_value[rawVal])\n", fieldName, namedType.Name(), namedType.Name())
+					c += fmt.Sprintf("    }\n\n")
+				} else {
+					c += fmt.Sprintf("    if x.%s == nil { x.%s = new(%s) }\n", fieldName, fieldName, namedType.Name())
+					c += fmt.Sprintf("    x.%s.loadFromEnv(prefix + \"%s_\", defaultValues.%s)\n", fieldName, envPrefix, fieldName)
+				}
+			} else if strings.HasPrefix(fieldType, "map") {
+				mapFields = append(mapFields, mf)
+				c += fmt.Sprintf("    if defaultValues != nil && len(defaultValues.%s) > 0 {\n", fieldName)
+
+				kType, vType := getSubtypesFromMap(mf.Type.Name())
+				c += fmt.Sprintf("        if x.%s == nil { x.%s = make(map[%s]%s) } \n", fieldName, fieldName, kType, vType)
+				c += fmt.Sprintf("        for k, v := range defaultValues.%s {\n", fieldName)
+				c += "            // defaults should not override existing resource attributes unless empty\n"
+				c += fmt.Sprintf("            if _, ok := x.%s[k]; !ok {", fieldName)
+				c += fmt.Sprintf("                x.%s[k] = v\n", fieldName)
+				c += "            }\n"
+				c += "        }\n"
+				c += "    }\n\n"
 			} else {
-				_type := mf.Type.Name()
 				c += fmt.Sprintf(
 					"    if val, ok := get%sEnv(prefix + \"%s\"); ok {\n",
-					strings.Title(_type),
+					strings.Title(fieldType),
 					envPrefix,
 				)
 				c += fmt.Sprintf("        x.%s = val\n", fieldName)
-				c += fmt.Sprintf("    } else if x.%s == %s && defaultValues != nil && defaultValues.%s != %s {\n", fieldName, zeroValues[_type], fieldName, zeroValues[_type])
+				c += fmt.Sprintf("    } else if x.%s == %s && defaultValues != nil && defaultValues.%s != %s {\n", fieldName, zeroValues[fieldType], fieldName, zeroValues[fieldType])
 				c += fmt.Sprintf("        x.%s = defaultValues.%s\n", fieldName, fieldName)
 				c += fmt.Sprintf("    }\n\n")
 			}
 		}
 		c += "}\n\n"
+
+		if len(mapFields) > 0 {
+			for _, mf := range mapFields {
+				addMapFieldSetter(&c, m, mf)
+				c += "\n"
+			}
+		}
 	}
 
 	baseFilename := filepath.Base(filename)
@@ -187,6 +230,33 @@ Parse PROTO_FILE and generate output value objects`)
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func getSubtypesFromMap(_type string) (string, string) {
+	_type = strings.Replace(_type, " ", "", -1)
+	t := strings.Split(_type[4:len(_type)-1], ",")
+	if t[0] != "string" || t[1] != "string" {
+		// While it is possible things work smooth, we better file and refine this rule
+		// for field map setters.
+		log.Fatalf("unsupported map subtypes: key %q value %q", t[0], t[1])
+	}
+
+	return t[0], t[1]
+}
+
+func addMapFieldSetter(c *string, m pbparser.MessageElement, mf pbparser.FieldElement) {
+	fieldName := toPublicFieldName(strcase.ToCamel(mf.Name))
+	*c += fmt.Sprintf("// Put%s sets values in the %s map.\n", fieldName, fieldName)
+
+	kType, vType := getSubtypesFromMap(mf.Type.Name())
+
+	*c += fmt.Sprintf("func (x *%s) Put%s(m map[%s]%s) {\n", m.Name, fieldName, kType, vType)
+	*c += fmt.Sprintf("    if len(m) == 0 { return }\n")
+	*c += fmt.Sprintf("    if x.%s == nil { x.%s = make(map[%s]%s) } \n", fieldName, fieldName, kType, vType)
+	*c += "    for k, v := range m {\n"
+	*c += fmt.Sprintf("            x.%s[k] = v\n", fieldName)
+	*c += "    }\n"
+	*c += "}\n"
 }
 
 func writeToFile(filename string, content []byte) error {

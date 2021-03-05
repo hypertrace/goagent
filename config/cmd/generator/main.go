@@ -6,6 +6,7 @@ import (
 	"go/format"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -182,12 +183,7 @@ Parse PROTO_FILE and generate output value objects`)
 			} else if strings.HasPrefix(fieldType, "map") {
 				mapFields = append(mapFields, mf)
 				c += fmt.Sprintf("    if defaultValues != nil && len(defaultValues.%s) > 0 {\n", fieldName)
-				c += fmt.Sprintf("        for k, v := range defaultValues.%s{\n", fieldName)
-				c += "            // we only set files if they don't exist\n"
-				c += fmt.Sprintf("            if _, ok := x.%s[k]; !ok {\n", fieldName)
-				c += fmt.Sprintf("               x.%s[k] = v\n", fieldName)
-				c += fmt.Sprintf("            }\n")
-				c += fmt.Sprintf("        }\n")
+				c += fmt.Sprintf("        x.Put%s(defaultValues.%s)", fieldName, fieldName)
 				c += fmt.Sprintf("    }\n\n")
 			} else {
 				c += fmt.Sprintf(
@@ -228,12 +224,27 @@ Parse PROTO_FILE and generate output value objects`)
 	}
 }
 
-func addMapFieldSetter(c *string, m pbparser.MessageElement, mf pbparser.FieldElement) {
-	_type := mf.Type.Name()
-	fieldName := toPublicFieldName(strcase.ToCamel(mf.Name))
+func getSubtypesFromMap(_type string) (string, string) {
+	_type = strings.Replace(_type, " ", "", -1)
 	t := strings.Split(_type[4:len(_type)-1], ",")
-	*c += fmt.Sprintf("// Set%s sets values in the %s map.\n", fieldName, fieldName)
-	*c += fmt.Sprintf("func (x *%s) Set%s(m map[%s]%s) {\n", m.Name, fieldName, t[0], t[1])
+	if t[0] != "string" || t[1] != "string" {
+		// While it is possible things work smooth, we better file and refine this rule
+		// for field map setters.
+		log.Fatalf("unsupported map subtypes: key %q value %q", t[0], t[1])
+	}
+
+	return t[0], t[1]
+}
+
+func addMapFieldSetter(c *string, m pbparser.MessageElement, mf pbparser.FieldElement) {
+	fieldName := toPublicFieldName(strcase.ToCamel(mf.Name))
+	*c += fmt.Sprintf("// Put%s sets values in the %s map.\n", fieldName, fieldName)
+
+	kType, vType := getSubtypesFromMap(mf.Type.Name())
+
+	*c += fmt.Sprintf("func (x *%s) Put%s(m map[%s]%s) {\n", m.Name, fieldName, kType, vType)
+	*c += fmt.Sprintf("    if len(m) == 0 { return }\n")
+	*c += fmt.Sprintf("    if x.%s == nil { x.%s = make(map[%s]%s) } \n", fieldName, fieldName, kType, vType)
 	*c += "    for k, v := range m {\n"
 	*c += fmt.Sprintf("        x.%s[k] = v\n", fieldName)
 	*c += fmt.Sprintf("    }\n")

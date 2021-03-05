@@ -45,18 +45,19 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 		}
 	}
 	if defaultValues != nil && len(defaultValues.ResourceAttributes) > 0 {
-		for k, v := range defaultValues.ResourceAttributes {
-			// we only set files if they don't exist
-			if _, ok := x.ResourceAttributes[k]; !ok {
-				x.ResourceAttributes[k] = v
-			}
-		}
+		x.PutResourceAttributes(defaultValues.ResourceAttributes)
 	}
 
 }
 
-// SetResourceAttributes allows to set values in the ResourceAttributes.
-func (x *AgentConfig) SetResourceAttributes(m map[string]string) {
+// PutResourceAttributes sets values in the ResourceAttributes map.
+func (x *AgentConfig) PutResourceAttributes(m map[string]string) {
+	if len(m) == 0 {
+		return
+	}
+	if x.ResourceAttributes == nil {
+		x.ResourceAttributes = make(map[string]string)
+	}
 	for k, v := range m {
 		x.ResourceAttributes[k] = v
 	}

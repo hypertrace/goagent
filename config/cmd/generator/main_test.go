@@ -22,8 +22,14 @@ func (dt MapDataType) Category() pbparser.DataTypeCategory {
 }
 
 func TestSetMapFieldSetter(t *testing.T) {
-	expectedCode, _ := format.Source([]byte(`// SetMyFields sets values in the MyFields map.
-	func (x *MyType) SetMyFields(m map[string]string) {
+	expectedCode, _ := format.Source([]byte(`// PutMyFields sets values in the MyFields map.
+	func (x *MyType) PutMyFields(m map[string]string) {
+		if len(m) == 0 {
+			return
+		}
+		if x.MyFields == nil {
+			x.MyFields = make(map[string]string)
+		}
 		for k, v := range m {
 			x.MyFields[k] = v
 		}
@@ -45,5 +51,13 @@ func TestSetMapFieldSetter(t *testing.T) {
 	actualCode, err := format.Source([]byte(c))
 	require.NoError(t, err)
 
-	assert.Equal(t, expectedCode, actualCode)
+	assert.Equal(t, string(expectedCode), string(actualCode))
+}
+
+func TestGetSubtypeFromMap(t *testing.T) {
+	for _, _type := range []string{"map<string,string>", "map< string, string>"} {
+		kType, vType := getSubtypesFromMap(_type)
+		assert.Equal(t, "string", kType)
+		assert.Equal(t, "string", vType)
+	}
 }

@@ -59,7 +59,9 @@ func (x *AgentConfig) PutResourceAttributes(m map[string]string) {
 		x.ResourceAttributes = make(map[string]string)
 	}
 	for k, v := range m {
-		x.ResourceAttributes[k] = v
+		if _, ok := x.ResourceAttributes[k]; !ok {
+			x.ResourceAttributes[k] = v
+		}
 	}
 }
 

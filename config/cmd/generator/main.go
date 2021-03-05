@@ -246,7 +246,9 @@ func addMapFieldSetter(c *string, m pbparser.MessageElement, mf pbparser.FieldEl
 	*c += fmt.Sprintf("    if len(m) == 0 { return }\n")
 	*c += fmt.Sprintf("    if x.%s == nil { x.%s = make(map[%s]%s) } \n", fieldName, fieldName, kType, vType)
 	*c += "    for k, v := range m {\n"
-	*c += fmt.Sprintf("        x.%s[k] = v\n", fieldName)
+	*c += fmt.Sprintf("        if _, ok := x.%s[k]; !ok {", fieldName)
+	*c += fmt.Sprintf("            x.%s[k] = v\n", fieldName)
+	*c += "        }\n"
 	*c += fmt.Sprintf("    }\n")
 	*c += fmt.Sprintf("}\n")
 }

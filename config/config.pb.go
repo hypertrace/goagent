@@ -7,9 +7,9 @@
 package config
 
 import (
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -134,7 +134,7 @@ type AgentConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// service_name identifies the service/process running e.g. "my service"
-	ServiceName *wrappers.StringValue `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	ServiceName *wrapperspb.StringValue `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	// reporting holds the reporting settings for the agent
 	Reporting *Reporting `protobuf:"bytes,2,opt,name=reporting,proto3" json:"reporting,omitempty"`
 	// data_capture describes the data being captured by instrumentation
@@ -142,7 +142,7 @@ type AgentConfig struct {
 	// propagation_formats list the supported propagation formats
 	PropagationFormats []PropagationFormat `protobuf:"varint,4,rep,packed,name=propagation_formats,json=propagationFormats,proto3,enum=org.hypertrace.agent.config.PropagationFormat" json:"propagation_formats,omitempty"`
 	// when `false`, disables the agent
-	Enabled *wrappers.BoolValue `protobuf:"bytes,5,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Enabled *wrapperspb.BoolValue `protobuf:"bytes,5,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	// javaagent has the configs specific to javaagent
 	Javaagent *JavaAgent `protobuf:"bytes,6,opt,name=javaagent,proto3" json:"javaagent,omitempty"`
 	// resource_attributes map define the static list of resources which is configured on the tracer
@@ -181,7 +181,7 @@ func (*AgentConfig) Descriptor() ([]byte, []int) {
 	return file_config_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *AgentConfig) GetServiceName() *wrappers.StringValue {
+func (x *AgentConfig) GetServiceName() *wrapperspb.StringValue {
 	if x != nil {
 		return x.ServiceName
 	}
@@ -209,7 +209,7 @@ func (x *AgentConfig) GetPropagationFormats() []PropagationFormat {
 	return nil
 }
 
-func (x *AgentConfig) GetEnabled() *wrappers.BoolValue {
+func (x *AgentConfig) GetEnabled() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Enabled
 	}
@@ -238,11 +238,11 @@ type Reporting struct {
 	unknownFields protoimpl.UnknownFields
 
 	// endpoint represents the endpoint for reporting the traces e.g. http://api.traceable.ai:9411/api/v2/spans
-	Endpoint *wrappers.StringValue `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	Endpoint *wrapperspb.StringValue `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 	// when `true`, connects to endpoints over TLS.
-	Secure *wrappers.BoolValue `protobuf:"bytes,2,opt,name=secure,proto3" json:"secure,omitempty"`
+	Secure *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=secure,proto3" json:"secure,omitempty"`
 	// user specific token to access Traceable API
-	Token *wrappers.StringValue `protobuf:"bytes,3,opt,name=token,proto3" json:"token,omitempty"`
+	Token *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=token,proto3" json:"token,omitempty"`
 	// opa describes the setting related to the Open Policy Agent
 	Opa *Opa `protobuf:"bytes,4,opt,name=opa,proto3" json:"opa,omitempty"`
 	// reporter type. Defaults to zipkin, in the future it will change to otlp.
@@ -281,21 +281,21 @@ func (*Reporting) Descriptor() ([]byte, []int) {
 	return file_config_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Reporting) GetEndpoint() *wrappers.StringValue {
+func (x *Reporting) GetEndpoint() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Endpoint
 	}
 	return nil
 }
 
-func (x *Reporting) GetSecure() *wrappers.BoolValue {
+func (x *Reporting) GetSecure() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Secure
 	}
 	return nil
 }
 
-func (x *Reporting) GetToken() *wrappers.StringValue {
+func (x *Reporting) GetToken() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Token
 	}
@@ -324,11 +324,11 @@ type Opa struct {
 	unknownFields protoimpl.UnknownFields
 
 	// endpoint represents the endpoint for polling OPA config file e.g. http://opa.traceableai:8181/
-	Endpoint *wrappers.StringValue `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	Endpoint *wrapperspb.StringValue `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 	// poll period in seconds to query OPA service
-	PollPeriodSeconds *wrappers.Int32Value `protobuf:"bytes,2,opt,name=poll_period_seconds,json=pollPeriodSeconds,proto3" json:"poll_period_seconds,omitempty"`
+	PollPeriodSeconds *wrapperspb.Int32Value `protobuf:"bytes,2,opt,name=poll_period_seconds,json=pollPeriodSeconds,proto3" json:"poll_period_seconds,omitempty"`
 	// when `true` Open Policy Agent evaluation is enabled to block request
-	Enabled *wrappers.BoolValue `protobuf:"bytes,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Enabled *wrapperspb.BoolValue `protobuf:"bytes,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
 }
 
 func (x *Opa) Reset() {
@@ -363,21 +363,21 @@ func (*Opa) Descriptor() ([]byte, []int) {
 	return file_config_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Opa) GetEndpoint() *wrappers.StringValue {
+func (x *Opa) GetEndpoint() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Endpoint
 	}
 	return nil
 }
 
-func (x *Opa) GetPollPeriodSeconds() *wrappers.Int32Value {
+func (x *Opa) GetPollPeriodSeconds() *wrapperspb.Int32Value {
 	if x != nil {
 		return x.PollPeriodSeconds
 	}
 	return nil
 }
 
-func (x *Opa) GetEnabled() *wrappers.BoolValue {
+func (x *Opa) GetEnabled() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Enabled
 	}
@@ -391,9 +391,9 @@ type Message struct {
 	unknownFields protoimpl.UnknownFields
 
 	// when `false` it disables the capture for the request in a client/request operation
-	Request *wrappers.BoolValue `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	Request *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
 	// when `false` it disables the capture for the response in a client/request operation
-	Response *wrappers.BoolValue `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"`
+	Response *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"`
 }
 
 func (x *Message) Reset() {
@@ -428,14 +428,14 @@ func (*Message) Descriptor() ([]byte, []int) {
 	return file_config_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Message) GetRequest() *wrappers.BoolValue {
+func (x *Message) GetRequest() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Request
 	}
 	return nil
 }
 
-func (x *Message) GetResponse() *wrappers.BoolValue {
+func (x *Message) GetResponse() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Response
 	}
@@ -457,7 +457,7 @@ type DataCapture struct {
 	// rpc_body enables/disables the capture of the request/response body in RPC
 	RpcBody *Message `protobuf:"bytes,4,opt,name=rpc_body,json=rpcBody,proto3" json:"rpc_body,omitempty"`
 	// maximum size of captured body in bytes. Default should be 131_072 (128 KiB).
-	BodyMaxSizeBytes *wrappers.Int32Value `protobuf:"bytes,5,opt,name=body_max_size_bytes,json=bodyMaxSizeBytes,proto3" json:"body_max_size_bytes,omitempty"`
+	BodyMaxSizeBytes *wrapperspb.Int32Value `protobuf:"bytes,5,opt,name=body_max_size_bytes,json=bodyMaxSizeBytes,proto3" json:"body_max_size_bytes,omitempty"`
 }
 
 func (x *DataCapture) Reset() {
@@ -520,7 +520,7 @@ func (x *DataCapture) GetRpcBody() *Message {
 	return nil
 }
 
-func (x *DataCapture) GetBodyMaxSizeBytes() *wrappers.Int32Value {
+func (x *DataCapture) GetBodyMaxSizeBytes() *wrapperspb.Int32Value {
 	if x != nil {
 		return x.BodyMaxSizeBytes
 	}
@@ -534,7 +534,7 @@ type JavaAgent struct {
 	unknownFields protoimpl.UnknownFields
 
 	// filter_jar_paths is the list of path to filter jars, separated by `,`
-	FilterJarPaths []*wrappers.StringValue `protobuf:"bytes,1,rep,name=filter_jar_paths,json=filterJarPaths,proto3" json:"filter_jar_paths,omitempty"`
+	FilterJarPaths []*wrapperspb.StringValue `protobuf:"bytes,1,rep,name=filter_jar_paths,json=filterJarPaths,proto3" json:"filter_jar_paths,omitempty"`
 }
 
 func (x *JavaAgent) Reset() {
@@ -569,7 +569,7 @@ func (*JavaAgent) Descriptor() ([]byte, []int) {
 	return file_config_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *JavaAgent) GetFilterJarPaths() []*wrappers.StringValue {
+func (x *JavaAgent) GetFilterJarPaths() []*wrapperspb.StringValue {
 	if x != nil {
 		return x.FilterJarPaths
 	}
@@ -720,18 +720,18 @@ func file_config_proto_rawDescGZIP() []byte {
 var file_config_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_config_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_config_proto_goTypes = []interface{}{
-	(PropagationFormat)(0),       // 0: org.hypertrace.agent.config.PropagationFormat
-	(TraceReporterType)(0),       // 1: org.hypertrace.agent.config.TraceReporterType
-	(*AgentConfig)(nil),          // 2: org.hypertrace.agent.config.AgentConfig
-	(*Reporting)(nil),            // 3: org.hypertrace.agent.config.Reporting
-	(*Opa)(nil),                  // 4: org.hypertrace.agent.config.Opa
-	(*Message)(nil),              // 5: org.hypertrace.agent.config.Message
-	(*DataCapture)(nil),          // 6: org.hypertrace.agent.config.DataCapture
-	(*JavaAgent)(nil),            // 7: org.hypertrace.agent.config.JavaAgent
-	nil,                          // 8: org.hypertrace.agent.config.AgentConfig.ResourceAttributesEntry
-	(*wrappers.StringValue)(nil), // 9: google.protobuf.StringValue
-	(*wrappers.BoolValue)(nil),   // 10: google.protobuf.BoolValue
-	(*wrappers.Int32Value)(nil),  // 11: google.protobuf.Int32Value
+	(PropagationFormat)(0),         // 0: org.hypertrace.agent.config.PropagationFormat
+	(TraceReporterType)(0),         // 1: org.hypertrace.agent.config.TraceReporterType
+	(*AgentConfig)(nil),            // 2: org.hypertrace.agent.config.AgentConfig
+	(*Reporting)(nil),              // 3: org.hypertrace.agent.config.Reporting
+	(*Opa)(nil),                    // 4: org.hypertrace.agent.config.Opa
+	(*Message)(nil),                // 5: org.hypertrace.agent.config.Message
+	(*DataCapture)(nil),            // 6: org.hypertrace.agent.config.DataCapture
+	(*JavaAgent)(nil),              // 7: org.hypertrace.agent.config.JavaAgent
+	nil,                            // 8: org.hypertrace.agent.config.AgentConfig.ResourceAttributesEntry
+	(*wrapperspb.StringValue)(nil), // 9: google.protobuf.StringValue
+	(*wrapperspb.BoolValue)(nil),   // 10: google.protobuf.BoolValue
+	(*wrapperspb.Int32Value)(nil),  // 11: google.protobuf.Int32Value
 }
 var file_config_proto_depIdxs = []int32{
 	9,  // 0: org.hypertrace.agent.config.AgentConfig.service_name:type_name -> google.protobuf.StringValue

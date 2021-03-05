@@ -15,8 +15,11 @@ import (
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
@@ -45,16 +48,36 @@ func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropa
 func Init(cfg *config.AgentConfig) func() {
 	sdkconfig.InitConfig(cfg)
 
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
-	}}
-
-	zipkinBatchExporter, err := zipkin.NewRawExporter(
-		cfg.GetReporting().GetEndpoint().GetValue(),
-		cfg.GetServiceName().GetValue(),
-		zipkin.WithClient(client),
+	var (
+		batcherExporter trace.SpanExporter
+		err             error
 	)
+
+	if cfg.Reporting.TraceReporterType == config.TraceReporterType_OTLP {
+		opts := []otlpgrpc.Option{
+			otlpgrpc.WithEndpoint(cfg.GetReporting().GetEndpoint().GetValue()),
+		}
+
+		if !cfg.GetReporting().GetSecure().GetValue() {
+			opts = append(opts, otlpgrpc.WithInsecure())
+		}
+
+		batcherExporter, err = otlp.NewExporter(
+			context.Background(),
+			otlpgrpc.NewDriver(opts...),
+		)
+	} else {
+		client := &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
+		}}
+
+		batcherExporter, err = zipkin.NewRawExporter(
+			cfg.GetReporting().GetEndpoint().GetValue(),
+			cfg.GetServiceName().GetValue(),
+			zipkin.WithClient(client),
+		)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +92,7 @@ func Init(cfg *config.AgentConfig) func() {
 
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
-		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeout)),
+		sdktrace.WithBatcher(batcherExporter, sdktrace.WithBatchTimeout(batchTimeout)),
 		sdktrace.WithResource(resources),
 	)
 	otel.SetTracerProvider(tp)

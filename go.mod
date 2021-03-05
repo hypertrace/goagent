@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/contrib/propagators v0.16.0
 	go.opentelemetry.io/otel v0.16.0
 	go.opentelemetry.io/otel/exporters/trace/zipkin v0.16.0
+	go.opentelemetry.io/otel/exporters/otlp v0.16.0
 	go.opentelemetry.io/otel/sdk v0.16.0
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642 // indirect

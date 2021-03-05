@@ -2,8 +2,9 @@ module github.com/hypertrace/goagent/instrumentation/hypertrace/database/hypersq
 
 go 1.15
 
-replace github.com/hypertrace/goagent/config => ../../../../../config
+replace github.com/hypertrace/goagent => ../../../../../..
 
-replace github.com/hypertrace/goagent/instrumentation/hypertrace => ../../../../../instrumentation/hypertrace
-
-replace github.com/hypertrace/goagent/instrumentation/hypertrace/database/hypersql => ../../../../../instrumentation/hypertrace/database/hypersql
+require (
+	github.com/go-sql-driver/mysql v1.5.0 // indirect
+	github.com/hypertrace/goagent v0.0.0-00010101000000-000000000000 // indirect
+)

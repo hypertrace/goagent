@@ -31,9 +31,7 @@ func TestSetMapFieldSetter(t *testing.T) {
 			x.MyFields = make(map[string]string)
 		}
 		for k, v := range m {
-			if _, ok := x.MyFields[k]; !ok {
-				x.MyFields[k] = v
-			}
+ 			x.MyFields[k] = v
 		}
 	}
 `))

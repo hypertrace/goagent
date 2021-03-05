@@ -183,8 +183,16 @@ Parse PROTO_FILE and generate output value objects`)
 			} else if strings.HasPrefix(fieldType, "map") {
 				mapFields = append(mapFields, mf)
 				c += fmt.Sprintf("    if defaultValues != nil && len(defaultValues.%s) > 0 {\n", fieldName)
-				c += fmt.Sprintf("        x.Put%s(defaultValues.%s)", fieldName, fieldName)
-				c += fmt.Sprintf("    }\n\n")
+
+				kType, vType := getSubtypesFromMap(mf.Type.Name())
+				c += fmt.Sprintf("        if x.%s == nil { x.%s = make(map[%s]%s) } \n", fieldName, fieldName, kType, vType)
+				c += fmt.Sprintf("        for k, v := range defaultValues.%s {\n", fieldName)
+				c += "            // defaults should not override existing resource attributes unless empty\n"
+				c += fmt.Sprintf("            if _, ok := x.%s[k]; !ok {", fieldName)
+				c += fmt.Sprintf("                x.%s[k] = v\n", fieldName)
+				c += "            }\n"
+				c += "        }\n"
+				c += "    }\n\n"
 			} else {
 				c += fmt.Sprintf(
 					"    if val, ok := get%sEnv(prefix + \"%s\"); ok {\n",
@@ -246,11 +254,9 @@ func addMapFieldSetter(c *string, m pbparser.MessageElement, mf pbparser.FieldEl
 	*c += fmt.Sprintf("    if len(m) == 0 { return }\n")
 	*c += fmt.Sprintf("    if x.%s == nil { x.%s = make(map[%s]%s) } \n", fieldName, fieldName, kType, vType)
 	*c += "    for k, v := range m {\n"
-	*c += fmt.Sprintf("        if _, ok := x.%s[k]; !ok {", fieldName)
 	*c += fmt.Sprintf("            x.%s[k] = v\n", fieldName)
-	*c += "        }\n"
-	*c += fmt.Sprintf("    }\n")
-	*c += fmt.Sprintf("}\n")
+	*c += "    }\n"
+	*c += "}\n"
 }
 
 func writeToFile(filename string, content []byte) error {

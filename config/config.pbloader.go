@@ -45,7 +45,15 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 		}
 	}
 	if defaultValues != nil && len(defaultValues.ResourceAttributes) > 0 {
-		x.PutResourceAttributes(defaultValues.ResourceAttributes)
+		if x.ResourceAttributes == nil {
+			x.ResourceAttributes = make(map[string]string)
+		}
+		for k, v := range defaultValues.ResourceAttributes {
+			// defaults should not override existing resources unless empty
+			if _, ok := x.ResourceAttributes[k]; !ok {
+				x.ResourceAttributes[k] = v
+			}
+		}
 	}
 
 }
@@ -59,9 +67,7 @@ func (x *AgentConfig) PutResourceAttributes(m map[string]string) {
 		x.ResourceAttributes = make(map[string]string)
 	}
 	for k, v := range m {
-		if _, ok := x.ResourceAttributes[k]; !ok {
-			x.ResourceAttributes[k] = v
-		}
+		x.ResourceAttributes[k] = v
 	}
 }
 

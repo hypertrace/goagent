@@ -30,8 +30,10 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 			vals = append(vals, PropagationFormat(PropagationFormat_value[rawVal]))
 		}
 		x.PropagationFormats = vals
-	} else if len(defaultValues.PropagationFormats) > 0 {
-		x.PropagationFormats = defaultValues.PropagationFormats
+	} else if len(x.PropagationFormats) == 0 {
+		if len(defaultValues.PropagationFormats) > 0 {
+			x.PropagationFormats = defaultValues.PropagationFormats
+		}
 	}
 
 	if val, ok := getBoolEnv(prefix + "ENABLED"); ok {

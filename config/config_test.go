@@ -57,23 +57,31 @@ func TestSnakeYAMLLoadSuccess(t *testing.T) {
 
 func TestConfigLoadFromEnvOverridesWithEnv(t *testing.T) {
 	cfg := &AgentConfig{
-		ServiceName: String("my_service"),
+		ServiceName:        String("my_service"),
+		PropagationFormats: []PropagationFormat{PropagationFormat_B3, PropagationFormat_TRACECONTEXT},
 	}
 	assert.Equal(t, "my_service", cfg.GetServiceName().Value)
 
 	os.Setenv("HT_SERVICE_NAME", "my_other_service")
+	os.Setenv("HT_PROPAGATION_FORMATS", "B3")
 
 	cfg.LoadFromEnv()
 	assert.Equal(t, "my_other_service", cfg.GetServiceName().Value)
+	assert.Equal(t, 1, len(cfg.GetPropagationFormats()))
+	assert.Equal(t, PropagationFormat_B3, cfg.GetPropagationFormats()[0])
 }
 
 func TestConfigLoadIsNotOverridenByDefaults(t *testing.T) {
+	pf := []PropagationFormat{
+		PropagationFormat_B3, PropagationFormat_TRACECONTEXT}
+
 	cfg := &AgentConfig{
 		DataCapture: &DataCapture{
 			RpcMetadata: &Message{
 				Request: Bool(false),
 			},
 		},
+		PropagationFormats: pf,
 	}
 
 	assert.Equal(t, false, cfg.DataCapture.RpcMetadata.Request.Value)
@@ -83,4 +91,5 @@ func TestConfigLoadIsNotOverridenByDefaults(t *testing.T) {
 	assert.Equal(t, false, cfg.DataCapture.RpcMetadata.Request.Value)
 	// we verify default value is used for undefined value (true)
 	assert.Equal(t, true, cfg.DataCapture.RpcMetadata.Response.Value)
+	assert.ElementsMatch(t, pf, cfg.GetPropagationFormats())
 }

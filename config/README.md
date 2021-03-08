@@ -29,6 +29,19 @@ Supported formats for config files are YAML and JSON.
 
 All default values are defined in the [defaults.go](./defaults.go), everything else will be default to zero values.
 
+## Loading for existing config
+
+Sometimes the user can choose to populate the config object and then load the config values
+from environment variables. In such case one can run:
+
+```go
+cfg := &config.AgentConfig{}
+cfg.ServiceName = config.String("myservice")
+cfg.DataCapture.HTTPHeaders.Request = config.Bool(true)
+
+cfg.LoadFromEnv()
+```
+
 ## Generating config structs
 
 When changing the proto definition, the config structs must be regenerated to use the new configuration fields. This can be done by:

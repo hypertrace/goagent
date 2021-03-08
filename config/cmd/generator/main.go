@@ -149,7 +149,7 @@ Parse PROTO_FILE and generate output value objects`)
 
 					c += fmt.Sprintf("        x.%s = vals\n", fieldName)
 				}
-				c += fmt.Sprintf("    } else if len(defaultValues.%s) > 0 {\n", fieldName)
+				c += fmt.Sprintf("    } else if len(x.%s) == 0 && len(defaultValues.%s) > 0 {\n", fieldName, fieldName)
 				c += fmt.Sprintf("        x.%s = defaultValues.%s\n", fieldName, fieldName)
 				c += fmt.Sprintf("    }\n\n")
 			} else if strings.HasPrefix(fieldType, "google.protobuf.") {

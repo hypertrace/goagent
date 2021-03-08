@@ -30,10 +30,8 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 			vals = append(vals, PropagationFormat(PropagationFormat_value[rawVal]))
 		}
 		x.PropagationFormats = vals
-	} else if len(x.PropagationFormats) == 0 {
-		if len(defaultValues.PropagationFormats) > 0 {
-			x.PropagationFormats = defaultValues.PropagationFormats
-		}
+	} else if len(x.PropagationFormats) == 0 && len(defaultValues.PropagationFormats) > 0 {
+		x.PropagationFormats = defaultValues.PropagationFormats
 	}
 
 	if val, ok := getBoolEnv(prefix + "ENABLED"); ok {
@@ -51,7 +49,7 @@ func (x *AgentConfig) loadFromEnv(prefix string, defaultValues *AgentConfig) {
 			x.ResourceAttributes = make(map[string]string)
 		}
 		for k, v := range defaultValues.ResourceAttributes {
-			// defaults should not override existing resources unless empty
+			// defaults should not override existing resource attributes unless empty
 			if _, ok := x.ResourceAttributes[k]; !ok {
 				x.ResourceAttributes[k] = v
 			}

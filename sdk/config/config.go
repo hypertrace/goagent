@@ -9,3 +9,8 @@ import (
 func InitConfig(c *config.AgentConfig) {
 	internalconfig.InitConfig(c)
 }
+
+// InitConfig allows users to initialize the config
+func GetConfig() *config.AgentConfig {
+	return internalconfig.GetConfig()
+}

@@ -95,6 +95,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	assert.False(t, requestIsReceived)
 	shutdown()
 	assert.True(t, requestIsReceived)
+	assert.Equal(t, 0, len(traceProviders))
 }
 
 func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {

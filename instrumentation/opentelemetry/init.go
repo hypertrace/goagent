@@ -31,8 +31,8 @@ var batchTimeout = time.Duration(200) * time.Millisecond
 
 var (
 	traceProviders map[string]*sdktrace.TracerProvider
-	batcher        *sdktrace.BatchSpanProcessor
-	sampler        sdktrace.Sampler
+	globalBatcher  *sdktrace.BatchSpanProcessor
+	globalSampler  sdktrace.Sampler
 	initialized    = false
 	mu             sync.Mutex
 )
@@ -77,7 +77,7 @@ func Init(cfg *config.AgentConfig) func() {
 		log.Fatal(err)
 	}
 
-	defaultBatcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
+	batcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
 
 	resources, err := resource.New(
 		context.Background(),
@@ -86,10 +86,10 @@ func Init(cfg *config.AgentConfig) func() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defaultSampler := sdktrace.AlwaysSample()
+	sampler := sdktrace.AlwaysSample()
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: defaultSampler}),
-		sdktrace.WithSpanProcessor(defaultBatcher),
+		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sampler}),
+		sdktrace.WithSpanProcessor(batcher),
 		sdktrace.WithResource(resources),
 	)
 	otel.SetTracerProvider(tp)
@@ -97,15 +97,16 @@ func Init(cfg *config.AgentConfig) func() {
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
-	batcher = defaultBatcher
-	sampler = defaultSampler
+	globalBatcher = batcher
+	globalSampler = sampler
 	initialized = true
 	return func() {
 		mu.Lock()
 		defer mu.Unlock()
-		batcher.Shutdown(context.Background())
-		for _, tracerProvider := range traceProviders {
+		globalBatcher.Shutdown(context.Background())
+		for serviceName, tracerProvider := range traceProviders {
 			tracerProvider.Shutdown(context.Background())
+			delete(traceProviders, serviceName)
 		}
 		tp.Shutdown(context.Background())
 		initialized = false
@@ -144,8 +145,8 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 		log.Fatal(err)
 	}
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sampler}),
-		sdktrace.WithSpanProcessor(batcher),
+		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: globalSampler}),
+		sdktrace.WithSpanProcessor(globalBatcher),
 		sdktrace.WithResource(resources),
 	)
 

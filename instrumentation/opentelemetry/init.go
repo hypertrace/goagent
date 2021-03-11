@@ -28,18 +28,12 @@ import (
 
 var batchTimeout = time.Duration(200) * time.Millisecond
 
-type traceProviderWrapper struct {
-	tp       *sdktrace.TracerProvider
-	shutdown func()
-}
-
 var (
-	traceProviders map[string]*traceProviderWrapper
+	traceProviders map[string]*sdktrace.TracerProvider
 	batcher        *sdktrace.BatchSpanProcessor
 	sampler        sdktrace.Sampler
 	initialized    = false
 	mu             sync.Mutex
-	stopOnce       sync.Once
 )
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
@@ -101,21 +95,19 @@ func Init(cfg *config.AgentConfig) func() {
 
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
-	traceProviders = make(map[string]*traceProviderWrapper)
+	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	batcher = defaultBatcher
 	sampler = defaultSampler
 	initialized = true
 	return func() {
 		mu.Lock()
 		defer mu.Unlock()
-		stopOnce.Do(func() {
-			batcher.Shutdown(context.Background())
-			for _, wrapper := range traceProviders {
-				wrapper.shutdown()
-			}
-			tp.Shutdown(context.Background())
-			initialized = false
-		})
+		batcher.Shutdown(context.Background())
+		for _, tracerProvider := range traceProviders {
+			tracerProvider.Shutdown(context.Background())
+		}
+		tp.Shutdown(context.Background())
+		initialized = false
 	}
 }
 
@@ -156,11 +148,6 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 		sdktrace.WithResource(resources),
 	)
 
-	traceProviders[serviceName] = &traceProviderWrapper{
-		tp: tp,
-		shutdown: func() {
-			tp.Shutdown(context.Background())
-		},
-	}
+	traceProviders[serviceName] = tp
 	return startSpan(tp), nil
 }

@@ -3,16 +3,17 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
-	"github.com/hypertrace/goagent/sdk"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/hypertrace/goagent/sdk"
+
 	"go.opentelemetry.io/otel/label"
 
 	"crypto/tls"
+
 	"github.com/hypertrace/goagent/config"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
@@ -28,7 +29,7 @@ import (
 var batchTimeout = time.Duration(200) * time.Millisecond
 
 type traceProviderWrapper struct {
-	tp       trace.TracerProvider
+	tp       *sdktrace.TracerProvider
 	shutdown func()
 }
 

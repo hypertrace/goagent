@@ -32,9 +32,9 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 	return &Span{trace.SpanFromContext(ctx)}
 }
 
-//type StartServiceSpan func(context.Context, string, *sdk.SpanOptions) (context.Context, sdk.Span, func())
+type getTracerProvider func() trace.TracerProvider
 
-func startSpan(tp trace.TracerProvider) sdk.StartSpan {
+func startSpan(provider getTracerProvider) sdk.StartSpan {
 	return func(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
 		startOpts := []trace.SpanOption{}
 
@@ -48,12 +48,12 @@ func startSpan(tp trace.TracerProvider) sdk.StartSpan {
 			}
 		}
 
-		ctx, span := tp.Tracer(TracerDomain).Start(ctx, name, startOpts...)
+		ctx, span := provider().Tracer(TracerDomain).Start(ctx, name, startOpts...)
 		return ctx, &Span{span}, func() { span.End() }
 	}
 }
 
-var StartSpan = startSpan(otel.GetTracerProvider())
+var StartSpan = startSpan(otel.GetTracerProvider)
 
 func mapSpanKind(kind sdk.SpanKind) trace.SpanKind {
 	switch kind {

@@ -3,6 +3,7 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"sync"
@@ -149,5 +150,7 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 	)
 
 	traceProviders[serviceName] = tp
-	return startSpan(tp), nil
+	return startSpan(func() trace.TracerProvider {
+		return tp
+	}), nil
 }

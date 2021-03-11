@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/propagation"
-	sdkexport "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
@@ -35,10 +34,11 @@ type traceProviderWrapper struct {
 
 var (
 	traceProviders map[string]*traceProviderWrapper
-	batcher        sdkexport.SpanExporter
+	batcher        *sdktrace.BatchSpanProcessor
 	sampler        sdktrace.Sampler
 	initialized    = false
 	mu             sync.Mutex
+	stopOnce       sync.Once
 )
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
@@ -72,7 +72,7 @@ func Init(cfg *config.AgentConfig) func() {
 			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
 	}}
 
-	zipkinBatchExporter, err := zipkin.NewRawExporter(
+	zipkinExporter, err := zipkin.NewRawExporter(
 		cfg.GetReporting().GetEndpoint().GetValue(),
 		cfg.GetServiceName().GetValue(),
 		zipkin.WithClient(client),
@@ -80,6 +80,8 @@ func Init(cfg *config.AgentConfig) func() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	defaultBatcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
 
 	resources, err := resource.New(
 		context.Background(),
@@ -91,26 +93,28 @@ func Init(cfg *config.AgentConfig) func() {
 	defaultSampler := sdktrace.AlwaysSample()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: defaultSampler}),
-		sdktrace.WithBatcher(zipkinBatchExporter, sdktrace.WithBatchTimeout(batchTimeout)),
+		sdktrace.WithSpanProcessor(defaultBatcher),
 		sdktrace.WithResource(resources),
 	)
 	otel.SetTracerProvider(tp)
 
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
-	batcher = zipkinBatchExporter
 	traceProviders = make(map[string]*traceProviderWrapper)
+	batcher = defaultBatcher
 	sampler = defaultSampler
 	initialized = true
 	return func() {
 		mu.Lock()
 		defer mu.Unlock()
-		// TODO: There is an issue here. The traceprovider which is shutdown first, will only have its span flushed.
-		for _, wrapper := range traceProviders {
-			wrapper.shutdown()
-		}
-		tp.Shutdown(context.Background())
-		initialized = false
+		stopOnce.Do(func() {
+			batcher.Shutdown(context.Background())
+			for _, wrapper := range traceProviders {
+				wrapper.shutdown()
+			}
+			tp.Shutdown(context.Background())
+			initialized = false
+		})
 	}
 }
 
@@ -127,7 +131,7 @@ func createResources(serviceName string, resources map[string]string) []label.Ke
 	return retValues
 }
 
-func InitService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, error) {
+func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if !initialized {
@@ -147,7 +151,7 @@ func InitService(serviceName string, resourceAttributes map[string]string) (sdk.
 	}
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sampler}),
-		sdktrace.WithBatcher(batcher, sdktrace.WithBatchTimeout(batchTimeout)),
+		sdktrace.WithSpanProcessor(batcher),
 		sdktrace.WithResource(resources),
 	)
 

@@ -31,7 +31,7 @@ func ExampleInitService() {
 
 	shutdown := Init(cfg)
 
-	_, err := InitService("custom_service", map[string]string{"test1": "val1"})
+	_, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	if err != nil {
 		log.Fatalf("Error while initalizing service: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	assert.True(t, initialized)
 	assert.Equal(t, 0, len(traceProviders))
 
-	startServiceSpan, err := InitService("custom_service", map[string]string{"test1": "val1"})
+	startServiceSpan, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
@@ -95,6 +95,41 @@ func TestMultipleTraceProviders(t *testing.T) {
 	assert.False(t, requestIsReceived)
 	shutdown()
 	assert.True(t, requestIsReceived)
+}
+
+func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {
+	requestIsReceived := false
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		requestIsReceived = true
+	}))
+	defer srv.Close()
+
+	cfg := config.Load()
+	cfg.ServiceName = config.String("my_example_svc")
+	cfg.Reporting.Endpoint = config.String(srv.URL)
+
+	// By doing this we make sure a batching isn't happening
+	batchTimeout = time.Duration(10) * time.Second
+
+	shutdown := Init(cfg)
+	assert.True(t, initialized)
+	assert.Equal(t, 0, len(traceProviders))
+
+	startServiceSpan, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	assert.NoError(t, err)
+	assert.NotNil(t, startServiceSpan)
+	assert.True(t, initialized)
+	assert.Equal(t, 1, len(traceProviders))
+
+	_, _, spanEnder := startServiceSpan(context.Background(), "my_span", nil)
+	spanEnder()
+
+	assert.False(t, requestIsReceived)
+	shutdown()
+	assert.True(t, requestIsReceived)
+
+	_, _, spanEnder = startServiceSpan(context.Background(), "my_span1", nil)
+	spanEnder()
 }
 
 type carrier struct {

@@ -8,4 +8,4 @@ import (
 // on a termination signal.
 var Init = opentelemetry.Init
 
-var InitService = opentelemetry.InitService
+var RegisterService = opentelemetry.RegisterService

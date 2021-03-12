@@ -3,6 +3,7 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel/exporters/trace/jaeger"
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/hypertrace/goagent/sdk"
 
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 
 	"crypto/tls"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -68,16 +68,23 @@ func Init(cfg *config.AgentConfig) func() {
 			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
 	}}
 
-	zipkinExporter, err := zipkin.NewRawExporter(
-		cfg.GetReporting().GetEndpoint().GetValue(),
-		cfg.GetServiceName().GetValue(),
-		zipkin.WithClient(client),
-	)
+	//zipkinExporter, err := zipkin.NewRawExporter(
+	//	cfg.GetReporting().GetEndpoint().GetValue(),
+	//	cfg.GetServiceName().GetValue(),
+	//	zipkin.WithClient(client),
+	//)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	jaegerExporter, err :=  jaeger.NewRawExporter(
+		jaeger.WithCollectorEndpoint(cfg.GetReporting().GetEndpoint().GetValue(), jaeger.WithHTTPClient(client)),
+		)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	batcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
+	batcher := sdktrace.NewBatchSpanProcessor(jaegerExporter)
 
 	resources, err := resource.New(
 		context.Background(),
@@ -113,15 +120,15 @@ func Init(cfg *config.AgentConfig) func() {
 	}
 }
 
-func createResources(serviceName string, resources map[string]string) []label.KeyValue {
-	retValues := []label.KeyValue{
+func createResources(serviceName string, resources map[string]string) []attribute.KeyValue {
+	retValues := []attribute.KeyValue{
 		semconv.ServiceNameKey.String(serviceName),
 		semconv.TelemetrySDKNameKey.String("hypertrace"),
 		semconv.TelemetrySDKVersionKey.String(version.Version),
 	}
 
 	for k, v := range resources {
-		retValues = append(retValues, label.String(k, v))
+		retValues = append(retValues, attribute.String(k, v))
 	}
 	return retValues
 }

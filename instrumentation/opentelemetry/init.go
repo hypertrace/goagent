@@ -31,10 +31,12 @@ import (
 var batchTimeout = time.Duration(200) * time.Millisecond
 
 var (
-	traceProviders map[string]*sdktrace.TracerProvider
-	globalSampler  sdktrace.Sampler
-	initialized    = false
-	mu             sync.Mutex
+	traceProviders    map[string]*sdktrace.TracerProvider
+	globalSampler     sdktrace.Sampler
+	initialized       = false
+	mu                sync.Mutex
+	reportingEndpoint string
+	secure            bool
 )
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
@@ -62,14 +64,16 @@ func Init(cfg *config.AgentConfig) func() {
 		return func() {}
 	}
 	sdkconfig.InitConfig(cfg)
+	reportingEndpoint = cfg.GetReporting().GetEndpoint().GetValue()
+	secure = cfg.GetReporting().GetSecure().GetValue()
 
 	client := &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
+			InsecureSkipVerify: !secure},
 	}}
 
 	zipkinExporter, err := zipkin.NewRawExporter(
-		cfg.GetReporting().GetEndpoint().GetValue(),
+		reportingEndpoint,
 		cfg.GetServiceName().GetValue(),
 		zipkin.WithClient(client),
 	)
@@ -137,11 +141,11 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 
 	client := &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: !sdkconfig.GetReportingSecureConfig()},
+			InsecureSkipVerify: !secure},
 	}}
 
 	zipkinExporter, err := zipkin.NewRawExporter(
-		sdkconfig.GetReportingEndpointConfig(),
+		reportingEndpoint,
 		serviceName,
 		zipkin.WithClient(client),
 	)

@@ -2,6 +2,7 @@ package opentelemetry
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -66,14 +67,15 @@ func TestShutdownFlushesAllSpans(t *testing.T) {
 }
 
 func TestMultipleTraceProviders(t *testing.T) {
-	requestIsReceived := false
+	count := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		requestIsReceived = true
+		count++
 	}))
 	defer srv.Close()
 
 	cfg := config.Load()
 	cfg.ServiceName = config.String("my_example_svc")
+	fmt.Println(srv.URL)
 	cfg.Reporting.Endpoint = config.String(srv.URL)
 
 	// By doing this we make sure a batching isn't happening
@@ -83,19 +85,23 @@ func TestMultipleTraceProviders(t *testing.T) {
 	assert.True(t, initialized)
 	assert.Equal(t, 0, len(traceProviders))
 
+	_, _, spanEnder := StartSpan(context.Background(), "example_span", nil)
+	spanEnder()
+
 	startServiceSpan, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
 	assert.Equal(t, 1, len(traceProviders))
 
-	_, _, spanEnder := startServiceSpan(context.Background(), "my_span", nil)
-	spanEnder()
+	_, _, serviceSpanEnder := startServiceSpan(context.Background(), "my_span", nil)
+	serviceSpanEnder()
 
-	assert.False(t, requestIsReceived)
+	assert.Equal(t, 0, count)
 	shutdown()
-	assert.True(t, requestIsReceived)
+	assert.Equal(t, 2, count)
 	assert.Equal(t, 0, len(traceProviders))
+	fmt.Println("Count: ", count)
 }
 
 func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {

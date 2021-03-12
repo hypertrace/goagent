@@ -75,7 +75,6 @@ func TestMultipleTraceProviders(t *testing.T) {
 
 	cfg := config.Load()
 	cfg.ServiceName = config.String("my_example_svc")
-	fmt.Println(srv.URL)
 	cfg.Reporting.Endpoint = config.String(srv.URL)
 
 	// By doing this we make sure a batching isn't happening

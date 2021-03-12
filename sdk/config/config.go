@@ -9,11 +9,3 @@ import (
 func InitConfig(c *config.AgentConfig) {
 	internalconfig.InitConfig(c)
 }
-
-func GetReportingEndpointConfig() string {
-	return internalconfig.GetConfig().GetReporting().GetEndpoint().GetValue()
-}
-
-func GetReportingSecureConfig() bool {
-	return internalconfig.GetConfig().GetReporting().GetSecure().GetValue()
-}

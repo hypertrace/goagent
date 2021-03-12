@@ -128,6 +128,7 @@ func createResources(serviceName string, resources map[string]string) []label.Ke
 	return retValues
 }
 
+// RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans
 func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, error) {
 	mu.Lock()
 	defer mu.Unlock()

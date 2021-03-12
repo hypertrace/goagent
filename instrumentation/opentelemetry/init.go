@@ -3,11 +3,12 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/hypertrace/goagent/sdk"
 
@@ -31,7 +32,6 @@ var batchTimeout = time.Duration(200) * time.Millisecond
 
 var (
 	traceProviders map[string]*sdktrace.TracerProvider
-	globalBatcher  *sdktrace.BatchSpanProcessor
 	globalSampler  sdktrace.Sampler
 	initialized    = false
 	mu             sync.Mutex
@@ -97,13 +97,11 @@ func Init(cfg *config.AgentConfig) func() {
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
-	globalBatcher = batcher
 	globalSampler = sampler
 	initialized = true
 	return func() {
 		mu.Lock()
 		defer mu.Unlock()
-		globalBatcher.Shutdown(context.Background())
 		for serviceName, tracerProvider := range traceProviders {
 			tracerProvider.Shutdown(context.Background())
 			delete(traceProviders, serviceName)
@@ -137,6 +135,22 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 		return nil, fmt.Errorf("service %v already initialized", serviceName)
 	}
 
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: !sdkconfig.GetReportingSecureConfig()},
+	}}
+
+	zipkinExporter, err := zipkin.NewRawExporter(
+		sdkconfig.GetReportingEndpointConfig(),
+		serviceName,
+		zipkin.WithClient(client),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	batcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
+
 	resources, err := resource.New(
 		context.Background(),
 		resource.WithAttributes(createResources(serviceName, resourceAttributes)...),
@@ -146,7 +160,7 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 	}
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: globalSampler}),
-		sdktrace.WithSpanProcessor(globalBatcher),
+		sdktrace.WithSpanProcessor(batcher),
 		sdktrace.WithResource(resources),
 	)
 

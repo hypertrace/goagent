@@ -79,25 +79,28 @@ func Init(cfg *config.AgentConfig) func() {
 
 	jaegerExporter, err :=  jaeger.NewRawExporter(
 		jaeger.WithCollectorEndpoint(cfg.GetReporting().GetEndpoint().GetValue(), jaeger.WithHTTPClient(client)),
-		)
+		jaeger.WithProcess(jaeger.Process{
+			ServiceName: cfg.GetServiceName().GetValue(),
+			Tags: createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes),
+		}))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	batcher := sdktrace.NewBatchSpanProcessor(jaegerExporter)
 
-	resources, err := resource.New(
-		context.Background(),
-		resource.WithAttributes(createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)...),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//resources, err := resource.New(
+	//	context.Background(),
+	//	resource.WithAttributes(createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)...),
+	//)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 	sampler := sdktrace.AlwaysSample()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sampler}),
 		sdktrace.WithSpanProcessor(batcher),
-		sdktrace.WithResource(resources),
+		//sdktrace.WithResource(resources),
 	)
 	otel.SetTracerProvider(tp)
 

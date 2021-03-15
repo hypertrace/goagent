@@ -21,7 +21,7 @@ import (
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/trace/zipkin"
+	"go.opentelemetry.io/otel/exporters/trace/jaeger"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -72,20 +72,30 @@ func Init(cfg *config.AgentConfig) func() {
 			InsecureSkipVerify: !secure},
 	}}
 
-	zipkinExporter, err := zipkin.NewRawExporter(
-		reportingEndpoint,
-		cfg.GetServiceName().GetValue(),
-		zipkin.WithClient(client),
-	)
+	//exporter, err := zipkin.NewRawExporter(
+	//	reportingEndpoint,
+	//	cfg.GetServiceName().GetValue(),
+	//	zipkin.WithClient(client),
+	//)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	exporter, err :=  jaeger.NewRawExporter(
+		jaeger.WithCollectorEndpoint(cfg.GetReporting().GetEndpoint().GetValue(), jaeger.WithHTTPClient(client)),
+		jaeger.WithProcess(jaeger.Process{
+			ServiceName: cfg.GetServiceName().GetValue(),
+			Tags: createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes),
+		}))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	batcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
+	batcher := sdktrace.NewBatchSpanProcessor(exporter)
 
 	resources, err := resource.New(
 		context.Background(),
-		resource.WithAttributes(createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)...),
+		resource.WithAttributes(createResources(cfg.GetServiceName().GetValue(), nil)...),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -145,20 +155,31 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 			InsecureSkipVerify: !secure},
 	}}
 
-	zipkinExporter, err := zipkin.NewRawExporter(
-		reportingEndpoint,
-		serviceName,
-		zipkin.WithClient(client),
-	)
+	//exporter, err := zipkin.NewRawExporter(
+	//	reportingEndpoint,
+	//	serviceName,
+	//	zipkin.WithClient(client),
+	//)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	exporter, err :=  jaeger.NewRawExporter(
+		jaeger.WithCollectorEndpoint(reportingEndpoint, jaeger.WithHTTPClient(client)),
+		jaeger.WithProcess(jaeger.Process{
+			ServiceName: serviceName,
+			Tags: createResources(serviceName, resourceAttributes),
+		}))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	batcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
+
+	batcher := sdktrace.NewBatchSpanProcessor(exporter)
 
 	resources, err := resource.New(
 		context.Background(),
-		resource.WithAttributes(createResources(serviceName, resourceAttributes)...),
+		resource.WithAttributes(createResources(serviceName, nil)...),
 	)
 	if err != nil {
 		log.Fatal(err)

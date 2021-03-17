@@ -151,10 +151,10 @@ func (c carrier) Set(key string, value string) {
 
 func (c carrier) Keys() []string {
 	keys := make([]string, len(c.m))
-	count := 0
+	idx := 0
 	for k, _ := range c.m {
-		keys[count] = k
-		count++
+		keys[idx] = k
+		idx++
 	}
 	return keys
 }

@@ -12,7 +12,7 @@ import (
 
 	"github.com/hypertrace/goagent/sdk"
 
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 
 	"crypto/tls"
 
@@ -115,15 +115,15 @@ func Init(cfg *config.AgentConfig) func() {
 	}
 }
 
-func createResources(serviceName string, resources map[string]string) []label.KeyValue {
-	retValues := []label.KeyValue{
+func createResources(serviceName string, resources map[string]string) []attribute.KeyValue {
+	retValues := []attribute.KeyValue{
 		semconv.ServiceNameKey.String(serviceName),
 		semconv.TelemetrySDKNameKey.String("hypertrace"),
 		semconv.TelemetrySDKVersionKey.String(version.Version),
 	}
 
 	for k, v := range resources {
-		retValues = append(retValues, label.String(k, v))
+		retValues = append(retValues, attribute.String(k, v))
 	}
 	return retValues
 }

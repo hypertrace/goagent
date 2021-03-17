@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"go.opentelemetry.io/otel/propagation"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -183,7 +184,7 @@ func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// We make sure the context is being injected.
-		ctx := b3.B3{}.Extract(context.Background(), req.Header)
+		ctx := b3.B3{}.Extract(context.Background(), propagation.HeaderCarrier(req.Header))
 		_, extractedSpan := tracer.Start(ctx, "test2")
 		defer extractedSpan.End()
 		assert.Equal(t, span.SpanContext().TraceID, extractedSpan.SpanContext().TraceID)

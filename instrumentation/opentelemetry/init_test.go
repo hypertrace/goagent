@@ -3,6 +3,7 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel/propagation"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -147,6 +148,18 @@ func (c carrier) Get(string) string { return "" }
 func (c carrier) Set(key string, value string) {
 	c.m[key] = value
 }
+
+func (c carrier) Keys() []string {
+	keys := make([]string, len(c.m))
+	count := 0
+	for k, _ := range c.m {
+		keys[count] = k
+		count++
+	}
+	return keys
+}
+
+var _ propagation.TextMapCarrier = carrier{}
 
 func TestPropagationFormats(t *testing.T) {
 	cfg := config.Load()

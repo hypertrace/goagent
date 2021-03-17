@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func TestAttributeLookupSuccess(t *testing.T) {
-	kvs := []label.KeyValue{
-		{Key: "abc", Value: label.StringValue("123")},
+	kvs := []attribute.KeyValue{
+		{Key: "abc", Value: attribute.StringValue("123")},
 	}
 
 	attrs := LookupAttributes(kvs)
@@ -18,8 +18,8 @@ func TestAttributeLookupSuccess(t *testing.T) {
 }
 
 func TestHasAttributeSuccess(t *testing.T) {
-	kvs := []label.KeyValue{
-		{Key: "abc", Value: label.StringValue("123")},
+	kvs := []attribute.KeyValue{
+		{Key: "abc", Value: attribute.StringValue("123")},
 	}
 
 	attrs := LookupAttributes(kvs)

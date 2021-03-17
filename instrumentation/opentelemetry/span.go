@@ -6,7 +6,7 @@ import (
 
 	"github.com/hypertrace/goagent/sdk"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -17,7 +17,7 @@ type Span struct {
 }
 
 func (s *Span) SetAttribute(key string, value interface{}) {
-	s.Span.SetAttributes(label.Any(key, value))
+	s.Span.SetAttributes(attribute.Any(key, value))
 }
 
 func (s *Span) SetError(err error) {

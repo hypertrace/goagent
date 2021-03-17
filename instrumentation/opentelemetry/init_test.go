@@ -24,7 +24,7 @@ func ExampleInit() {
 	defer shutdown()
 }
 
-func ExampleInitService() {
+func ExampleRegisterService() {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
@@ -34,7 +34,7 @@ func ExampleInitService() {
 
 	_, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	if err != nil {
-		log.Fatalf("Error while initalizing service: %v", err)
+		log.Fatalf("Error while initializing service: %v", err)
 	}
 
 	defer shutdown()

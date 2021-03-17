@@ -12,6 +12,8 @@ type TextMapCarrier interface {
 	Get(key string) string
 	// Set stores the key-value pair.
 	Set(key string, value string)
+	// Keys lists the keys stored in this carrier.
+	Keys() []string
 }
 
 // InjectTextMap set cross-cutting concerns from the Context into the TextMap carrier.

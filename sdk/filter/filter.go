@@ -6,6 +6,9 @@ import "github.com/hypertrace/goagent/sdk"
 type Filter interface {
 	EvaluateURL(span sdk.Span, url string) bool
 	EvaluateHeaders(span sdk.Span, headers map[string][]string) bool
+	// EvaluateURLAndHeaders can be used to evaluate both URL and Headers together
+	// instead of separately
+	EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool
 	EvaluateBody(span sdk.Span, body []byte) bool
 }
 
@@ -13,18 +16,25 @@ type Filter interface {
 type NoOpFilter struct {
 }
 
+var _ Filter = (*NoOpFilter)(nil)
+
 // EvaluateURL that always returns false
-func (f NoOpFilter) EvaluateURL(span sdk.Span, url string) bool {
+func (f *NoOpFilter) EvaluateURL(span sdk.Span, url string) bool {
 	return false
 }
 
 // EvaluateHeaders that always returns false
-func (f NoOpFilter) EvaluateHeaders(span sdk.Span, headers map[string][]string) bool {
+func (f *NoOpFilter) EvaluateHeaders(span sdk.Span, headers map[string][]string) bool {
+	return false
+}
+
+// EvaluateURLAndHeaders that always returns false
+func (f *NoOpFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
 	return false
 }
 
 // EvaluateBody that always returns false
-func (f NoOpFilter) EvaluateBody(span sdk.Span, body []byte) bool {
+func (f *NoOpFilter) EvaluateBody(span sdk.Span, body []byte) bool {
 	return false
 }
 
@@ -32,6 +42,8 @@ func (f NoOpFilter) EvaluateBody(span sdk.Span, body []byte) bool {
 type MultiFilter struct {
 	filters []Filter
 }
+
+var _ Filter = (*MultiFilter)(nil)
 
 // NewMultiFilter creates a new MultiFilter
 func NewMultiFilter(filter ...Filter) *MultiFilter {
@@ -52,6 +64,16 @@ func (m *MultiFilter) EvaluateURL(span sdk.Span, url string) bool {
 func (m *MultiFilter) EvaluateHeaders(span sdk.Span, headers map[string][]string) bool {
 	for _, f := range (*m).filters {
 		if f.EvaluateHeaders(span, headers) {
+			return true
+		}
+	}
+	return false
+}
+
+// EvaluateURLAndHeaders runs URL and headers evaluation for each filter until one returns true
+func (m *MultiFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
+	for _, f := range (*m).filters {
+		if f.EvaluateURLAndHeaders(span, url, headers) {
 			return true
 		}
 	}

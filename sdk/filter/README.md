@@ -15,6 +15,10 @@ func (FooURLFilter) EvaluateHeaders(span sdk.Span, headers map[string][]string) 
 	return false
 }
 
+func (FooURLFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
+	return false
+}
+
 func (FooURLFilter) EvaluateBody(span sdk.Span, body []byte) bool {
 	return false
 }

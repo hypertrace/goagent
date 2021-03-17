@@ -89,6 +89,8 @@ func TestExecSuccess(t *testing.T) {
 
 	attrs := internal.LookupAttributes(span.Attributes)
 	assert.False(t, attrs.Has("error"))
+
+	db.Close()
 }
 
 func TestTxWithCommitSuccess(t *testing.T) {

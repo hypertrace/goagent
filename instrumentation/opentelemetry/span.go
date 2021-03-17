@@ -32,22 +32,28 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 	return &Span{trace.SpanFromContext(ctx)}
 }
 
-func StartSpan(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
-	startOpts := []trace.SpanOption{}
+type getTracerProvider func() trace.TracerProvider
 
-	if opts != nil {
-		startOpts = append(startOpts, trace.WithSpanKind(mapSpanKind(opts.Kind)))
+func startSpan(provider getTracerProvider) sdk.StartSpan {
+	return func(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
+		startOpts := []trace.SpanOption{}
 
-		if opts.Timestamp.IsZero() {
-			startOpts = append(startOpts, trace.WithTimestamp(time.Now()))
-		} else {
-			startOpts = append(startOpts, trace.WithTimestamp(opts.Timestamp))
+		if opts != nil {
+			startOpts = append(startOpts, trace.WithSpanKind(mapSpanKind(opts.Kind)))
+
+			if opts.Timestamp.IsZero() {
+				startOpts = append(startOpts, trace.WithTimestamp(time.Now()))
+			} else {
+				startOpts = append(startOpts, trace.WithTimestamp(opts.Timestamp))
+			}
 		}
-	}
 
-	ctx, span := otel.Tracer(TracerDomain).Start(ctx, name, startOpts...)
-	return ctx, &Span{span}, func() { span.End() }
+		ctx, span := provider().Tracer(TracerDomain).Start(ctx, name, startOpts...)
+		return ctx, &Span{span}, func() { span.End() }
+	}
 }
+
+var StartSpan = startSpan(otel.GetTracerProvider)
 
 func mapSpanKind(kind sdk.SpanKind) trace.SpanKind {
 	switch kind {

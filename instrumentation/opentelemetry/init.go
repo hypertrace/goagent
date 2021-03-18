@@ -21,8 +21,11 @@ import (
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
 	"go.opentelemetry.io/otel/exporters/trace/zipkin"
 	"go.opentelemetry.io/otel/propagation"
+	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
@@ -31,12 +34,11 @@ import (
 var batchTimeout = time.Duration(200) * time.Millisecond
 
 var (
-	traceProviders    map[string]*sdktrace.TracerProvider
-	globalSampler     sdktrace.Sampler
-	initialized       = false
-	mu                sync.Mutex
-	reportingEndpoint string
-	secure            bool
+	traceProviders  map[string]*sdktrace.TracerProvider
+	globalSampler   sdktrace.Sampler
+	initialized     = false
+	mu              sync.Mutex
+	exporterFactory func(serviceName string) (export.SpanExporter, error)
 )
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
@@ -55,6 +57,38 @@ func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropa
 	return propagation.NewCompositeTextMapPropagator(propagators...)
 }
 
+func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (export.SpanExporter, error) {
+	if cfg.Reporting.TraceReporterType == config.TraceReporterType_OTLP {
+		opts := []otlpgrpc.Option{
+			otlpgrpc.WithEndpoint(cfg.GetReporting().GetEndpoint().GetValue()),
+		}
+
+		if !cfg.GetReporting().GetSecure().GetValue() {
+			opts = append(opts, otlpgrpc.WithInsecure())
+		}
+
+		return func(_ string) (export.SpanExporter, error) {
+			return otlp.NewExporter(
+				context.Background(),
+				otlpgrpc.NewDriver(opts...),
+			)
+		}
+	}
+
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
+	}}
+
+	return func(serviceName string) (export.SpanExporter, error) {
+		return zipkin.NewRawExporter(
+			cfg.GetReporting().GetEndpoint().GetValue(),
+			serviceName,
+			zipkin.WithClient(client),
+		)
+	}
+}
+
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately
 // on a termination signal.
 func Init(cfg *config.AgentConfig) func() {
@@ -64,24 +98,15 @@ func Init(cfg *config.AgentConfig) func() {
 		return func() {}
 	}
 	sdkconfig.InitConfig(cfg)
-	reportingEndpoint = cfg.GetReporting().GetEndpoint().GetValue()
-	secure = cfg.GetReporting().GetSecure().GetValue()
 
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: !secure},
-	}}
+	exporterFactory = makeExporterFactory(cfg)
 
-	zipkinExporter, err := zipkin.NewRawExporter(
-		reportingEndpoint,
-		cfg.GetServiceName().GetValue(),
-		zipkin.WithClient(client),
-	)
+	exporter, err := exporterFactory(cfg.ServiceName.Value)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	batcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
+	batcher := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
 
 	resources, err := resource.New(
 		context.Background(),
@@ -90,6 +115,7 @@ func Init(cfg *config.AgentConfig) func() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	sampler := sdktrace.AlwaysSample()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sampler}),
@@ -103,6 +129,7 @@ func Init(cfg *config.AgentConfig) func() {
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler
 	initialized = true
+
 	return func() {
 		mu.Lock()
 		defer mu.Unlock()
@@ -140,21 +167,12 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 		return nil, fmt.Errorf("service %v already initialized", serviceName)
 	}
 
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: !secure},
-	}}
-
-	zipkinExporter, err := zipkin.NewRawExporter(
-		reportingEndpoint,
-		serviceName,
-		zipkin.WithClient(client),
-	)
+	exporter, err := exporterFactory(serviceName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	batcher := sdktrace.NewBatchSpanProcessor(zipkinExporter)
+	batcher := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
 
 	resources, err := resource.New(
 		context.Background(),

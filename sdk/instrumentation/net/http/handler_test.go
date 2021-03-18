@@ -260,11 +260,8 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					URLEvaluator: func(span sdk.Span, url string) bool {
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
 						assert.Equal(t, "http://localhost/foo", url)
-						return false
-					},
-					HeadersEvaluator: func(span sdk.Span, headers map[string][]string) bool {
 						assert.Equal(t, 1, len(headers))
 						assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
 						return false
@@ -280,7 +277,7 @@ func TestServerRequestFilter(t *testing.T) {
 			url: "http://localhost/foo",
 			options: &Options{
 				Filter: mock.Filter{
-					URLEvaluator: func(span sdk.Span, url string) bool {
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
 						return true
 					},
 				},
@@ -291,7 +288,7 @@ func TestServerRequestFilter(t *testing.T) {
 			url: "http://localhost/foo",
 			options: &Options{
 				Filter: mock.Filter{
-					HeadersEvaluator: func(span sdk.Span, headers map[string][]string) bool {
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
 						return true
 					},
 				},

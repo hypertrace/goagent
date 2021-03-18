@@ -71,7 +71,7 @@ func wrapHandler(
 			return delegateHandler(ctx, req)
 		}
 
-		var filter filter.Filter = &filter.NoOpFilter{}
+		var filter filter.Filter = &filter.NoopFilter{}
 		if options != nil && options.Filter != nil {
 			filter = options.Filter
 		}
@@ -98,7 +98,8 @@ func wrapHandler(
 			setAttributesFromRequestIncomingMetadata(ctx, span)
 
 			if md, ok := metadata.FromIncomingContext(ctx); ok {
-				if filter.EvaluateHeaders(span, md) {
+				// TODO: decide what should be passed as URL in GRPC
+				if filter.EvaluateURLAndHeaders(span, "", md) {
 					return nil, status.Error(codes.PermissionDenied, "Permission Denied")
 				}
 			}

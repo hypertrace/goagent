@@ -52,6 +52,7 @@ func main() {
 ```
 
 #### Options
+
 ##### Filter
 [Filtering](sdk/filter/README.md) can be added as part of Options. Multiple filters can be added and they will be run in sequence until a filter returns true (request is blocked), or all filters are run.
 

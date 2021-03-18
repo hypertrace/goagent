@@ -33,7 +33,7 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, opt
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
-	var f filter.Filter = filter.NoOpFilter{}
+	var f filter.Filter = &filter.NoOpFilter{}
 	if options != nil && options.Filter != nil {
 		f = options.Filter
 	}

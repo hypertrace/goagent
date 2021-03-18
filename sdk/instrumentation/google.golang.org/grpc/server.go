@@ -71,7 +71,7 @@ func wrapHandler(
 			return delegateHandler(ctx, req)
 		}
 
-		var filter filter.Filter = filter.NoOpFilter{}
+		var filter filter.Filter = &filter.NoOpFilter{}
 		if options != nil && options.Filter != nil {
 			filter = options.Filter
 		}

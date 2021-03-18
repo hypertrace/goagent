@@ -3,12 +3,13 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/otel/propagation"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/hypertrace/goagent/config"
 	"github.com/stretchr/testify/assert"

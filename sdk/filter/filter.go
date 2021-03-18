@@ -4,37 +4,36 @@ import "github.com/hypertrace/goagent/sdk"
 
 // Filter evaluates whether request should be blocked, `true` blocks the request and `false` continues it.
 type Filter interface {
-	EvaluateURL(span sdk.Span, url string) bool
-	EvaluateHeaders(span sdk.Span, headers map[string][]string) bool
-	// EvaluateURLAndHeaders can be used to evaluate both URL and Headers together
-	// instead of separately
+	// EvaluateURLAndHeaders can be used to evaluate both URL and Headers
 	EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool
+
+	// EvaluateBody can be used to evaluate the body content
 	EvaluateBody(span sdk.Span, body []byte) bool
 }
 
-// NoOpFilter is a filter that always evaluates to false
-type NoOpFilter struct {
+// NoopFilter is a filter that always evaluates to false
+type NoopFilter struct {
 }
 
-var _ Filter = (*NoOpFilter)(nil)
+var _ Filter = (*NoopFilter)(nil)
 
 // EvaluateURL that always returns false
-func (f *NoOpFilter) EvaluateURL(span sdk.Span, url string) bool {
+func (f *NoopFilter) EvaluateURL(span sdk.Span, url string) bool {
 	return false
 }
 
 // EvaluateHeaders that always returns false
-func (f *NoOpFilter) EvaluateHeaders(span sdk.Span, headers map[string][]string) bool {
+func (f *NoopFilter) EvaluateHeaders(span sdk.Span, headers map[string][]string) bool {
 	return false
 }
 
 // EvaluateURLAndHeaders that always returns false
-func (f *NoOpFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
+func (f *NoopFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
 	return false
 }
 
 // EvaluateBody that always returns false
-func (f *NoOpFilter) EvaluateBody(span sdk.Span, body []byte) bool {
+func (f *NoopFilter) EvaluateBody(span sdk.Span, body []byte) bool {
 	return false
 }
 
@@ -48,26 +47,6 @@ var _ Filter = (*MultiFilter)(nil)
 // NewMultiFilter creates a new MultiFilter
 func NewMultiFilter(filter ...Filter) *MultiFilter {
 	return &MultiFilter{filters: filter}
-}
-
-// EvaluateURL runs url evaluation for each filter until one returns true
-func (m *MultiFilter) EvaluateURL(span sdk.Span, url string) bool {
-	for _, f := range (*m).filters {
-		if f.EvaluateURL(span, url) {
-			return true
-		}
-	}
-	return false
-}
-
-// EvaluateHeaders runs headers evaluation for each filter until one returns true
-func (m *MultiFilter) EvaluateHeaders(span sdk.Span, headers map[string][]string) bool {
-	for _, f := range (*m).filters {
-		if f.EvaluateHeaders(span, headers) {
-			return true
-		}
-	}
-	return false
 }
 
 // EvaluateURLAndHeaders runs URL and headers evaluation for each filter until one returns true

@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"go.opentelemetry.io/otel/propagation"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	"github.com/stretchr/testify/assert"

@@ -99,7 +99,7 @@ func TestServerInterceptorFilter(t *testing.T) {
 		"headers filter": {
 			expectedFilterResult: true,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				HeadersEvaluator: func(span sdk.Span, headers map[string][]string) bool {
+				URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
 					assert.Equal(t, []string{"test_value"}, headers["test_key"])
 					return true
 				},

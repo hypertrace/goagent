@@ -33,7 +33,7 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, opt
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}
-	var f filter.Filter = &filter.NoOpFilter{}
+	var f filter.Filter = &filter.NoopFilter{}
 	if options != nil && options.Filter != nil {
 		f = options.Filter
 	}
@@ -59,12 +59,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.String()
 	span.SetAttribute("http.url", url)
 
-	// run filters on URL
-	if h.filter.EvaluateURL(span, url) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
 	headers := r.Header
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {
@@ -72,7 +66,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// run filters on headers
-	if h.filter.EvaluateHeaders(span, headers) {
+	if h.filter.EvaluateURLAndHeaders(span, url, headers) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

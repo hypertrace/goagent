@@ -58,7 +58,21 @@ func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropa
 }
 
 func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (export.SpanExporter, error) {
-	if cfg.Reporting.TraceReporterType == config.TraceReporterType_OTLP {
+	switch cfg.Reporting.TraceReporterType {
+	case config.TraceReporterType_ZIPKIN:
+		client := &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
+		}}
+
+		return func(serviceName string) (export.SpanExporter, error) {
+			return zipkin.NewRawExporter(
+				cfg.GetReporting().GetEndpoint().GetValue(),
+				serviceName,
+				zipkin.WithClient(client),
+			)
+		}
+	default:
 		opts := []otlpgrpc.Option{
 			otlpgrpc.WithEndpoint(cfg.GetReporting().GetEndpoint().GetValue()),
 		}
@@ -73,19 +87,6 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (expo
 				otlpgrpc.NewDriver(opts...),
 			)
 		}
-	}
-
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
-	}}
-
-	return func(serviceName string) (export.SpanExporter, error) {
-		return zipkin.NewRawExporter(
-			cfg.GetReporting().GetEndpoint().GetValue(),
-			serviceName,
-			zipkin.WithClient(client),
-		)
 	}
 }
 

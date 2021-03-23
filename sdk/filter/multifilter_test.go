@@ -8,14 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNoOpFilter(t *testing.T) {
-	f := NoopFilter{}
-	assert.False(t, f.EvaluateURL(nil, ""))
-	assert.False(t, f.EvaluateHeaders(nil, nil))
-	assert.False(t, f.EvaluateURLAndHeaders(nil, "", nil))
-	assert.False(t, f.EvaluateBody(nil, nil))
-}
-
 func TestMultiFilterEmpty(t *testing.T) {
 	f := NewMultiFilter()
 	assert.False(t, f.EvaluateURLAndHeaders(nil, "", nil))

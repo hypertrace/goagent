@@ -3,7 +3,7 @@
 ![test](https://github.com/hypertrace/goagent/workflows/test/badge.svg)
 [![codecov](https://codecov.io/gh/hypertrace/goagent/branch/master/graph/badge.svg)](https://codecov.io/gh/hypertrace/goagent)
 
-`goagent` provides a set of complementary instrumentation features for collecting relevant data to be processed by [Hypertrace](https://hypertrace.org).
+`goagent` provides a set of complementary instrumentation features for collecting relevant data to be processed by [Hypertrace](https://hypertrace.org). 
 
 ## Getting started
 
@@ -209,3 +209,7 @@ make test-unit
 ### Releasing
 
 Run `./release.sh <version_number>` (`<version_number>` should follow semver, e.g. `1.2.3`). The script will change the hardcoded version, commit it, push a tag and prepare the hardcoded version for the next release.
+
+### Further Reference
+
+Read more about `goagent` in the 'Yet Another [Go Agent](https://blog.hypertrace.org/blog/yet-another-go-agent/)' blog post. 

@@ -29,19 +29,10 @@ deps-ci:
 	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 check-examples:
-	go build -o ./examples/http_client instrumentation/hypertrace/net/hyperhttp/examples/client/main.go && rm ./examples/http_client
-	go build -o ./examples/http_server instrumentation/hypertrace/net/hyperhttp/examples/server/main.go && rm ./examples/http_server
-	go build -o ./examples/grpc_client instrumentation/hypertrace/google.golang.org/hypergrpc/examples/client/main.go && rm ./examples/grpc_client
-	go build -o ./examples/grpc_server instrumentation/hypertrace/google.golang.org/hypergrpc/examples/server/main.go && rm ./examples/grpc_server
-	cd instrumentation/hypertrace/database/hypersql/examples/query; go build -o example main.go && rm ./example
-	go build -o ./examples/http_client instrumentation/opentelemetry/net/hyperhttp/examples/client/main.go && rm ./examples/http_client
-	go build -o ./examples/http_server instrumentation/opentelemetry/net/hyperhttp/examples/server/main.go && rm ./examples/http_server
-	go build -o ./examples/grpc_client instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/client/main.go && rm ./examples/grpc_client
-	go build -o ./examples/grpc_server instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/server/main.go && rm ./examples/grpc_server
-	go build -o ./examples/http_client instrumentation/opencensus/net/hyperhttp/examples/client/main.go && rm ./examples/http_client
-	go build -o ./examples/http_server instrumentation/opencensus/net/hyperhttp/examples/server/main.go && rm ./examples/http_server
-	go build -o ./examples/grpc_client instrumentation/opencensus/google.golang.org/hypergrpc/examples/client/main.go && rm ./examples/grpc_client
-	go build -o ./examples/grpc_server instrumentation/opencensus/google.golang.org/hypergrpc/examples/server/main.go && rm ./examples/grpc_server
+	find ./instrumentation -type d -print | \
+	grep examples/ | \
+	xargs -I {} bash -c 'if [ -f "{}/main.go" ] ; then cd {}; go build -o ./build_example main.go ; fi'
+	find . -name "build_example" -delete
 
 generate-config: # generates config object for Go
 	@echo "Compiling the proto file"

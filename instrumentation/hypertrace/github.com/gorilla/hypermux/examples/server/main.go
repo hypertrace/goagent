@@ -1,5 +1,3 @@
-// +build ignore
-
 package main
 
 import (
@@ -9,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/hypertrace/goagent/config"
@@ -24,7 +24,7 @@ func main() {
 	defer flusher()
 
 	r := mux.NewRouter()
-	r.Use(hypermux.NewMiddleware()) // here we use the mux middleware
+	r.Use(hypermux.NewMiddleware(&sdkhttp.Options{})) // here we use the mux middleware
 	r.HandleFunc("/foo", http.HandlerFunc(fooHandler))
 	log.Fatal(http.ListenAndServe(":8081", r))
 }

@@ -4,7 +4,6 @@ go 1.16
 
 replace github.com/hypertrace/goagent => ../../../../../../../
 
-//replace github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/gorilla/hypermux => ../../../../../../opentelemetry/github.com/gorilla/hypermux
 
 require (
 	github.com/gorilla/mux v1.8.0

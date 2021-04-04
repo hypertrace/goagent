@@ -3,7 +3,6 @@ package hyperpgx
 import (
 	"context"
 	"database/sql/driver"
-	"fmt"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/sdk"
@@ -137,13 +136,7 @@ func Connect(ctx context.Context, connString string) (PGXConn, error) {
 	connAttrs, err := parseDSN(connString)
 	if err == nil {
 		connAttrs["db.system"] = "postgres"
-	} else {
-		fmt.Print(err)
 	}
 
 	return &wrappedConn{conn, connAttrs}, nil
-}
-
-func WrapConnection(conn *pgx.Conn, connAttrs map[string]string) PGXConn {
-	return &wrappedConn{delegate: conn, connAttrs: connAttrs}
 }

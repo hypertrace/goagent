@@ -23,7 +23,14 @@ type PGXConn interface {
 	// scans and f will be called. If any row fails to scan or f returns an error the query will be aborted and the error
 	// will be returned.
 	QueryFunc(ctx context.Context, sql string, args []interface{}, scans []interface{}, f func(pgx.QueryFuncRow) error) (pgconn.CommandTag, error)
+
+	// SendBatch sends all queued queries to the server at once. All queries are run in an implicit transaction unless
+	// explicit transaction control statements are executed. The returned BatchResults must be closed before the connection
+	// is used again.
 	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+
+	// Close closes a connection. It is safe to call Close on a already closed
+	// connection.
 	Close(ctx context.Context) error
 }
 

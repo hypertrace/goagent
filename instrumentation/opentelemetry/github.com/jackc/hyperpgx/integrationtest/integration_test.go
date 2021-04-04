@@ -1,6 +1,6 @@
 //+build integration
 
-package hyperpgx
+package integrationtest
 
 import (
 	"context"
@@ -9,14 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/jackc/hyperpgx"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
-func TestQuery(t *testing.T) {
-	conn, err := Connect(context.Background(), "postgres://root:123456@localhost:5432")
+func TestQuerySuccess(t *testing.T) {
+	conn, err := hyperpgx.Connect(context.Background(), "postgres://root:123456@localhost:5432")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
@@ -26,6 +27,7 @@ func TestQuery(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	select {
+	// We timeout after 5 secs of trying ping the DB.
 	case <-time.After(time.Duration(5) * time.Second):
 		t.Fatal("Unable to ping the DB")
 	default:

@@ -13,7 +13,7 @@ test-docker:
 
 .PHONY: test-integration
 test-integration:
-	$(MAKE) -C ./instrumentation/opentelemetry/github.com/jackc/hyperpgx/Makefile test-integration
+	$(MAKE) -C ./instrumentation/opentelemetry/github.com/jackc/hyperpgx/integrationtest test
 
 .PHONY: bench
 bench:

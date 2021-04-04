@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := test
 
 .PHONY: test
-test: test-unit test-docker
+test: test-unit test-integration test-docker
 
 .PHONY: test-unit
 test-unit:
@@ -10,6 +10,10 @@ test-unit:
 .PHONY: docker-test
 test-docker:
 	@./tests/docker/test.sh
+
+.PHONY: test-integration
+test-integration:
+	$(MAKE) -C ./instrumentation/opentelemetry/github.com/jackc/hyperpgx/Makefile test-integration
 
 .PHONY: bench
 bench:

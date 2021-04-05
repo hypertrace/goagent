@@ -3,19 +3,17 @@ package hyperpgx
 import (
 	"fmt"
 	"net/url"
-	"strings"
 )
 
 // parseDSN parses the connection string provided for postgres driver.
 func parseDSN(dsn string) (map[string]string, error) {
-	if !strings.HasPrefix(dsn, "postgres://") {
-		return nil, fmt.Errorf("invalid postgres connection string as it isn't prefixed with \"postgres://\": %q", dsn)
+	parsedURL, err := url.Parse(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse connection %q string: %v", dsn, err)
 	}
 
-	// we prepend "http://" to be able to parse the connection string as a URL as it has the same structure.
-	parsedURL, err := url.Parse("http://" + dsn[11:])  // 11 = len("postgres://")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse connection string: %v", err)
+	if parsedURL.Scheme != "postgres" {
+		return nil, fmt.Errorf("invalid postgres connection string %q: it should use \"postgres\" as protocol", dsn)
 	}
 
 	connAttrs := map[string]string{}

@@ -9,9 +9,10 @@ import (
 // parseDSN parses the connection string provided for postgres driver.
 func parseDSN(dsn string) (map[string]string, error) {
 	if !strings.HasPrefix(dsn, "postgres://") {
-		return nil, fmt.Errorf("invalid postgresql connection string: %q", dsn)
+		return nil, fmt.Errorf("invalid postgres connection string as it isn't prefixed with \"postgres://\": %q", dsn)
 	}
 
+	// we prepend "http://" to be able to parse the connection string as a URL as it has the same structure.
 	parsedURL, err := url.Parse("http://" + dsn[11:])  // 11 = len("postgres://")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse connection string: %v", err)

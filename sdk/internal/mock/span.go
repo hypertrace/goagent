@@ -2,7 +2,6 @@ package mock
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/hypertrace/goagent/sdk"
@@ -65,7 +64,6 @@ func SpanFromContext(ctx context.Context) sdk.Span {
 }
 
 func StartSpan(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
-	fmt.Println(opts)
 	s := &Span{Name: name, Options: *opts}
 	return ContextWithSpan(ctx, s), s, func() {}
 }

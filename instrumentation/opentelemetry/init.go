@@ -148,6 +148,7 @@ func createResources(serviceName string, resources map[string]string) []attribut
 		semconv.ServiceNameKey.String(serviceName),
 		semconv.TelemetrySDKNameKey.String("hypertrace"),
 		semconv.TelemetrySDKVersionKey.String(version.Version),
+		semconv.TelemetrySDKLanguageGo,
 	}
 
 	for k, v := range resources {

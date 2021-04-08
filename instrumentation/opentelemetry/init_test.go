@@ -178,7 +178,6 @@ func TestPropagationFormats(t *testing.T) {
 	propagator := otel.GetTextMapPropagator()
 	c := carrier{make(map[string]string)}
 	propagator.Inject(ctx, c)
-	fmt.Println(c.m)
 	_, ok := c.m["x-b3-traceid"]
 	assert.True(t, ok)
 	_, ok = c.m["traceparent"]

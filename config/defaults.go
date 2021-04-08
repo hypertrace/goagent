@@ -26,8 +26,9 @@ var defaultConfig = AgentConfig{
 		},
 	},
 	Reporting: &Reporting{
-		Endpoint: String("http://localhost:9411/api/v2/spans"),
-		Secure:   Bool(false),
+		Endpoint:          String("localhost:4317"),
+		Secure:            Bool(false),
+		TraceReporterType: TraceReporterType_OTLP,
 	},
 }
 

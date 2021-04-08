@@ -175,6 +175,8 @@ Parse PROTO_FILE and generate output value objects`)
 						envPrefix,
 					)
 					c += fmt.Sprintf("        x.%s = %s(%s_value[rawVal])\n", fieldName, namedType.Name(), namedType.Name())
+					c += fmt.Sprintf("    } else if x.%s == %s(0) && defaultValues != nil && defaultValues.%s != %s(0) {\n", fieldName, fieldName, fieldName, fieldName)
+					c += fmt.Sprintf("        x.%s = defaultValues.%s\n", fieldName, fieldName)
 					c += fmt.Sprintf("    }\n\n")
 				} else {
 					c += fmt.Sprintf("    if x.%s == nil { x.%s = new(%s) }\n", fieldName, fieldName, namedType.Name())

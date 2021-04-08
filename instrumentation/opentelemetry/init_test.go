@@ -31,6 +31,7 @@ func ExampleRegisterService() {
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
 	cfg.Reporting.Endpoint = config.String("http://api.traceable.ai:9411/api/v2/spans")
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
 
 	shutdown := Init(cfg)
 
@@ -52,6 +53,7 @@ func TestShutdownFlushesAllSpans(t *testing.T) {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.Reporting.Endpoint = config.String(srv.URL)
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
 
 	// By doing this we make sure a batching isn't happening
 	batchTimeout = time.Duration(10) * time.Second
@@ -78,6 +80,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.Reporting.Endpoint = config.String(srv.URL)
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
 
 	// By doing this we make sure a batching isn't happening
 	batchTimeout = time.Duration(10) * time.Second
@@ -115,6 +118,7 @@ func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.Reporting.Endpoint = config.String(srv.URL)
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
 
 	// By doing this we make sure a batching isn't happening
 	batchTimeout = time.Duration(10) * time.Second

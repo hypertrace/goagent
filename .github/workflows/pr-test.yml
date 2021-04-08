@@ -34,7 +34,12 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.29
+          version: v1.39
+          # work around for "file exists" errors.
+          # See https://github.com/golangci/golangci-lint-action/issues/135#issuecomment-791775296
+          skip-go-installation: true
+          skip-pkg-cache: true
+          args: --skip-dirs google --skip-dirs proto
 
       - name: Run tests
         run: CGO_ENABLED=1 go test -coverprofile=coverage.txt -v ./...

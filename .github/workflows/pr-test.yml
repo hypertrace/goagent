@@ -39,7 +39,6 @@ jobs:
           # See https://github.com/golangci/golangci-lint-action/issues/135#issuecomment-791775296
           skip-go-installation: true
           skip-pkg-cache: true
-          args: --skip-dirs google --skip-dirs proto
 
       - name: Run tests
         run: CGO_ENABLED=1 go test -coverprofile=coverage.txt -v ./...

@@ -46,6 +46,7 @@ func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropa
 	for _, format := range formats {
 		switch format {
 		case config.PropagationFormat_B3:
+			// We set B3MultipleHeader in here but ideally we should use both.
 			propagators = append(propagators, b3.B3{InjectEncoding: b3.B3MultipleHeader})
 		case config.PropagationFormat_TRACECONTEXT:
 			propagators = append(propagators, propagation.TraceContext{})

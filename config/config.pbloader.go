@@ -109,6 +109,8 @@ func (x *Reporting) loadFromEnv(prefix string, defaultValues *Reporting) {
 	x.Opa.loadFromEnv(prefix+"OPA_", defaultValues.Opa)
 	if rawVal, ok := getStringEnv(prefix + "TRACE_REPORTER_TYPE"); ok {
 		x.TraceReporterType = TraceReporterType(TraceReporterType_value[rawVal])
+	} else if x.TraceReporterType == TraceReporterType(0) && defaultValues != nil && defaultValues.TraceReporterType != TraceReporterType(0) {
+		x.TraceReporterType = defaultValues.TraceReporterType
 	}
 
 }

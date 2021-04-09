@@ -8,7 +8,7 @@ require (
 	github.com/jackc/pgtype v1.7.0
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/otel/trace v0.18.0
+	go.opentelemetry.io/otel/trace v0.19.0
 )
 
 replace github.com/hypertrace/goagent => ../../../../../

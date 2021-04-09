@@ -46,7 +46,8 @@ func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropa
 	for _, format := range formats {
 		switch format {
 		case config.PropagationFormat_B3:
-			propagators = append(propagators, b3.B3{})
+			// We set B3MultipleHeader in here but ideally we should use both.
+			propagators = append(propagators, b3.B3{InjectEncoding: b3.B3MultipleHeader | b3.B3SingleHeader})
 		case config.PropagationFormat_TRACECONTEXT:
 			propagators = append(propagators, propagation.TraceContext{})
 		}
@@ -68,7 +69,6 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (expo
 		return func(serviceName string) (export.SpanExporter, error) {
 			return zipkin.NewRawExporter(
 				cfg.GetReporting().GetEndpoint().GetValue(),
-				serviceName,
 				zipkin.WithClient(client),
 			)
 		}
@@ -119,7 +119,7 @@ func Init(cfg *config.AgentConfig) func() {
 
 	sampler := sdktrace.AlwaysSample()
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sampler}),
+		sdktrace.WithSampler(sampler),
 		sdktrace.WithSpanProcessor(batcher),
 		sdktrace.WithResource(resources),
 	)
@@ -184,7 +184,7 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 		log.Fatal(err)
 	}
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: globalSampler}),
+		sdktrace.WithSampler(globalSampler),
 		sdktrace.WithSpanProcessor(batcher),
 		sdktrace.WithResource(resources),
 	)

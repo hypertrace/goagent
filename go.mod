@@ -15,12 +15,12 @@ require (
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.18.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.18.0
-	go.opentelemetry.io/contrib/propagators v0.18.0
-	go.opentelemetry.io/otel v0.18.0
-	go.opentelemetry.io/otel/exporters/otlp v0.18.0
-	go.opentelemetry.io/otel/exporters/trace/zipkin v0.18.0
-	go.opentelemetry.io/otel/sdk v0.18.0
-	go.opentelemetry.io/otel/trace v0.18.0
+	go.opentelemetry.io/contrib/propagators v0.19.0
+	go.opentelemetry.io/otel v0.19.0
+	go.opentelemetry.io/otel/exporters/otlp v0.19.0
+	go.opentelemetry.io/otel/exporters/trace/zipkin v0.19.0
+	go.opentelemetry.io/otel/sdk v0.19.0
+	go.opentelemetry.io/otel/trace v0.19.0
 	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4 // indirect
 	golang.org/x/sys v0.0.0-20210317091845-390168757d9c // indirect
 	golang.org/x/text v0.3.5 // indirect

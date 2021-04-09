@@ -135,6 +135,6 @@ func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
 
 	spans := flusher()
 	assert.Equal(t, 1, len(spans))
-	assert.Equal(t, "1f46165474d11ee5836777d85df2cdab", spans[0].SpanContext.TraceID.String())
+	assert.Equal(t, "1f46165474d11ee5836777d85df2cdab", spans[0].SpanContext.TraceID().String())
 	assert.Equal(t, "1ee58677d8df2cab", spans[0].ParentSpanID.String())
 }

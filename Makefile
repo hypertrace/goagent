@@ -49,3 +49,10 @@ generate-config: # generates config object for Go
 .PHONY: fmt
 fmt:
 	gofmt -w -s ./
+
+.PHONY: tidy
+tidy:
+	find . -path ./config -prune -o -name "go.mod" \
+	| grep go.mod \
+	| xargs -I {} bash -c 'dirname {}' \
+	| xargs -I {} bash -c 'cd {}; go mod tidy'

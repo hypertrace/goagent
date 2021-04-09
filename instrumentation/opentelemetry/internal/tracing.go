@@ -22,7 +22,7 @@ func InitTracer() (apitrace.Tracer, func() []*trace.SpanSnapshot) {
 	resources, _ := resource.New(context.Background(), resource.WithAttributes(semconv.ServiceNameKey.String("TestService")))
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithSyncer(exporter),
 		sdktrace.WithResource(resources),
 	)

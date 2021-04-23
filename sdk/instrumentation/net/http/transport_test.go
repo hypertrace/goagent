@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -175,7 +176,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 	tCases := map[string]struct {
 		captureHTTPBodyConfig          bool
-		requestBody                    string
+		requestBody                    interface{}
 		requestContentType             string
 		shouldHaveRecordedRequestBody  bool
 		responseBody                   string
@@ -185,6 +186,13 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 		"no content type headers and empty body": {
 			captureHTTPBodyConfig: true,
 
+			shouldHaveRecordedRequestBody:  false,
+			shouldHaveRecordedResponseBody: false,
+		},
+		"nil body": {
+			captureHTTPBodyConfig:          true,
+			requestBody:                    nil,
+			requestContentType:             "application/json",
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
@@ -254,7 +262,13 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				Transport: tr,
 			}
 
-			req, _ := http.NewRequest("POST", srv.URL, bytes.NewBufferString(tCase.requestBody))
+			var reqBody io.Reader
+			if tCase.requestBody != nil {
+				reqBody = bytes.NewBufferString(tCase.requestBody.(string))
+			} else {
+				reqBody = nil
+			}
+			req, _ := http.NewRequest("POST", srv.URL, reqBody)
 			req.Header.Set("request_id", "abc123xyz")
 			req.Header.Set("content-type", tCase.requestContentType)
 			res, err := client.Do(req)
@@ -269,7 +283,9 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			span := tr.spans[0]
 			if tCase.shouldHaveRecordedRequestBody {
-				assert.Equal(t, tCase.requestBody, span.ReadAttribute("http.request.body").(string))
+				if tCase.requestBody != nil {
+					assert.Equal(t, tCase.requestBody.(string), span.ReadAttribute("http.request.body").(string))
+				}
 			} else {
 				assert.Nil(t, span.ReadAttribute("http.request.body"))
 			}

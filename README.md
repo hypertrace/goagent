@@ -82,7 +82,7 @@ import (
 
 client := http.Client{
     Transport: hyperhttp.NewTransport(
-        http.DefaultTransport
+        http.DefaultTransport,
     ),
 }
 

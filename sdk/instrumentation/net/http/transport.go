@@ -42,7 +42,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// is in the recording accept list. Notice in here we rely on the fact that
 	// the content type is not streamable, otherwise we could end up in a very
 	// expensive parsing of a big body in memory.
-	if rt.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{req.Header}) {
+	if req.Body != nil && rt.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{req.Header}) {
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			return rt.delegate.RoundTrip(req)

@@ -190,16 +190,16 @@ func TestTraceReporterType(t *testing.T) {
 	Init(cfg)
 }
 
-func TestTryToRemoveProtocolPrefixForOTLP(t *testing.T) {
+func TestRemoveProtocolPrefixForOTLP(t *testing.T) {
 	assert.Equal(
 		t,
 		"traceable-agent.traceableai:4317",
-		tryToRemoveProtocolPrefixForOTLP("http://traceable-agent.traceableai:4317"),
+		removeProtocolPrefixForOTLP("http://traceable-agent.traceableai:4317"),
 	)
 
 	assert.Equal(
 		t,
 		"traceable-agent.traceableai:4317",
-		tryToRemoveProtocolPrefixForOTLP("traceable-agent.traceableai:4317"),
+		removeProtocolPrefixForOTLP("traceable-agent.traceableai:4317"),
 	)
 }

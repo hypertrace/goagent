@@ -59,9 +59,9 @@ func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropa
 	return propagation.NewCompositeTextMapPropagator(propagators...)
 }
 
-// tryToRemoveProtocolPrefix removes the prefix protocol as grpc exporter
+// removeProtocolPrefixForOTLP removes the prefix protocol as grpc exporter
 // will reject it with error "too many colons in address"
-func tryToRemoveProtocolPrefixForOTLP(endpoint string) string {
+func removeProtocolPrefixForOTLP(endpoint string) string {
 	pieces := strings.SplitN(endpoint, "://", 2)
 	if len(pieces) == 1 {
 		return endpoint
@@ -86,7 +86,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (expo
 		}
 	default:
 		opts := []otlpgrpc.Option{
-			otlpgrpc.WithEndpoint(tryToRemoveProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),
+			otlpgrpc.WithEndpoint(removeProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),
 		}
 
 		if !cfg.GetReporting().GetSecure().GetValue() {

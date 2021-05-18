@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -58,6 +59,17 @@ func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropa
 	return propagation.NewCompositeTextMapPropagator(propagators...)
 }
 
+// tryToRemoveProtocolPrefix removes the prefix protocol as grpc exporter
+// will reject it with error "too many colons in address"
+func tryToRemoveProtocolPrefixForOTLP(endpoint string) string {
+	pieces := strings.SplitN(endpoint, "://", 2)
+	if len(pieces) == 1 {
+		return endpoint
+	}
+
+	return pieces[1]
+}
+
 func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (export.SpanExporter, error) {
 	switch cfg.Reporting.TraceReporterType {
 	case config.TraceReporterType_ZIPKIN:
@@ -74,7 +86,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (expo
 		}
 	default:
 		opts := []otlpgrpc.Option{
-			otlpgrpc.WithEndpoint(cfg.GetReporting().GetEndpoint().GetValue()),
+			otlpgrpc.WithEndpoint(tryToRemoveProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),
 		}
 
 		if !cfg.GetReporting().GetSecure().GetValue() {
@@ -162,7 +174,7 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 	mu.Lock()
 	defer mu.Unlock()
 	if !initialized {
-		return nil, fmt.Errorf("hypertrace lib not initialized. hypertrace.Init has not been called")
+		return nil, fmt.Errorf("hypertrace hadn't been initialized")
 	}
 
 	if _, ok := traceProviders[serviceName]; ok {

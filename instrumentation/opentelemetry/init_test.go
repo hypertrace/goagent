@@ -189,3 +189,17 @@ func TestTraceReporterType(t *testing.T) {
 	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
 	Init(cfg)
 }
+
+func TestRemoveProtocolPrefixForOTLP(t *testing.T) {
+	assert.Equal(
+		t,
+		"traceable-agent.traceableai:4317",
+		removeProtocolPrefixForOTLP("http://traceable-agent.traceableai:4317"),
+	)
+
+	assert.Equal(
+		t,
+		"traceable-agent.traceableai:4317",
+		removeProtocolPrefixForOTLP("traceable-agent.traceableai:4317"),
+	)
+}

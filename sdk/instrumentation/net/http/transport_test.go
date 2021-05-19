@@ -45,6 +45,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 			Request:  config.Bool(false),
 			Response: config.Bool(false),
 		},
+		BodyMaxSizeBytes: config.Int32(1000),
 	}
 
 	tr := &mockTransport{
@@ -106,6 +107,7 @@ func TestClientRequestHeadersAreCapturedAccordingly(t *testing.T) {
 				Request:  config.Bool(false),
 				Response: config.Bool(false),
 			},
+			BodyMaxSizeBytes: config.Int32(1000),
 		}
 
 		tr := &mockTransport{
@@ -252,6 +254,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 					Request:  config.Bool(false),
 					Response: config.Bool(false),
 				},
+				BodyMaxSizeBytes: config.Int32(1000),
 			}
 
 			tr := &mockTransport{

@@ -83,7 +83,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Only records the body if it is not empty and the content type
 		// header is not streamable
 		if len(body) > 0 {
-			span.SetAttribute("http.request.body", string(body))
+			setTruncatedBodyAttribute("request", body, int(h.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 		}
 
 		// run body filters
@@ -103,7 +103,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if h.dataCaptureConfig.HttpBody.Response.Value &&
 			len(wi.body) > 0 &&
 			ShouldRecordBodyOfContentType(headerMapAccessor{wi.Header()}) {
-			span.SetAttribute("http.response.body", string(wi.body))
+			setTruncatedBodyAttribute("response", wi.body, int(h.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 		}
 
 		if h.dataCaptureConfig.HttpHeaders.Response.Value {

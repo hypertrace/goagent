@@ -28,10 +28,6 @@ func (s *Span) IsNoop() bool {
 	return !s.Span.IsRecording()
 }
 
-func SpanFromContext(ctx context.Context) sdk.Span {
-	return &Span{trace.SpanFromContext(ctx)}
-}
-
 type getTracerProvider func() trace.TracerProvider
 
 func startSpan(provider getTracerProvider) sdk.StartSpan {

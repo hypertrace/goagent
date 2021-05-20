@@ -24,6 +24,7 @@ var defaultConfig = AgentConfig{
 			Request:  Bool(true),
 			Response: Bool(true),
 		},
+		BodyMaxSizeBytes: Int32(131072),
 	},
 	Reporting: &Reporting{
 		Endpoint:          String("http://localhost:9411/api/v2/spans"),
@@ -40,4 +41,8 @@ func Bool(val bool) *wrapperspb.BoolValue {
 // String wraps the scalar value to be used in the AgentConfig object
 func String(val string) *wrapperspb.StringValue {
 	return &wrapperspb.StringValue{Value: val}
+}
+
+func Int32(val int32) *wrapperspb.Int32Value {
+	return &wrapperspb.Int32Value{Value: val}
 }

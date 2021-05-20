@@ -87,7 +87,7 @@ func wrapHandler(
 		reqBody, err := marshalMessageableJSON(req)
 		if dataCaptureConfig.RpcBody.Request.Value &&
 			len(reqBody) > 0 && err == nil {
-			span.SetAttribute("rpc.request.body", string(reqBody))
+			setTruncatedBodyAttribute("request", reqBody, int(dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 
 			if filter.EvaluateBody(span, reqBody) {
 				return nil, status.Error(codes.PermissionDenied, "Permission Denied")
@@ -113,7 +113,7 @@ func wrapHandler(
 		resBody, err := marshalMessageableJSON(res)
 		if dataCaptureConfig.RpcBody.Response.Value &&
 			len(resBody) > 0 && err == nil {
-			span.SetAttribute("rpc.response.body", string(resBody))
+			setTruncatedBodyAttribute("response", resBody, int(dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 		}
 
 		return res, err
@@ -154,9 +154,9 @@ func (s *handler) HandleRPC(ctx context.Context, rs stats.RPCStats) {
 		}
 
 		if rs.IsClient() && s.dataCaptureConfig.RpcBody.Response.Value {
-			span.SetAttribute("rpc.response.body", string(body))
+			setTruncatedBodyAttribute("response", body, int(s.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 		} else if !rs.IsClient() && s.dataCaptureConfig.RpcBody.Request.Value {
-			span.SetAttribute("rpc.request.body", string(body))
+			setTruncatedBodyAttribute("request", body, int(s.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 		}
 	case *stats.InHeader:
 		if rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Response.Value {
@@ -177,9 +177,9 @@ func (s *handler) HandleRPC(ctx context.Context, rs stats.RPCStats) {
 		}
 
 		if rs.IsClient() && s.dataCaptureConfig.RpcBody.Request.Value {
-			span.SetAttribute("rpc.request.body", string(body))
+			setTruncatedBodyAttribute("request", body, int(s.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 		} else if !rs.IsClient() && s.dataCaptureConfig.RpcBody.Response.Value {
-			span.SetAttribute("rpc.response.body", string(body))
+			setTruncatedBodyAttribute("response", body, int(s.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 		}
 	case *stats.OutHeader:
 		if rs.IsClient() && s.dataCaptureConfig.RpcMetadata.Request.Value {

@@ -9,7 +9,7 @@ import "context"
 // but the attributes won't be available.
 type ReadbackSpan interface {
 	Span
-	GetAttribute(key string) interface{}
+	GetAttributes() map[string]interface{}
 }
 
 type StartReadbackSpan func(

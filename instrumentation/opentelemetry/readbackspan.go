@@ -16,12 +16,11 @@ type ReadbackSpan struct {
 	m         sync.Mutex
 }
 
-func (rs *ReadbackSpan) GetAttribute(key string) interface{} {
-	if v, ok := (*rs.readAttrs)[key]; ok {
-		return v
-	}
+func (rs *ReadbackSpan) GetAttributes() map[string]interface{} {
+	rs.m.Lock()
+	defer rs.m.Unlock()
 
-	return nil
+	return *rs.readAttrs
 }
 
 func (rs *ReadbackSpan) SetAttribute(key string, value interface{}) {

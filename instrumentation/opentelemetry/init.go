@@ -158,15 +158,19 @@ func createResources(serviceName string, resources map[string]string) []attribut
 }
 
 // RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans
-func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, error) {
+func RegisterService(serviceName string, resourceAttributes map[string]string) (
+	sdk.StartSpan,
+	sdk.StartReadbackSpan,
+	error,
+) {
 	mu.Lock()
 	defer mu.Unlock()
 	if !initialized {
-		return nil, fmt.Errorf("hypertrace lib not initialized. hypertrace.Init has not been called")
+		return nil, nil, fmt.Errorf("hypertrace lib not initialized. hypertrace.Init has not been called")
 	}
 
 	if _, ok := traceProviders[serviceName]; ok {
-		return nil, fmt.Errorf("service %v already initialized", serviceName)
+		return nil, nil, fmt.Errorf("service %v already initialized", serviceName)
 	}
 
 	exporter, err := exporterFactory(serviceName)
@@ -190,7 +194,9 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 	)
 
 	traceProviders[serviceName] = tp
-	return startSpan(func() trace.TracerProvider {
+	tper := func() trace.TracerProvider {
 		return tp
-	}), nil
+	}
+
+	return startSpan(tper), startReadbackSpan(tper), nil
 }

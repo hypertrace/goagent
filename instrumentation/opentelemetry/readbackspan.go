@@ -36,7 +36,7 @@ func startReadbackSpan(provider getTracerProvider) sdk.StartReadbackSpan {
 	return func(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.ReadbackSpan, func()) {
 		ctx, s, ender := ss(ctx, name, opts)
 		readAttrs := map[string]interface{}{}
-		return context.WithValue(ctx, &readAttrsKey, readAttrs), &ReadbackSpan{s, &readAttrs, sync.Mutex{}}, ender
+		return context.WithValue(ctx, readAttrsKey, &readAttrs), &ReadbackSpan{s, &readAttrs, sync.Mutex{}}, ender
 	}
 }
 

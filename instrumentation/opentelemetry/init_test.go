@@ -35,7 +35,7 @@ func ExampleRegisterService() {
 
 	shutdown := Init(cfg)
 
-	_, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	_, _, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	_, _, spanEnder := StartSpan(context.Background(), "example_span", nil)
 	spanEnder()
 
-	startServiceSpan, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	startServiceSpan, _, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
@@ -127,7 +127,7 @@ func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {
 	assert.True(t, initialized)
 	assert.Equal(t, 0, len(traceProviders))
 
-	startServiceSpan, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	startServiceSpan, _, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)

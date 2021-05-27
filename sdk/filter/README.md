@@ -18,4 +18,9 @@ func (FooURLFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map
 func (FooURLFilter) EvaluateBody(span sdk.Span, body []byte) bool {
 	return false
 }
+
+// Filter evaluates whether request should be blocked, `true` blocks the request and `false` continues it.
+func (FooURLFilter) Evaluate(span sdk.ReadbackSpan) bool {
+	return false
+}
 ```

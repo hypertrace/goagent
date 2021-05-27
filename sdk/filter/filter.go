@@ -9,4 +9,8 @@ type Filter interface {
 
 	// EvaluateBody can be used to evaluate the body content
 	EvaluateBody(span sdk.Span, body []byte) bool
+
+	// Evaluate can be used to evaluate the span attributes. Notice span will contain at most
+	// pre-processing attributes (e.g. request attributes in a HTTP/RPC call).
+	Evaluate(span sdk.ReadbackSpan) bool
 }

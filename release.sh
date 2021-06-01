@@ -71,7 +71,7 @@ git add $VERSION_FILE
 
 git commit -m "chore(version): changes version to $VERSION"
 
-git tag -a "$VERSION" -m "Version $VERSION"
+git tag -a "v$VERSION" -m "Version $VERSION"
 
 NEW_VERSION="$MAJOR.$MINOR.$(($PATCH+1))-dev"
 

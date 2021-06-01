@@ -120,6 +120,7 @@ func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {
 				Request:  config.Bool(false),
 				Response: config.Bool(false),
 			},
+			BodyMaxSizeBytes: config.Int32(1000),
 		}
 
 		r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
@@ -213,6 +214,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 					Request:  config.Bool(false),
 					Response: config.Bool(false),
 				},
+				BodyMaxSizeBytes: config.Int32(1000),
 			}
 			ih := &mockHandler{baseHandler: wh}
 

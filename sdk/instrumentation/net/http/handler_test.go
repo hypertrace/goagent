@@ -88,9 +88,42 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 
 	span := ih.spans[0]
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", span.ReadAttribute("http.url").(string))
+	assert.Equal(t, "traceable.ai", span.ReadAttribute("http.request.header.host"))
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
+}
+
+func TestHostIsSuccessfullyRecorded(t *testing.T) {
+	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		assert.Nil(t, r.Body)
+	})
+
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
+	wh.dataCaptureConfig = &config.DataCapture{
+		HttpHeaders: &config.Message{
+			Request:  config.Bool(false),
+			Response: config.Bool(false),
+		},
+		HttpBody: &config.Message{
+			Request:  config.Bool(true),
+			Response: config.Bool(false),
+		},
+	}
+
+	ih := &mockHandler{baseHandler: wh}
+
+	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", nil)
+	r.Header.Add("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ih.ServeHTTP(w, r)
+	span := ih.spans[0]
+	assert.NotNil(t, span)
+
+	hostHeaderValue, ok := span.Attributes["http.request.header.host"]
+	assert.True(t, ok)
+	assert.Equal(t, hostHeaderValue, "traceable.ai")
 }
 
 func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {

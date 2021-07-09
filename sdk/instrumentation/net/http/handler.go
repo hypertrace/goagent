@@ -59,6 +59,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.String()
 	span.SetAttribute("http.url", url)
 
+	host := r.Host
+	span.SetAttribute("http.request.header.host", host)
+
 	headers := r.Header
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {

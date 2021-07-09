@@ -88,6 +88,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 
 	span := ih.spans[0]
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", span.ReadAttribute("http.url").(string))
+	assert.Equal(t, "traceable.ai", span.ReadAttribute("http.request.header.host"))
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)

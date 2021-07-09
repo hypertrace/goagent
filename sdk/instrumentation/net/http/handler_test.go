@@ -27,7 +27,6 @@ func (h *mockHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	h.baseHandler.ServeHTTP(rw, r.WithContext(ctx))
 }
 
-
 func TestServerRequestWithNilBodyIsntChanged(t *testing.T) {
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		assert.Nil(t, r.Body)

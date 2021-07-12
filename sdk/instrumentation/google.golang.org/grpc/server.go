@@ -87,14 +87,7 @@ func wrapHandler(
 
 		span.SetAttribute("rpc.request.metadata.:method", "POST")
 
-		peer, ok := peer.FromContext(ctx)
-		if ok {
-			if peer.AuthInfo == nil {
-				span.SetAttribute("rpc.request.metadata.:scheme", "http")
-			} else {
-				span.SetAttribute("rpc.request.metadata.:scheme", "https")
-			}
-		}
+		setSchemeAttributes(ctx, span)
 
 		reqBody, err := marshalMessageableJSON(req)
 		if dataCaptureConfig.RpcBody.Request.Value &&
@@ -241,5 +234,16 @@ func WrapStatsHandler(delegate stats.Handler, spanFromContext sdk.SpanFromContex
 		spanFromContext:   spanFromContext,
 		defaultAttributes: defaultAttributes,
 		dataCaptureConfig: internalconfig.GetConfig().GetDataCapture(),
+	}
+}
+
+func setSchemeAttributes(ctx context.Context, span sdk.Span) {
+	peer, ok := peer.FromContext(ctx)
+	if ok {
+		if peer.AuthInfo != nil {
+			span.SetAttribute("rpc.request.metadata.:scheme", "https")
+		} else {
+			span.SetAttribute("rpc.request.metadata.:scheme", "http")
+		}
 	}
 }

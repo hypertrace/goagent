@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
 )
@@ -83,6 +84,17 @@ func wrapHandler(
 		pieces := strings.Split(fullMethod[1:], "/")
 		span.SetAttribute("rpc.service", pieces[0])
 		span.SetAttribute("rpc.method", pieces[1])
+
+		span.SetAttribute("rpc.request.metadata.:method", "POST")
+
+		peer, ok := peer.FromContext(ctx)
+		if ok {
+			if peer.AuthInfo == nil {
+				span.SetAttribute("rpc.request.metadata.:scheme", "http")
+			} else {
+				span.SetAttribute("rpc.request.metadata.:scheme", "https")
+			}
+		}
 
 		reqBody, err := marshalMessageableJSON(req)
 		if dataCaptureConfig.RpcBody.Request.Value &&

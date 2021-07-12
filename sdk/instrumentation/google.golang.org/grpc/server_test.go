@@ -69,6 +69,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 	assert.Equal(t, "helloworld.Greeter", span.ReadAttribute("rpc.service").(string))
 	assert.Equal(t, "SayHello", span.ReadAttribute("rpc.method").(string))
 	assert.Equal(t, "test_value", span.ReadAttribute("rpc.request.metadata.test_key").(string))
+	assert.Equal(t, "POST", span.ReadAttribute("rpc.request.metadata.:method").(string))
 
 	expectedBody := "{\"name\":\"Pupo\"}"
 	actualBody := span.ReadAttribute("rpc.request.body").(string)

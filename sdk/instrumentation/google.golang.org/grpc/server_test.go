@@ -234,7 +234,6 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 }
 
 type fakeALTSAuthInfo struct {
-	peerServiceAccount string
 }
 
 func (f fakeALTSAuthInfo) AuthType() string {
@@ -248,11 +247,11 @@ func TestSetSchemeAttributes(t *testing.T) {
 	}{
 		"no auth info": {
 			expectedScheme: "http",
-			AuthInfo:        nil,
+			AuthInfo:       nil,
 		},
 		"with auth info": {
 			expectedScheme: "https",
-			AuthInfo: fakeALTSAuthInfo{},
+			AuthInfo:       fakeALTSAuthInfo{},
 		},
 	}
 

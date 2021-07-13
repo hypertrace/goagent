@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"github.com/hypertrace/goagent/config"
@@ -85,7 +86,7 @@ func wrapHandler(
 		span.SetAttribute("rpc.service", pieces[0])
 		span.SetAttribute("rpc.method", pieces[1])
 
-		span.SetAttribute("rpc.request.metadata.:method", "POST")
+		span.SetAttribute("rpc.request.metadata.:method", http.MethodPost)
 
 		setSchemeAttributes(ctx, span)
 

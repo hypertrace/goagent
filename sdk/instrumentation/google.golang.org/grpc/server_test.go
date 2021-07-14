@@ -11,7 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
@@ -40,6 +42,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 	dialer := createDialer(s)
 
 	ctx := context.Background()
+
 	conn, err := grpc.DialContext(
 		ctx,
 		"bufnet",
@@ -69,6 +72,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 	assert.Equal(t, "helloworld.Greeter", span.ReadAttribute("rpc.service").(string))
 	assert.Equal(t, "SayHello", span.ReadAttribute("rpc.method").(string))
 	assert.Equal(t, "test_value", span.ReadAttribute("rpc.request.metadata.test_key").(string))
+	assert.Equal(t, "POST", span.ReadAttribute("rpc.request.metadata.:method").(string))
 
 	expectedBody := "{\"name\":\"Pupo\"}"
 	actualBody := span.ReadAttribute("rpc.request.body").(string)
@@ -227,4 +231,43 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
+}
+
+type fakeALTSAuthInfo struct {
+}
+
+func (f fakeALTSAuthInfo) AuthType() string {
+	return "tls"
+}
+
+func TestSetSchemeAttributes(t *testing.T) {
+	tCases := map[string]struct {
+		expectedScheme string
+		AuthInfo       credentials.AuthInfo
+	}{
+		"no auth info": {
+			expectedScheme: "http",
+			AuthInfo:       nil,
+		},
+		"with auth info": {
+			expectedScheme: "https",
+			AuthInfo:       fakeALTSAuthInfo{},
+		},
+	}
+
+	for name, tCase := range tCases {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			ms := mock.NewSpan()
+
+			p := &peer.Peer{
+				Addr:     nil,
+				AuthInfo: tCase.AuthInfo,
+			}
+
+			pctx := peer.NewContext(ctx, p)
+			setSchemeAttributes(pctx, ms)
+			assert.Equal(t, tCase.expectedScheme, ms.ReadAttribute("rpc.request.metadata.:scheme"))
+		})
+	}
 }

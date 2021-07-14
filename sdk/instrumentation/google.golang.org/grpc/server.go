@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"github.com/hypertrace/goagent/config"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
 )
@@ -83,6 +85,10 @@ func wrapHandler(
 		pieces := strings.Split(fullMethod[1:], "/")
 		span.SetAttribute("rpc.service", pieces[0])
 		span.SetAttribute("rpc.method", pieces[1])
+
+		span.SetAttribute("rpc.request.metadata.:method", http.MethodPost)
+
+		setSchemeAttributes(ctx, span)
 
 		reqBody, err := marshalMessageableJSON(req)
 		if dataCaptureConfig.RpcBody.Request.Value &&
@@ -230,4 +236,18 @@ func WrapStatsHandler(delegate stats.Handler, spanFromContext sdk.SpanFromContex
 		defaultAttributes: defaultAttributes,
 		dataCaptureConfig: internalconfig.GetConfig().GetDataCapture(),
 	}
+}
+
+func setSchemeAttributes(ctx context.Context, span sdk.Span) {
+	peer, ok := peer.FromContext(ctx)
+	if !ok {
+		return
+	}
+	scheme := "http"
+	// https://github.com/grpc/grpc-go/blob/ebfe3be62a82434bc83fd7b36410141a603a96be/peer/peer.go#L35-L36
+	if peer.AuthInfo != nil {
+		scheme = "https"
+	}
+
+	span.SetAttribute("rpc.request.metadata.:scheme", scheme)
 }

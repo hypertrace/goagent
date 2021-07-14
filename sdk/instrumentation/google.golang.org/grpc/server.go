@@ -240,11 +240,14 @@ func WrapStatsHandler(delegate stats.Handler, spanFromContext sdk.SpanFromContex
 
 func setSchemeAttributes(ctx context.Context, span sdk.Span) {
 	peer, ok := peer.FromContext(ctx)
-	if ok {
-		if peer.AuthInfo != nil {
-			span.SetAttribute("rpc.request.metadata.:scheme", "https")
-		} else {
-			span.SetAttribute("rpc.request.metadata.:scheme", "http")
-		}
+	if !ok {
+		return
 	}
+	scheme := "http"
+	// https://github.com/grpc/grpc-go/blob/ebfe3be62a82434bc83fd7b36410141a603a96be/peer/peer.go#L35-L36
+	if peer.AuthInfo != nil {
+		scheme = "https"
+	}
+
+	span.SetAttribute("rpc.request.metadata.:scheme", scheme)
 }

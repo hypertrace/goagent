@@ -41,7 +41,7 @@ func (h *nextRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Wrap something that accepts an http.Handler, returns an http.Handler
-func WrapHH(hh func(h http.Handler) http.Handler) gin.HandlerFunc {
+func wrap(hh func(h http.Handler) http.Handler) gin.HandlerFunc {
 	// Steps:
 	// - create an http handler to pass `hh`
 	// - call `hh` with the http handler, which returns a function
@@ -63,17 +63,26 @@ type hyperGinCtxKeyType string
 const hyperGinKey hyperGinCtxKeyType = "gin_route"
 
 func spanNameFormatter(operation string, r *http.Request) (spanName string) {
-	routeWrapper := r.Context().Value(hyperGinKey).(ginRoute)
+	routeWrapper, ok := r.Context().Value(hyperGinKey).(ginRoute)
+
+	// if a ginRoute wasn't appended to the context we won't have the route path template(ex: /users/:id)
+	// instead just report method
+	if !ok {
+		return r.Method
+	}
 
 	return routeWrapper.route
 }
 
 func Middleware(options *sdkhttp.Options) gin.HandlerFunc {
-	return WrapHH(func(delegate http.Handler) http.Handler {
-		wrappedHandler := delegate.(*nextRequestHandler)
-		requestContext := wrappedHandler.c.Request.Context()
-		ctx := context.WithValue(requestContext, hyperGinKey, ginRoute{route: wrappedHandler.c.FullPath()})
-		wrappedHandler.c.Request = wrappedHandler.c.Request.WithContext(ctx)
+	return wrap(func(delegate http.Handler) http.Handler {
+		wrappedHandler, ok := delegate.(*nextRequestHandler)
+		// if we fail to extract the next request handler from delegate the route template won't be reported
+		if ok {
+			requestContext := wrappedHandler.c.Request.Context()
+			ctx := context.WithValue(requestContext, hyperGinKey, ginRoute{route: wrappedHandler.c.FullPath()})
+			wrappedHandler.c.Request = wrappedHandler.c.Request.WithContext(ctx)
+		}
 		return otelhttp.NewHandler(
 			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options),
 			"",

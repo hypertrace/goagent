@@ -2,10 +2,8 @@ package hypergin
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"net"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -15,18 +13,12 @@ import (
 	"gotest.tools/assert"
 )
 
-// inspired in https://github.com/jcchavezs/httptest-php/blob/e6a65c73/src/HttpTest/HttpTestServer.php#L150
-func findAvailablePort() (int, error) {
-	for port := 60000; port < 65535; port++ {
-		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-		defer l.Close()
-
-		if err == nil {
-			return port, nil
-		}
-	}
-
-	return 0, errors.New("failed to find an available port")
+func handler(c *gin.Context) {
+	c.Header("request_id", "xyz123abc")
+	c.JSON(200, gin.H{
+		"code": http.StatusOK,
+		"id":   "123",
+	})
 }
 
 func TestSpanRecordedCorrectly(t *testing.T) {
@@ -34,38 +26,24 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 
 	r := gin.Default()
 	r.Use(Middleware(&sdkhttp.Options{}))
-	r.POST("/things/:thing_id", func(c *gin.Context) {
-		c.Header("request_id", "xyz123abc")
-		c.JSON(200, gin.H{
-			"code": http.StatusOK,
-			"id":   "123",
-		})
-	})
+	r.POST("/things/:thing_id", handler)
 
-	port, err := findAvailablePort()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	server := &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: r}
+	server := httptest.NewServer(r)
 	defer server.Close()
 
-	go server.ListenAndServe()
-
-	req, _ := http.NewRequest(
+	req := httptest.NewRequest(
 		"POST",
-		fmt.Sprintf("http://localhost:%d/things/123?include_something=1", port),
+		"http://example.com/things/123?include_something=1",
 		bytes.NewBufferString(`{"name":"Jacinto"}`),
 	)
 	req.Header.Set("api_key", "abc123xyz")
 	req.Header.Set("content-type", "application/json")
 
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	w := httptest.NewRecorder()
 
-	if want, have := 200, res.StatusCode; want != have {
+	r.ServeHTTP(w, req)
+
+	if want, have := 200, w.Result().StatusCode; want != have {
 		t.Errorf("unexpected status code, want %q, have %q", want, have)
 	}
 

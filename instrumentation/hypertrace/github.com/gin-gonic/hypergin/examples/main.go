@@ -15,12 +15,6 @@ func setupRouter() *gin.Engine {
 	// hypergin.DisableConsoleColor()
 	r := gin.Default()
 
-	cfg := config.Load()
-	cfg.ServiceName = config.String("http-gin-server")
-
-	flusher := hypertrace.Init(cfg)
-	defer flusher()
-
 	r.Use(hypergin.Middleware(&sdkhttp.Options{}))
 
 	// Ping test
@@ -35,6 +29,11 @@ func setupRouter() *gin.Engine {
 }
 
 func main() {
+	cfg := config.Load()
+	cfg.ServiceName = config.String("gin-example-server")
+
+	flusher := hypertrace.Init(cfg)
+	defer flusher()
 
 	r := setupRouter()
 	// Listen and Server in 0.0.0.0:8080

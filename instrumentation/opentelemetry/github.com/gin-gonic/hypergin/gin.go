@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 
 	//"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
@@ -36,6 +37,10 @@ type nextRequestHandler struct {
 
 // Run the next request in the middleware chain and return
 func (h *nextRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	preservedContext := h.c.Request.Context()
+	defer func() {
+		h.c.Request = h.c.Request.WithContext(preservedContext)
+	}()
 	h.c.Writer = &wrappedResponseWriter{h.c.Writer, w}
 	h.c.Next()
 }
@@ -46,8 +51,17 @@ func wrap(hh func(h http.Handler) http.Handler) gin.HandlerFunc {
 	// - create an http handler to pass `hh`
 	// - call `hh` with the http handler, which returns a function
 	// - call the ServeHTTP method of the resulting function to run the rest of the middleware chain
-
 	return func(c *gin.Context) {
+		preservedContext := c.Request.Context()
+		defer func() {
+			c.Request = c.Request.WithContext(preservedContext)
+		}()
+
+		tracer := otel.Tracer("tracecontext")
+		ctx, _ := tracer.Start(context.Background(), c.FullPath())
+
+		c.Request = c.Request.WithContext(ctx)
+
 		hh(&nextRequestHandler{c}).ServeHTTP(c.Writer, c.Request)
 	}
 }
@@ -77,12 +91,16 @@ func spanNameFormatter(operation string, r *http.Request) (spanName string) {
 func Middleware(options *sdkhttp.Options) gin.HandlerFunc {
 	return wrap(func(delegate http.Handler) http.Handler {
 		wrappedHandler, ok := delegate.(*nextRequestHandler)
+
 		// if we fail to extract the next request handler from delegate the route template won't be reported
 		if ok {
-			requestContext := wrappedHandler.c.Request.Context()
-			ctx := context.WithValue(requestContext, hyperGinKey, ginRoute{route: wrappedHandler.c.FullPath()})
+			rc := wrappedHandler.c.Request.Context()
+			ctx := context.WithValue(rc, hyperGinKey, ginRoute{route: wrappedHandler.c.FullPath()})
 			wrappedHandler.c.Request = wrappedHandler.c.Request.WithContext(ctx)
 		}
+
+
+
 		return otelhttp.NewHandler(
 			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options),
 			"",

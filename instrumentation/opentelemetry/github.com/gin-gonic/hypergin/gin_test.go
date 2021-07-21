@@ -2,6 +2,7 @@ package hypergin
 
 import (
 	"bytes"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,6 +21,7 @@ func handler(c *gin.Context) {
 		"code": http.StatusOK,
 		"id":   "123",
 	})
+
 }
 
 func TestSpanRecordedCorrectly(t *testing.T) {
@@ -64,31 +66,63 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", attrs.Get("http.response.header.content-type").AsString())
 }
 
+var client = http.Client{
+	Transport: hyperhttp.NewTransport(
+		http.DefaultTransport,
+	),
+}
+
+// Client -> GET Server1/send_thing_request -> POST Server2/things/:thing_id
 func TestTraceContextIsPropagated(t *testing.T) {
 	_, flusher := internal.InitTracer()
 
 	// Configure Gin server
 	r := gin.Default()
 	r.Use(Middleware(&sdkhttp.Options{}))
-	r.POST("/things/:thing_id", handler)
+	r.POST("/things/:thing_id", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"thing": "go",
+		})
+	})
+
+	r2 := gin.Default()
+	r2.Use(Middleware(&sdkhttp.Options{}))
+	r2.GET("/send_thing_request", func(c *gin.Context) {
+		req, _ := http.NewRequest("POST",
+			"http://localhost:60543/things/123",
+			bytes.NewBufferString(`{"name":"Jacinto"}`))
+
+		req = req.WithContext(c.Request.Context())
+		res, err := client.Do(req)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"success": false,
+			})
+			return
+		}
+		bodyBytes, _ := ioutil.ReadAll(res.Body)
+		bodyString := string(bodyBytes)
+		c.JSON(200, gin.H{
+			"success":              true,
+			"otherServiceResponse": bodyString,
+		})
+	})
 
 	server := &http.Server{Addr: ":60543", Handler: r}
 	defer server.Close()
-
 	go server.ListenAndServe()
 
-	// Configure http Client
-	client := http.Client{
-		Transport: hyperhttp.NewTransport(
-			http.DefaultTransport,
-		),
-	}
+	server2 := &http.Server{Addr: ":60544", Handler: r2}
+	defer server2.Close()
+	go server2.ListenAndServe()
 
-	req, _ := http.NewRequest("POST",
-		"http://localhost:60543/things/123",
-		bytes.NewBufferString(`{"name":"Jacinto"}`))
+	req, _ := http.NewRequest("GET",
+		"http://localhost:60544/send_thing_request", nil)
 
 	res, err := client.Do(req)
+	bodyBytes, _ := ioutil.ReadAll(res.Body)
+	bodyString := string(bodyBytes)
+	assert.Equal(t, "{\"otherServiceResponse\":\"{\\\"thing\\\":\\\"go\\\"}\",\"success\":true}", bodyString)
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -103,12 +137,17 @@ func TestTraceContextIsPropagated(t *testing.T) {
 		t.Errorf("failed")
 	}
 
-	assert.Equal(t, 1, len(spans))
+	assert.Equal(t, 4, len(spans))
+	assert.Equal(t, "/things/:thing_id", spans[0].Name)
+	assert.Equal(t, spans[1].SpanContext.SpanID(), spans[0].ParentSpanID)
+	assert.Equal(t, "POST", spans[1].Name)
+	assert.Equal(t, spans[2].SpanContext.SpanID(), spans[1].ParentSpanID)
+	assert.Equal(t, "/send_thing_request", spans[2].Name)
+	assert.Equal(t, spans[3].SpanContext.SpanID(), spans[2].ParentSpanID)
+	assert.Equal(t, "GET", spans[3].Name)
 
-	span := spans[0]
-	attrs := internal.LookupAttributes(span.Attributes)
-	b3RequestHeader := attrs.Get("http.request.header.b3").AsString()
-	expectedHeader := span.SpanContext.TraceID().String() + "-" + span.ParentSpanID.String() + "-1"
-	assert.Equal(t, b3RequestHeader, expectedHeader)
-
+	traceId := spans[0].SpanContext.TraceID().String()
+	for _, span := range spans {
+		assert.Equal(t, traceId, span.SpanContext.TraceID().String())
+	}
 }

@@ -7,9 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
 
-	//"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 
@@ -37,10 +35,12 @@ type nextRequestHandler struct {
 
 // Run the next request in the middleware chain and return
 func (h *nextRequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	preservedContext := h.c.Request.Context()
+	savedCtx := h.c.Request.Context()
 	defer func() {
-		h.c.Request = h.c.Request.WithContext(preservedContext)
+		h.c.Request = h.c.Request.WithContext(savedCtx)
 	}()
+
+	h.c.Request = h.c.Request.WithContext(r.Context())
 	h.c.Writer = &wrappedResponseWriter{h.c.Writer, w}
 	h.c.Next()
 }
@@ -52,17 +52,9 @@ func wrap(hh func(h http.Handler) http.Handler) gin.HandlerFunc {
 	// - call `hh` with the http handler, which returns a function
 	// - call the ServeHTTP method of the resulting function to run the rest of the middleware chain
 	return func(c *gin.Context) {
-		preservedContext := c.Request.Context()
-		defer func() {
-			c.Request = c.Request.WithContext(preservedContext)
-		}()
-
-		tracer := otel.Tracer("tracecontext")
-		ctx, _ := tracer.Start(context.Background(), c.FullPath())
-
-		c.Request = c.Request.WithContext(ctx)
-
+		// if we fail to extract the next request handler from delegate the route template won't be reported
 		hh(&nextRequestHandler{c}).ServeHTTP(c.Writer, c.Request)
+
 	}
 }
 
@@ -98,9 +90,6 @@ func Middleware(options *sdkhttp.Options) gin.HandlerFunc {
 			ctx := context.WithValue(rc, hyperGinKey, ginRoute{route: wrappedHandler.c.FullPath()})
 			wrappedHandler.c.Request = wrappedHandler.c.Request.WithContext(ctx)
 		}
-
-
-
 		return otelhttp.NewHandler(
 			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options),
 			"",

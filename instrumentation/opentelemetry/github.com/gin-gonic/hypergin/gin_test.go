@@ -66,15 +66,15 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", attrs.Get("http.response.header.content-type").AsString())
 }
 
-var client = http.Client{
-	Transport: hyperhttp.NewTransport(
-		http.DefaultTransport,
-	),
-}
-
 // Client -> GET Server1/send_thing_request -> POST Server2/things/:thing_id
 func TestTraceContextIsPropagated(t *testing.T) {
 	_, flusher := internal.InitTracer()
+
+	var client = http.Client{
+		Transport: hyperhttp.NewTransport(
+			http.DefaultTransport,
+		),
+	}
 
 	// Configure Gin server
 	r := gin.Default()

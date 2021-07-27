@@ -54,10 +54,10 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, 1, len(spans), "unexpected number of spans")
 
 	span := spans[0]
-	assert.Equal(t, span.Name, "POST")
+	assert.Equal(t, span.Name(), "POST")
 	assert.Equal(t, span.SpanKind, trace.SpanKindClient)
 
-	attrs := internal.LookupAttributes(span.Attributes)
+	attrs := internal.LookupAttributes(span.Attributes())
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.Api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
@@ -161,7 +161,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			span := flusher()[0]
 
-			var attrs internal.LookupAttributes = internal.LookupAttributes(span.Attributes)
+			var attrs internal.LookupAttributes = internal.LookupAttributes(span.Attributes())
 			if tCase.shouldHaveRecordedRequestBody {
 				assert.Equal(t, tCase.requestBody, attrs.Get("http.request.body").AsString())
 			} else {

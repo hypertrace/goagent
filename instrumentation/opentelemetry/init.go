@@ -2,6 +2,7 @@ package opentelemetry
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,27 +10,26 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/hypertrace/goagent/sdk"
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"crypto/tls"
-
 	"github.com/hypertrace/goagent/config"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
-	"go.opentelemetry.io/otel/exporters/trace/zipkin"
+	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+
+	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
-	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
+	export "go.opentelemetry.io/otel/sdk/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 var batchTimeout = time.Duration(200) * time.Millisecond
@@ -79,7 +79,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (expo
 		}}
 
 		return func(serviceName string) (export.SpanExporter, error) {
-			return zipkin.NewRawExporter(
+			return zipkin.New(
 				cfg.GetReporting().GetEndpoint().GetValue(),
 				zipkin.WithClient(client),
 			)
@@ -94,9 +94,9 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (expo
 		}
 
 		return func(_ string) (export.SpanExporter, error) {
-			return otlp.NewExporter(
+			return otlptrace.New(
 				context.Background(),
-				otlpgrpc.NewDriver(opts...),
+				otlpgrpc.NewClient(opts...),
 			)
 		}
 	}

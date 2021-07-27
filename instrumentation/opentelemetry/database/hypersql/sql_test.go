@@ -10,11 +10,11 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/sdk/export/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
-func createDB(t *testing.T) (*sql.DB, func() []*trace.SpanSnapshot) {
+func createDB(t *testing.T) (*sql.DB, func() []sdktrace.ReadOnlySpan) {
 	_, flusher := internal.InitTracer()
 
 	driverName, err := Register("sqlite3")
@@ -53,10 +53,10 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "db:query", span.Name)
-	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind)
+	assert.Equal(t, "db:query", span.Name())
+	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind())
 
-	attrs := internal.LookupAttributes(span.Attributes)
+	attrs := internal.LookupAttributes(span.Attributes())
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", attrs.Get("db.statement").AsString())
 	assert.Equal(t, "sqlite", attrs.Get("db.system").AsString())
 	assert.False(t, attrs.Has("error"))
@@ -84,10 +84,10 @@ func TestExecSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "db:exec", span.Name)
-	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind)
+	assert.Equal(t, "db:exec", span.Name())
+	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind())
 
-	attrs := internal.LookupAttributes(span.Attributes)
+	attrs := internal.LookupAttributes(span.Attributes())
 	assert.False(t, attrs.Has("error"))
 
 	db.Close()
@@ -127,15 +127,15 @@ func TestTxWithCommitSuccess(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 5, len(spans))
 
-	assert.Equal(t, "db:exec", spans[0].Name)
-	assert.Equal(t, "db:begin_transaction", spans[1].Name)
-	assert.Equal(t, "db:prepare", spans[2].Name)
-	assert.Equal(t, "db:exec", spans[3].Name)
-	assert.Equal(t, "db:commit", spans[4].Name)
+	assert.Equal(t, "db:exec", spans[0].Name())
+	assert.Equal(t, "db:begin_transaction", spans[1].Name())
+	assert.Equal(t, "db:prepare", spans[2].Name())
+	assert.Equal(t, "db:exec", spans[3].Name())
+	assert.Equal(t, "db:commit", spans[4].Name())
 
 	for i := 0; i < 5; i++ {
-		assert.Equal(t, apitrace.SpanKindClient, spans[i].SpanKind)
-		attrs := internal.LookupAttributes(spans[i].Attributes)
+		assert.Equal(t, apitrace.SpanKindClient, spans[i].SpanKind())
+		attrs := internal.LookupAttributes(spans[i].Attributes())
 		assert.False(t, attrs.Has("error"))
 	}
 
@@ -173,15 +173,15 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 5, len(spans))
 
-	assert.Equal(t, "db:exec", spans[0].Name)
-	assert.Equal(t, "db:begin_transaction", spans[1].Name)
-	assert.Equal(t, "db:prepare", spans[2].Name)
-	assert.Equal(t, "db:exec", spans[3].Name)
-	assert.Equal(t, "db:rollback", spans[4].Name)
+	assert.Equal(t, "db:exec", spans[0].Name())
+	assert.Equal(t, "db:begin_transaction", spans[1].Name())
+	assert.Equal(t, "db:prepare", spans[2].Name())
+	assert.Equal(t, "db:exec", spans[3].Name())
+	assert.Equal(t, "db:rollback", spans[4].Name())
 
 	for i := 0; i < 5; i++ {
-		assert.Equal(t, apitrace.SpanKindClient, spans[i].SpanKind)
-		attrs := internal.LookupAttributes(spans[i].Attributes)
+		assert.Equal(t, apitrace.SpanKindClient, spans[i].SpanKind())
+		attrs := internal.LookupAttributes(spans[i].Attributes())
 		assert.False(t, attrs.Has("error"))
 	}
 

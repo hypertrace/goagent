@@ -55,10 +55,10 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "/things/:thing_id", span.Name)
-	assert.Equal(t, span.SpanKind, trace.SpanKindServer)
+	assert.Equal(t, "/things/:thing_id", span.Name())
+	assert.Equal(t, span.SpanKind(), trace.SpanKindServer)
 
-	attrs := internal.LookupAttributes(span.Attributes)
+	attrs := internal.LookupAttributes(span.Attributes())
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
@@ -138,16 +138,16 @@ func TestTraceContextIsPropagated(t *testing.T) {
 	}
 
 	assert.Equal(t, 4, len(spans))
-	assert.Equal(t, "/things/:thing_id", spans[0].Name)
-	assert.Equal(t, spans[1].SpanContext.SpanID(), spans[0].ParentSpanID)
-	assert.Equal(t, "POST", spans[1].Name)
-	assert.Equal(t, spans[2].SpanContext.SpanID(), spans[1].ParentSpanID)
-	assert.Equal(t, "/send_thing_request", spans[2].Name)
-	assert.Equal(t, spans[3].SpanContext.SpanID(), spans[2].ParentSpanID)
-	assert.Equal(t, "GET", spans[3].Name)
+	assert.Equal(t, "/things/:thing_id", spans[0].Name())
+	assert.Equal(t, spans[1].SpanContext().SpanID(), spans[0].Parent().SpanID())
+	assert.Equal(t, "HTTP POST", spans[1].Name())
+	assert.Equal(t, spans[2].SpanContext().SpanID(), spans[1].Parent().SpanID())
+	assert.Equal(t, "/send_thing_request", spans[2].Name())
+	assert.Equal(t, spans[3].SpanContext().SpanID(), spans[2].Parent().SpanID())
+	assert.Equal(t, "HTTP GET", spans[3].Name())
 
-	traceId := spans[0].SpanContext.TraceID().String()
+	traceId := spans[0].SpanContext().TraceID().String()
 	for _, span := range spans {
-		assert.Equal(t, traceId, span.SpanContext.TraceID().String())
+		assert.Equal(t, traceId, span.SpanContext().TraceID().String())
 	}
 }

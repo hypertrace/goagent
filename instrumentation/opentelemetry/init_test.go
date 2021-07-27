@@ -43,6 +43,23 @@ func ExampleRegisterService() {
 	defer shutdown()
 }
 
+func TestOtlpService(t *testing.T) {
+	cfg := config.Load()
+	cfg.ServiceName = config.String("my_example_svc")
+	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
+	cfg.Reporting.Endpoint = config.String("http://api.traceable.ai:4317")
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
+
+	shutdown := Init(cfg)
+
+	_, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	if err != nil {
+		log.Fatalf("Error while initializing service: %v", err)
+	}
+
+	defer shutdown()
+}
+
 func TestShutdownFlushesAllSpans(t *testing.T) {
 	requestIsReceived := false
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

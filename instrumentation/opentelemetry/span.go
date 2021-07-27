@@ -36,7 +36,7 @@ type getTracerProvider func() trace.TracerProvider
 
 func startSpan(provider getTracerProvider) sdk.StartSpan {
 	return func(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
-		startOpts := []trace.SpanOption{}
+		startOpts := []trace.SpanStartOption{}
 
 		if opts != nil {
 			startOpts = append(startOpts, trace.WithSpanKind(mapSpanKind(opts.Kind)))

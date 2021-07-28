@@ -44,7 +44,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, "test_name", spans[0].Name)
 	assert.Equal(t, trace.SpanKindServer, spans[0].SpanKind)
 
-	attrs := internal.LookupAttributes(spans[0].Attributes)
+	attrs := internal.LookupAttributes(spans[0].Attributes())
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", attrs.Get("http.url").AsString())
 	assert.Equal(t, "xyz123abc", attrs.Get("http.request.header.Api_key").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.response.header.Request_id").AsString())
@@ -105,7 +105,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			ih.ServeHTTP(w, r)
 
 			span := flusher()[0]
-			attrs := internal.LookupAttributes(span.Attributes)
+			attrs := internal.LookupAttributes(span.Attributes())
 
 			if tCase.shouldHaveRecordedRequestBody {
 				assert.Equal(t, tCase.requestBody, attrs.Get("http.request.body").AsString())
@@ -135,6 +135,6 @@ func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
 
 	spans := flusher()
 	assert.Equal(t, 1, len(spans))
-	assert.Equal(t, "1f46165474d11ee5836777d85df2cdab", spans[0].SpanContext.TraceID().String())
-	assert.Equal(t, "1ee58677d8df2cab", spans[0].ParentSpanID.String())
+	assert.Equal(t, "1f46165474d11ee5836777d85df2cdab", spans[0].SpanContext().TraceID().String())
+	assert.Equal(t, "1ee58677d8df2cab", spans[0].Parent().SpanID().String())
 }

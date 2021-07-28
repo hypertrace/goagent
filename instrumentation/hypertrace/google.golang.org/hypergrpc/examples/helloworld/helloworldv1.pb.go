@@ -16,7 +16,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type HelloResponse struct {
-	Name            string   `protobuf:"bytes,1,opt,name=name,json=name,proto3" json:"product_id,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,json=name,proto3" json:"product_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

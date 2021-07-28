@@ -51,10 +51,10 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "db:query", span.Name)
-	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind)
+	assert.Equal(t, "db:query", span.Name())
+	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind())
 
-	attrs := internal.LookupAttributes(span.Attributes)
+	attrs := internal.LookupAttributes(span.Attributes())
 	assert.Equal(t, "SELECT 1 WHERE 1 = $1", attrs.Get("db.statement").AsString())
 	assert.Equal(t, "postgres", attrs.Get("db.system").AsString())
 	assert.Equal(t, "root", attrs.Get("db.user").AsString())

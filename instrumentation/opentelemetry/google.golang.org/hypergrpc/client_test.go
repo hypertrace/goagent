@@ -63,9 +63,9 @@ func TestClientHelloWorldSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, "helloworld.Greeter/SayHello", span.Name)
+	assert.Equal(t, "helloworld.Greeter/SayHello", span.Name())
 
-	attrs := internal.LookupAttributes(span.Attributes)
+	attrs := internal.LookupAttributes(span.Attributes())
 	assert.Equal(t, "grpc", attrs.Get("rpc.system").AsString())
 	assert.Equal(t, "helloworld.Greeter", attrs.Get("rpc.service").AsString())
 	assert.Equal(t, "SayHello", attrs.Get("rpc.method").AsString())
@@ -133,8 +133,8 @@ func TestClientRegisterPersonFails(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, otelcodes.Error, span.StatusCode)
-	assert.Equal(t, "invalid argument", span.StatusMessage)
+	assert.Equal(t, otelcodes.Error, span.Status().Code)
+	assert.Equal(t, "invalid argument", span.Status().Description)
 }
 
 func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {

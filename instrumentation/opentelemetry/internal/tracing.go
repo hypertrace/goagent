@@ -6,17 +6,16 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/semconv/v1.4.0"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
 // InitTracer initializes the tracer and returns a flusher of the reported
 // spans for further inspection. Its main purpose is to declare a tracer
 // for TESTING.
-func InitTracer() (apitrace.Tracer, func() []*trace.SpanSnapshot) {
+func InitTracer() (apitrace.Tracer, func() []sdktrace.ReadOnlySpan) {
 	exporter := &Recorder{}
 
 	resources, _ := resource.New(context.Background(), resource.WithAttributes(semconv.ServiceNameKey.String("TestService")))
@@ -30,7 +29,7 @@ func InitTracer() (apitrace.Tracer, func() []*trace.SpanSnapshot) {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(b3.B3{})
 
-	return tp.Tracer(opentelemetry.TracerDomain), func() []*trace.SpanSnapshot {
+	return tp.Tracer(opentelemetry.TracerDomain), func() []sdktrace.ReadOnlySpan {
 		return exporter.Flush()
 	}
 }

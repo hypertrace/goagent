@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -33,16 +34,14 @@ func toPublicFieldName(name string) string {
 	return strings.Title(name)
 }
 
-const filepathSeparator = string(filepath.Separator)
-
 type protobufImportModuleProvider struct {
 	dir string
 }
 
 func (pi *protobufImportModuleProvider) Provide(module string) (io.Reader, error) {
-	modulePath := pi.dir + filepathSeparator + module
+	modulePath := path.Join(pi.dir, module)
 	if strings.HasPrefix(module, "google/protobuf/") {
-		modulePath = pi.dir + filepathSeparator + "protobuf" + filepathSeparator + "src" + filepathSeparator + module
+		modulePath = path.Join(pi.dir, "_protobuf", "src", module)
 	}
 
 	raw, err := ioutil.ReadFile(modulePath)
@@ -85,15 +84,13 @@ Parse PROTO_FILE and generate output value objects`)
 		os.Exit(1)
 	}
 
-	path, err := os.Getwd()
+	currPath, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("Unable to get current working directory: %v", err)
 		os.Exit(1)
 	}
 
-	pf, err := pbparser.Parse(f, &protobufImportModuleProvider{
-		path + filepathSeparator + "cmd" + filepathSeparator + "generator",
-	})
+	pf, err := pbparser.Parse(f, &protobufImportModuleProvider{currPath})
 	if err != nil {
 		fmt.Printf("Unable to parse proto file %q: %v \n", filename, err)
 		os.Exit(1)

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -16,7 +16,7 @@ import (
 )
 
 func TestClientHelloWorldSuccess(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	s := grpc.NewServer()
 	defer s.Stop()
@@ -65,7 +65,7 @@ func TestClientHelloWorldSuccess(t *testing.T) {
 	span := spans[0]
 	assert.Equal(t, "helloworld.Greeter/SayHello", span.Name())
 
-	attrs := internal.LookupAttributes(span.Attributes())
+	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.Equal(t, "grpc", attrs.Get("rpc.system").AsString())
 	assert.Equal(t, "helloworld.Greeter", attrs.Get("rpc.service").AsString())
 	assert.Equal(t, "SayHello", attrs.Get("rpc.method").AsString())
@@ -91,7 +91,7 @@ func TestClientHelloWorldSuccess(t *testing.T) {
 }
 
 func TestClientRegisterPersonFails(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	s := grpc.NewServer()
 	defer s.Stop()
@@ -138,7 +138,7 @@ func TestClientRegisterPersonFails(t *testing.T) {
 }
 
 func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
-	internal.InitTracer()
+	tracetesting.InitTracer()
 
 	s := grpc.NewServer()
 	defer s.Stop()
@@ -181,7 +181,7 @@ func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
 }
 
 func BenchmarkClientRequestDefaultInterceptor(b *testing.B) {
-	internal.InitTracer()
+	tracetesting.InitTracer()
 
 	s := grpc.NewServer()
 	defer s.Stop()

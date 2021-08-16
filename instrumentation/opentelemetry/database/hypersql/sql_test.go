@@ -7,7 +7,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -15,7 +15,7 @@ import (
 )
 
 func createDB(t *testing.T) (*sql.DB, func() []sdktrace.ReadOnlySpan) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	driverName, err := Register("sqlite3")
 	if err != nil {
@@ -56,7 +56,7 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, "db:query", span.Name())
 	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind())
 
-	attrs := internal.LookupAttributes(span.Attributes())
+	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", attrs.Get("db.statement").AsString())
 	assert.Equal(t, "sqlite", attrs.Get("db.system").AsString())
 	assert.False(t, attrs.Has("error"))
@@ -87,7 +87,7 @@ func TestExecSuccess(t *testing.T) {
 	assert.Equal(t, "db:exec", span.Name())
 	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind())
 
-	attrs := internal.LookupAttributes(span.Attributes())
+	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.False(t, attrs.Has("error"))
 
 	db.Close()
@@ -135,7 +135,7 @@ func TestTxWithCommitSuccess(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		assert.Equal(t, apitrace.SpanKindClient, spans[i].SpanKind())
-		attrs := internal.LookupAttributes(spans[i].Attributes())
+		attrs := tracetesting.LookupAttributes(spans[i].Attributes())
 		assert.False(t, attrs.Has("error"))
 	}
 
@@ -181,7 +181,7 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		assert.Equal(t, apitrace.SpanKindClient, spans[i].SpanKind())
-		attrs := internal.LookupAttributes(spans[i].Attributes())
+		attrs := tracetesting.LookupAttributes(spans[i].Attributes())
 		assert.False(t, attrs.Has("error"))
 	}
 

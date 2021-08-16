@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/jackc/hyperpgx"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -24,7 +24,7 @@ func TestQuerySuccess(t *testing.T) {
 	}
 	defer conn.Close(context.Background())
 
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	select {
 	// We timeout after 5 secs of trying ping the DB.
@@ -54,7 +54,7 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, "db:query", span.Name())
 	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind())
 
-	attrs := internal.LookupAttributes(span.Attributes())
+	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.Equal(t, "SELECT 1 WHERE 1 = $1", attrs.Get("db.statement").AsString())
 	assert.Equal(t, "postgres", attrs.Get("db.system").AsString())
 	assert.Equal(t, "root", attrs.Get("db.user").AsString())

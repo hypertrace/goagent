@@ -1,4 +1,4 @@
-package internal
+package tracetesting
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 // spans for further inspection. Its main purpose is to declare a tracer
 // for TESTING.
 func InitTracer() (apitrace.Tracer, func() []sdktrace.ReadOnlySpan) {
-	exporter := &Recorder{}
+	exporter := &recorder{}
 
 	resources, _ := resource.New(context.Background(), resource.WithAttributes(semconv.ServiceNameKey.String("TestService")))
 

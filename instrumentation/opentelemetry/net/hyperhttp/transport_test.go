@@ -10,9 +10,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	"go.opentelemetry.io/otel/propagation"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -20,7 +20,7 @@ import (
 )
 
 func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.Header().Set("content-type", "application/json")
@@ -57,7 +57,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, span.Name(), "POST")
 	assert.Equal(t, span.SpanKind, trace.SpanKindClient)
 
-	attrs := internal.LookupAttributes(span.Attributes())
+	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.Api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
@@ -77,7 +77,7 @@ func (t failingTransport) RoundTrip(*http.Request) (*http.Response, error) {
 }
 
 func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
-	internal.InitTracer()
+	tracetesting.InitTracer()
 
 	expectedErr := errors.New("roundtrip error")
 	client := &http.Client{
@@ -94,7 +94,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 }
 
 func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	tCases := map[string]struct {
 		requestBody                    string
@@ -161,7 +161,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			span := flusher()[0]
 
-			var attrs internal.LookupAttributes = internal.LookupAttributes(span.Attributes())
+			var attrs tracetesting.LookupAttributes = tracetesting.LookupAttributes(span.Attributes())
 			if tCase.shouldHaveRecordedRequestBody {
 				assert.Equal(t, tCase.requestBody, attrs.Get("http.request.body").AsString())
 			} else {
@@ -178,7 +178,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 }
 
 func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
-	tracer, _ := internal.InitTracer()
+	tracer, _ := tracetesting.InitTracer()
 
 	ctx, span := tracer.Start(context.Background(), "test")
 	defer span.End()

@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"go.opentelemetry.io/otel/trace"
 	"gotest.tools/assert"
@@ -30,7 +30,7 @@ func findAvailablePort() (int, error) {
 }
 
 func TestSpanRecordedCorrectly(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/things/{thing_id}", func(rw http.ResponseWriter, r *http.Request) {
@@ -76,7 +76,7 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 	assert.Equal(t, "/things/{thing_id}", span.Name())
 	assert.Equal(t, span.SpanKind(), trace.SpanKindServer)
 
-	attrs := internal.LookupAttributes(span.Attributes())
+	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())

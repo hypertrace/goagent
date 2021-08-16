@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/config"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("request_id", "abc123xyz")
@@ -44,14 +44,14 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, "test_name", spans[0].Name)
 	assert.Equal(t, trace.SpanKindServer, spans[0].SpanKind)
 
-	attrs := internal.LookupAttributes(spans[0].Attributes())
+	attrs := tracetesting.LookupAttributes(spans[0].Attributes())
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", attrs.Get("http.url").AsString())
 	assert.Equal(t, "xyz123abc", attrs.Get("http.request.header.Api_key").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.response.header.Request_id").AsString())
 }
 
 func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	tCases := map[string]struct {
 		requestBody                    string
@@ -105,7 +105,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			ih.ServeHTTP(w, r)
 
 			span := flusher()[0]
-			attrs := internal.LookupAttributes(span.Attributes())
+			attrs := tracetesting.LookupAttributes(span.Attributes())
 
 			if tCase.shouldHaveRecordedRequestBody {
 				assert.Equal(t, tCase.requestBody, attrs.Get("http.request.body").AsString())
@@ -119,7 +119,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 }
 
 func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
 

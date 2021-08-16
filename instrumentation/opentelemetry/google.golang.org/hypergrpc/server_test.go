@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"log"
 	"net"
-	reflect "reflect"
+	"reflect"
 	"testing"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	sdkgrpc "github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -79,7 +79,7 @@ func jsonEqual(a, b string) (bool, error) {
 }
 
 func TestServerRegisterPersonSuccess(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
@@ -122,7 +122,7 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 	span := spans[0]
 	assert.Equal(t, "helloworld.Greeter/SayHello", span.Name())
 
-	attrs := internal.LookupAttributes(span.Attributes())
+	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.Equal(t, "grpc", attrs.Get("rpc.system").AsString())
 	assert.Equal(t, "helloworld.Greeter", attrs.Get("rpc.service").AsString())
 	assert.Equal(t, "SayHello", attrs.Get("rpc.method").AsString())
@@ -146,7 +146,7 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 }
 
 func TestServerRegisterPersonFails(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
@@ -192,7 +192,7 @@ func TestServerRegisterPersonFails(t *testing.T) {
 }
 
 func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
-	internal.InitTracer()
+	tracetesting.InitTracer()
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
@@ -234,7 +234,7 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 }
 
 func BenchmarkServerRequestDefaultInterceptor(b *testing.B) {
-	internal.InitTracer()
+	tracetesting.InitTracer()
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),

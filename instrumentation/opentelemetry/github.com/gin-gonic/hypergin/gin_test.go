@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/net/hyperhttp"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
@@ -26,7 +26,7 @@ func handler(c *gin.Context) {
 }
 
 func TestSpanRecordedCorrectly(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	r := gin.Default()
 	r.Use(Middleware(&sdkhttp.Options{}))
@@ -58,7 +58,7 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 	assert.Equal(t, "/things/:thing_id", span.Name())
 	assert.Equal(t, span.SpanKind(), trace.SpanKindServer)
 
-	attrs := internal.LookupAttributes(span.Attributes())
+	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
@@ -69,7 +69,7 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 
 // Client -> GET Server1/send_thing_request -> POST Server2/things/:thing_id
 func TestTraceContextIsPropagated(t *testing.T) {
-	_, flusher := internal.InitTracer()
+	_, flusher := tracetesting.InitTracer()
 
 	var client = http.Client{
 		Transport: hyperhttp.NewTransport(

@@ -19,11 +19,11 @@ import (
 
 	"github.com/hypertrace/goagent/config"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
-	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/metadata"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -158,8 +158,8 @@ func Init(cfg *config.AgentConfig) func() {
 func createResources(serviceName string, resources map[string]string) []attribute.KeyValue {
 	retValues := []attribute.KeyValue{
 		semconv.ServiceNameKey.String(serviceName),
-		semconv.TelemetrySDKNameKey.String("hypertrace"),
-		semconv.TelemetrySDKVersionKey.String(version.Version),
+		semconv.TelemetrySDKNameKey.String(metadata.SDKName),
+		semconv.TelemetrySDKVersionKey.String(metadata.SDKVersion),
 		semconv.TelemetrySDKLanguageGo,
 	}
 

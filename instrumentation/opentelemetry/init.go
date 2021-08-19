@@ -39,7 +39,7 @@ var (
 	globalSampler   sdktrace.Sampler
 	initialized     = false
 	mu              sync.Mutex
-	exporterFactory func(serviceName string) (export.SpanExporter, error)
+	exporterFactory func() (export.SpanExporter, error)
 )
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
@@ -70,7 +70,7 @@ func removeProtocolPrefixForOTLP(endpoint string) string {
 	return pieces[1]
 }
 
-func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (export.SpanExporter, error) {
+func makeExporterFactory(cfg *config.AgentConfig) func() (export.SpanExporter, error) {
 	switch cfg.Reporting.TraceReporterType {
 	case config.TraceReporterType_ZIPKIN:
 		client := &http.Client{Transport: &http.Transport{
@@ -78,7 +78,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (expo
 				InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
 		}}
 
-		return func(serviceName string) (export.SpanExporter, error) {
+		return func() (export.SpanExporter, error) {
 			return zipkin.New(
 				cfg.GetReporting().GetEndpoint().GetValue(),
 				zipkin.WithClient(client),
@@ -93,7 +93,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceName string) (expo
 			opts = append(opts, otlpgrpc.WithInsecure())
 		}
 
-		return func(_ string) (export.SpanExporter, error) {
+		return func() (export.SpanExporter, error) {
 			return otlptrace.New(
 				context.Background(),
 				otlpgrpc.NewClient(opts...),
@@ -114,7 +114,7 @@ func Init(cfg *config.AgentConfig) func() {
 
 	exporterFactory = makeExporterFactory(cfg)
 
-	exporter, err := exporterFactory(cfg.ServiceName.Value)
+	exporter, err := exporterFactory()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 		return nil, fmt.Errorf("service %v already initialized", serviceName)
 	}
 
-	exporter, err := exporterFactory(serviceName)
+	exporter, err := exporterFactory()
 	if err != nil {
 		log.Fatal(err)
 	}

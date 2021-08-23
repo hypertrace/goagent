@@ -7,6 +7,8 @@ type NoopFilter struct{}
 
 var _ Filter = NoopFilter{}
 
+func (NoopFilter) Start() {}
+
 // EvaluateURLAndHeaders that always returns false
 func (NoopFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
 	return false

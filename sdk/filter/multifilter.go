@@ -14,6 +14,8 @@ func NewMultiFilter(filter ...Filter) *MultiFilter {
 	return &MultiFilter{filters: filter}
 }
 
+func (m *MultiFilter) Start() {}
+
 // EvaluateURLAndHeaders runs URL and headers evaluation for each filter until one returns true
 func (m *MultiFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
 	for _, f := range (*m).filters {

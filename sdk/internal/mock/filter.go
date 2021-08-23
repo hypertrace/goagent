@@ -7,6 +7,8 @@ type Filter struct {
 	BodyEvaluator          func(span sdk.Span, body []byte) bool
 }
 
+func (f Filter) Start() {}
+
 func (f Filter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
 	return f.URLAndHeadersEvaluator != nil && f.URLAndHeadersEvaluator(span, url, headers)
 }

@@ -2,9 +2,10 @@ package config
 
 import agentconfig "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
 
-// defaultConfig holds the default config values for agent.
 var defaultConfig = agentconfig.AgentConfig{
-	PropagationFormats: []agentconfig.PropagationFormat{agentconfig.PropagationFormat_TRACECONTEXT},
+	PropagationFormats: []agentconfig.PropagationFormat{
+		agentconfig.PropagationFormat_TRACECONTEXT,
+	},
 	DataCapture: &agentconfig.DataCapture{
 		HttpHeaders: &agentconfig.Message{
 			Request:  agentconfig.Bool(true),

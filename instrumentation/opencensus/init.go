@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
-	"github.com/hypertrace/goagent/config"
+	config "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/openzipkin/zipkin-go"
 	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"

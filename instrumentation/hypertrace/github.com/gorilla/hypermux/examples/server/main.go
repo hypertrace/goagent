@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hypertrace/goagent/config"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/gorilla/hypermux"
 )

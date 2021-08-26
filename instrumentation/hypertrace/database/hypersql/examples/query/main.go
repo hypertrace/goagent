@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/database/hypersql"

@@ -11,7 +11,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/hypertrace/goagent/config"
+	config "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )

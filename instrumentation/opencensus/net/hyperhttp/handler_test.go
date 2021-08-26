@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hypertrace/goagent/config"
+	config "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"

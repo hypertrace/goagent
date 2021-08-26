@@ -1,5 +1,10 @@
 package config
 
+// This package aims to reduce the friction of introducing a new external package
+// (hypertrace/agent-config) and provides most of the utility function so that
+// user code does not need to import more than one package when it comes to declare
+// the config.
+
 import (
 	agentconfig "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
 )

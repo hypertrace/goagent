@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hypertrace/goagent/config"
+
 	"go.opentelemetry.io/otel/propagation"
 
-	"github.com/hypertrace/goagent/config"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel"
 )
@@ -185,10 +186,10 @@ var _ propagation.TextMapCarrier = carrier{}
 
 func TestPropagationFormats(t *testing.T) {
 	cfg := config.Load()
-	cfg.PropagationFormats = []config.PropagationFormat{
+	cfg.PropagationFormats = config.PropagationFormats(
 		config.PropagationFormat_B3,
 		config.PropagationFormat_TRACECONTEXT,
-	}
+	)
 	Init(cfg)
 	tracer := otel.Tracer("b3")
 	ctx, _ := tracer.Start(context.Background(), "test")

@@ -20,7 +20,7 @@ func setupRouter() *gin.Engine {
 	// Ping test
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"code" : http.StatusOK,
+			"code":    http.StatusOK,
 			"message": "pong",
 		})
 	})

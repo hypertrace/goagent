@@ -1,48 +1,32 @@
 package config
 
-import (
-	"google.golang.org/protobuf/types/known/wrapperspb"
-)
+import agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
 
 // defaultConfig holds the default config values for agent.
-var defaultConfig = AgentConfig{
-	PropagationFormats: []PropagationFormat{PropagationFormat_TRACECONTEXT},
-	DataCapture: &DataCapture{
-		HttpHeaders: &Message{
-			Request:  Bool(true),
-			Response: Bool(true),
+var defaultConfig = agentconfig.AgentConfig{
+	PropagationFormats: []agentconfig.PropagationFormat{agentconfig.PropagationFormat_TRACECONTEXT},
+	DataCapture: &agentconfig.DataCapture{
+		HttpHeaders: &agentconfig.Message{
+			Request:  agentconfig.Bool(true),
+			Response: agentconfig.Bool(true),
 		},
-		HttpBody: &Message{
-			Request:  Bool(true),
-			Response: Bool(true),
+		HttpBody: &agentconfig.Message{
+			Request:  agentconfig.Bool(true),
+			Response: agentconfig.Bool(true),
 		},
-		RpcMetadata: &Message{
-			Request:  Bool(true),
-			Response: Bool(true),
+		RpcMetadata: &agentconfig.Message{
+			Request:  agentconfig.Bool(true),
+			Response: agentconfig.Bool(true),
 		},
-		RpcBody: &Message{
-			Request:  Bool(true),
-			Response: Bool(true),
+		RpcBody: &agentconfig.Message{
+			Request:  agentconfig.Bool(true),
+			Response: agentconfig.Bool(true),
 		},
-		BodyMaxSizeBytes: Int32(131072),
+		BodyMaxSizeBytes: agentconfig.Int32(131072),
 	},
-	Reporting: &Reporting{
-		Endpoint:          String("http://localhost:9411/api/v2/spans"),
-		Secure:            Bool(false),
-		TraceReporterType: TraceReporterType_ZIPKIN,
+	Reporting: &agentconfig.Reporting{
+		Endpoint:          agentconfig.String("http://localhost:9411/api/v2/spans"),
+		Secure:            agentconfig.Bool(false),
+		TraceReporterType: agentconfig.TraceReporterType_ZIPKIN,
 	},
-}
-
-// Bool wraps the scalar value to be used in the AgentConfig object
-func Bool(val bool) *wrapperspb.BoolValue {
-	return &wrapperspb.BoolValue{Value: val}
-}
-
-// String wraps the scalar value to be used in the AgentConfig object
-func String(val string) *wrapperspb.StringValue {
-	return &wrapperspb.StringValue{Value: val}
-}
-
-func Int32(val int32) *wrapperspb.Int32Value {
-	return &wrapperspb.Int32Value{Value: val}
 }

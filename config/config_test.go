@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,9 +63,9 @@ func TestSnakeYAMLLoadSuccess(t *testing.T) {
 }
 
 func TestConfigLoadFromEnvOverridesWithEnv(t *testing.T) {
-	cfg := &AgentConfig{
-		ServiceName:        String("my_service"),
-		PropagationFormats: []PropagationFormat{PropagationFormat_B3, PropagationFormat_TRACECONTEXT},
+	cfg := &agentconfig.AgentConfig{
+		ServiceName:        agentconfig.String("my_service"),
+		PropagationFormats: []agentconfig.PropagationFormat{PropagationFormat_B3, PropagationFormat_TRACECONTEXT},
 	}
 	assert.Equal(t, "my_service", cfg.GetServiceName().Value)
 
@@ -76,17 +77,17 @@ func TestConfigLoadFromEnvOverridesWithEnv(t *testing.T) {
 	cfg.LoadFromEnv()
 	assert.Equal(t, "my_other_service", cfg.GetServiceName().Value)
 	assert.Equal(t, 1, len(cfg.GetPropagationFormats()))
-	assert.Equal(t, PropagationFormat_B3, cfg.GetPropagationFormats()[0])
+	assert.Equal(t, agentconfig.PropagationFormat_B3, cfg.GetPropagationFormats()[0])
 }
 
 func TestConfigLoadIsNotOverridenByDefaults(t *testing.T) {
-	pf := []PropagationFormat{
-		PropagationFormat_B3, PropagationFormat_TRACECONTEXT}
+	pf := []agentconfig.PropagationFormat{
+		agentconfig.PropagationFormat_B3, agentconfig.PropagationFormat_TRACECONTEXT}
 
-	cfg := &AgentConfig{
-		DataCapture: &DataCapture{
-			RpcMetadata: &Message{
-				Request: Bool(false),
+	cfg := &agentconfig.AgentConfig{
+		DataCapture: &agentconfig.DataCapture{
+			RpcMetadata: &agentconfig.Message{
+				Request: agentconfig.Bool(false),
 			},
 		},
 		PropagationFormats: pf,
@@ -94,7 +95,7 @@ func TestConfigLoadIsNotOverridenByDefaults(t *testing.T) {
 
 	assert.Equal(t, false, cfg.DataCapture.RpcMetadata.Request.Value)
 
-	cfg.LoadFromEnv()
+	LoadEnv(cfg)
 	// we verify here the value isn't overridden by default value (true)
 	assert.Equal(t, false, cfg.DataCapture.RpcMetadata.Request.Value)
 	// we verify default value is used for undefined value (true)

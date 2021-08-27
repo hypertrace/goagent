@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/hypertrace/goagent/config"
+	config "github.com/hypertrace/agent-config/gen/go/v1"
 )
 
 func TestConfig(t *testing.T) {

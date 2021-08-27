@@ -1,11 +1,11 @@
 package config
 
 import (
-	"github.com/hypertrace/goagent/config"
+	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 )
 
 // InitConfig allows users to initialize the config
-func InitConfig(c *config.AgentConfig) {
+func InitConfig(c *agentconfig.AgentConfig) {
 	internalconfig.InitConfig(c)
 }

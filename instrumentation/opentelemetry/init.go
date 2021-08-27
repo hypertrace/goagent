@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	export "go.opentelemetry.io/otel/sdk/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
@@ -39,7 +38,7 @@ var (
 	globalSampler   sdktrace.Sampler
 	initialized     = false
 	mu              sync.Mutex
-	exporterFactory func() (export.SpanExporter, error)
+	exporterFactory func() (sdktrace.SpanExporter, error)
 )
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
@@ -70,7 +69,7 @@ func removeProtocolPrefixForOTLP(endpoint string) string {
 	return pieces[1]
 }
 
-func makeExporterFactory(cfg *config.AgentConfig) func() (export.SpanExporter, error) {
+func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter, error) {
 	switch cfg.Reporting.TraceReporterType {
 	case config.TraceReporterType_ZIPKIN:
 		client := &http.Client{Transport: &http.Transport{
@@ -78,7 +77,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (export.SpanExporter, e
 				InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
 		}}
 
-		return func() (export.SpanExporter, error) {
+		return func() (sdktrace.SpanExporter, error) {
 			return zipkin.New(
 				cfg.GetReporting().GetEndpoint().GetValue(),
 				zipkin.WithClient(client),
@@ -93,7 +92,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (export.SpanExporter, e
 			opts = append(opts, otlpgrpc.WithInsecure())
 		}
 
-		return func() (export.SpanExporter, error) {
+		return func() (sdktrace.SpanExporter, error) {
 			return otlptrace.New(
 				context.Background(),
 				otlpgrpc.NewClient(opts...),

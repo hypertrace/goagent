@@ -28,3 +28,10 @@ linters-settings:
     min-complexity: 15
   golint:
     min-confidence: 0.85
+
+issues:
+  exclude-rules:
+    - path: config\/config\.go
+      text: don't use underscores in Go names
+      linters:
+        - golint

@@ -1,7 +1,7 @@
 package config
 
 import (
-	agentconfig "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
+	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 )
 

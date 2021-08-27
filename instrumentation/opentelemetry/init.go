@@ -15,7 +15,7 @@ import (
 
 	"github.com/hypertrace/goagent/sdk"
 
-	config "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
+	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"go.opentelemetry.io/otel/attribute"
 
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"

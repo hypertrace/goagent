@@ -1,6 +1,6 @@
 package config
 
-import agentconfig "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
+import agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
 
 // defaultConfig holds the default config values for agent.
 var defaultConfig = agentconfig.AgentConfig{

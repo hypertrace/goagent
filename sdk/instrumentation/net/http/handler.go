@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	config "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
+	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"

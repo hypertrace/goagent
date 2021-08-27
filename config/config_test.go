@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	agentconfig "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
+	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/stretchr/testify/assert"
 )
 

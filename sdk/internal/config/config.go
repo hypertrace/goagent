@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	agentconfig "github.com/hypertrace/agent-config/gen/go/hypertrace/agent/config/v1"
+	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/config"
 	"google.golang.org/protobuf/proto"
 )

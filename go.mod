@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.7.2
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
-	github.com/hypertrace/agent-config/gen/go v0.0.0-00010101000000-000000000000
+	github.com/hypertrace/agent-config/gen/go v0.0.0-20210827180927-f8a7187ff6cc
 	github.com/mattn/go-sqlite3 v1.14.4
 	github.com/ngrok/sqlmw v0.0.0-20200129213757-d5c93a81bec6
 	github.com/openzipkin/zipkin-go v0.2.5
@@ -31,5 +31,3 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gotest.tools v2.2.0+incompatible
 )
-
-replace github.com/hypertrace/agent-config/gen/go => ../agent-config/gen/go

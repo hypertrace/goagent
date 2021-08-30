@@ -1,4 +1,4 @@
-package hyperhttp
+package hyperhttp // import "github.com/hypertrace/goagent/instrumentation/hypertrace/net/hyperhttp"
 
 import (
 	"net/http"

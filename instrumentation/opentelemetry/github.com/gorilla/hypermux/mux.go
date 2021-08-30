@@ -1,4 +1,4 @@
-package hypermux
+package hypermux // import "github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/gorilla/hypermux"
 
 import (
 	"net/http"

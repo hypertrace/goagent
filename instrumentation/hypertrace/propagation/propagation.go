@@ -1,4 +1,4 @@
-package propagation
+package propagation // import "github.com/hypertrace/goagent/instrumentation/hypertrace/propagation"
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package opencensus
+package opencensus // import "github.com/hypertrace/goagent/instrumentation/opencensus"
 
 import (
 	"crypto/tls"

@@ -1,4 +1,4 @@
-package grpc
+package grpc // import "github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc"
 
 import (
 	"context"

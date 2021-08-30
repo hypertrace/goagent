@@ -1,4 +1,4 @@
-package hypertrace
+package hypertrace // import "github.com/hypertrace/goagent/instrumentation/hypertrace"
 
 import (
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"

@@ -1,4 +1,4 @@
-package sql
+package sql // import "github.com/hypertrace/goagent/sdk/instrumentation/database/sql"
 
 // Highly inspired in https://github.com/go-sql-driver/mysql/blob/d2e52fca0b/dsn.go
 

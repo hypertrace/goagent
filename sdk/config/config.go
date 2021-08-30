@@ -1,4 +1,4 @@
-package config
+package config // import "github.com/hypertrace/goagent/sdk/config"
 
 import (
 	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"

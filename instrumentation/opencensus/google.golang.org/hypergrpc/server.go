@@ -1,4 +1,4 @@
-package hypergrpc
+package hypergrpc // import "github.com/hypertrace/goagent/instrumentation/opencensus/google.golang.org/hypergrpc"
 
 import (
 	"github.com/hypertrace/goagent/instrumentation/opencensus"

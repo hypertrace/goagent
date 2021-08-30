@@ -1,4 +1,4 @@
-package hypergin
+package hypergin // import "github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/gin-gonic/hypergin"
 
 import (
 	"context"

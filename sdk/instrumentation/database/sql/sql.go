@@ -1,4 +1,4 @@
-package sql
+package sql // import "github.com/hypertrace/goagent/sdk/instrumentation/database/sql"
 
 import (
 	"context"

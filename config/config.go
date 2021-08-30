@@ -1,4 +1,4 @@
-package config
+package config // import "github.com/hypertrace/goagent/config"
 
 // This package aims to reduce the friction of introducing a new external package
 // (hypertrace/agent-config) and provides most of the utility function so that

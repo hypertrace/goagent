@@ -1,4 +1,4 @@
-package hypersql
+package hypersql // import "github.com/hypertrace/goagent/instrumentation/hypertrace/database/hypersql"
 
 import (
 	otelsql "github.com/hypertrace/goagent/instrumentation/opentelemetry/database/hypersql"

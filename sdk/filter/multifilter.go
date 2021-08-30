@@ -1,4 +1,4 @@
-package filter
+package filter // import "github.com/hypertrace/goagent/sdk/filter"
 
 import "github.com/hypertrace/goagent/sdk"
 

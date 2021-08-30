@@ -1,4 +1,4 @@
-package hypersql
+package hypersql // import "github.com/hypertrace/goagent/instrumentation/opencensus/database/hypersql"
 
 import (
 	"database/sql/driver"

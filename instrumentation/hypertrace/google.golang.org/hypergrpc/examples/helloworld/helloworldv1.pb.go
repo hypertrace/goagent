@@ -1,4 +1,4 @@
-package helloworld
+package helloworld // import "github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc/examples/helloworld"
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"

@@ -1,4 +1,4 @@
-package examples
+package examples // import "github.com/hypertrace/goagent/instrumentation/opencensus/net/hyperhttp/examples"
 
 import (
 	"contrib.go.opencensus.io/exporter/zipkin"

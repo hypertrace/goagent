@@ -1,4 +1,4 @@
-package http
+package http // import "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 
 import (
 	"fmt"

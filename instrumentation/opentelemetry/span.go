@@ -1,4 +1,4 @@
-package opentelemetry
+package opentelemetry // import "github.com/hypertrace/goagent/instrumentation/opentelemetry"
 
 import (
 	"context"

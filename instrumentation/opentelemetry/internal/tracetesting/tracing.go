@@ -27,7 +27,7 @@ func InitTracer() (apitrace.Tracer, func() []sdktrace.ReadOnlySpan) {
 	)
 
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(b3.B3{})
+	otel.SetTextMapPropagator(b3.New())
 
 	return tp.Tracer(opentelemetry.TracerDomain), func() []sdktrace.ReadOnlySpan {
 		return exporter.Flush()

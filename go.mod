@@ -1,6 +1,6 @@
 module github.com/hypertrace/goagent
 
-go 1.14
+go 1.15
 
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2

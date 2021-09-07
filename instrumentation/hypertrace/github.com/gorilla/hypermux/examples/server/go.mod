@@ -1,6 +1,6 @@
 module github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/gorilla/hypermux/examples/server
 
-go 1.16
+go 1.15
 
 replace github.com/hypertrace/goagent => ../../../../../../../
 

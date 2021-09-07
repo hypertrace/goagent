@@ -11,9 +11,9 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/net/hyperhttp"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
-	"gotest.tools/assert"
 )
 
 func handler(c *gin.Context) {

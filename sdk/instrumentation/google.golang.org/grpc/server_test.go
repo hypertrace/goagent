@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc/examples/helloworld"
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/sdk/filter"
+	"github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc/internal/helloworld"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"

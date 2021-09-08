@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/examples/helloworld"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/internal/helloworld"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"

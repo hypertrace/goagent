@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/gin-gonic/hypergin"
+	"github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/gin-gonic/hypergin"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 

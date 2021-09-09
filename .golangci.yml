@@ -1,6 +1,9 @@
 run:
   deadline: 5m
 
+  skip-files:
+    - "\\.pb\\.go$"
+
 linters:
   disable-all: true
   enable:

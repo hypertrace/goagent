@@ -33,8 +33,7 @@ deps-ci:
 	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 check-examples:
-	find ./instrumentation -type d -print | \
-	grep examples/ | \
+	find ./examples -type d -print | \
 	xargs -I {} bash -c 'if [ -f "{}/main.go" ] ; then cd {}; go build -o ./build_example main.go ; fi'
 	find . -name "build_example" -delete
 
@@ -44,10 +43,10 @@ fmt:
 
 .PHONY: tidy
 tidy:
-	find . -path ./config -prune -o -name "go.mod" \
+	@find . -name "go.mod" \
 	| grep go.mod \
 	| xargs -I {} bash -c 'dirname {}' \
-	| xargs -I {} bash -c 'cd {}; go mod tidy'
+	| xargs -I {} bash -c 'echo "=> {}"; cd {}; go mod tidy -v; '
 
 .PHONY: install-tools
 install-tools: ## Install all the dependencies under the tools module

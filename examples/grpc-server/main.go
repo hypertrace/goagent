@@ -9,9 +9,9 @@ import (
 	"net"
 
 	"github.com/hypertrace/goagent/config"
+	pb "github.com/hypertrace/goagent/examples/internal/helloworld"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc"
-	pb "github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc/examples/helloworld"
 	sdkgrpc "github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc"
 	"google.golang.org/grpc"
 )

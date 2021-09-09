@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/jackc/hyperpgx"
+	"github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/jackc/hyperpgx"
 )
 
 func main() {
-	conn, err := hyperpgx.Connect(context.Background(),"root:root@localhost")
+	conn, err := hyperpgx.Connect(context.Background(), "root:root@localhost")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)

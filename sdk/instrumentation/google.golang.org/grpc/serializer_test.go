@@ -3,7 +3,7 @@ package grpc
 import (
 	"testing"
 
-	pb "github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc/examples/helloworld"
+	pb "github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc/internal/helloworld"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,8 +15,8 @@ func TestWithProtobufMessageFormatV2(t *testing.T) {
 }
 
 func TestWithProtobufMessageFormatV1(t *testing.T) {
-	msg := &pb.HelloResponse{Name: "Test Name"}
+	msg := &pb.HelloReply{Message: "Test message"}
 	data, err := marshalMessageableJSON(msg)
 	assert.Nil(t, err)
-	assert.Equal(t, "{\"name\":\"Test Name\"}", string(data[:]))
+	assert.Equal(t, "{\"message\":\"Test message\"}", string(data[:]))
 }

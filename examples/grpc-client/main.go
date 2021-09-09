@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/hypertrace/goagent/config"
+	pb "github.com/hypertrace/goagent/examples/internal/helloworld"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc"
-	pb "github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc/examples/helloworld"
 	"google.golang.org/grpc"
 )
 

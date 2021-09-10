@@ -112,6 +112,7 @@ go run ./examples/http-server/main.go
 
 
 ## Gin-Gonic Server
+
 Gin server instrumentation relies on adding the `hypergin.Middleware` middleware to the gin server. 
 ```go
 r := gin.Default()
@@ -122,12 +123,12 @@ cfg.ServiceName = config.String("http-gin-server")
 flusher := hypertrace.Init(cfg)
 defer flusher()
 
-r.Use(hypergin.Middleware(&sdkhttp.Options{}))
+r.Use(hypergin.Middleware())
 ```
 
 To run an example gin server with the hypertrace middleware: 
 ```bash
-go run ./instrumentation/hypertrace/github.com/gin-gonic/hypergin/examples/main.go
+go run ./examples/gin-server/main.go
 ```
 
 Then make a request to `localhost:8080/ping`

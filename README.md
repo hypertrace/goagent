@@ -3,13 +3,17 @@
 ![test](https://github.com/hypertrace/goagent/workflows/test/badge.svg)
 [![codecov](https://codecov.io/gh/hypertrace/goagent/branch/master/graph/badge.svg)](https://codecov.io/gh/hypertrace/goagent)
 
-`goagent` provides a set of complementary instrumentation features for collecting relevant data to be processed by [Hypertrace](https://hypertrace.org). 
+`goagent` provides a set of complementary instrumentation features for collecting relevant data to be processed by [Hypertrace](https://hypertrace.org).
 
 ## Getting started
 
 Setting up Go Agent can be done with a few lines:
 
 ```go
+import "github.com/hypertrace/goagent/config"
+
+...
+
 func main() {
     cfg := config.Load()
     cfg.ServiceName = config.String("myservice")
@@ -33,7 +37,6 @@ import (
 
     "github.com/gorilla/mux"
     "github.com/hypertrace/goagent/instrumentation/hypertrace/net/hyperhttp"
-    sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 
 func main() {
@@ -43,8 +46,6 @@ func main() {
     r.Handle("/foo/{bar}", hyperhttp.NewHandler(
         fooHandler,
         "/foo/{bar}",
-        // See Options section
-        &sdkhttp.Options{}
     ))
 
     // ...
@@ -139,12 +140,13 @@ The server instrumentation relies on the `grpc.UnaryServerInterceptor` component
 
 server := grpc.NewServer(
     grpc.UnaryInterceptor(
-        hypergrpc.UnaryServerInterceptor(&sdkgrpc.Options{}),
+        hypergrpc.UnaryServerInterceptor(),
     ),
 )
 ```
 
 #### Options
+
 ##### Filter
 [Filtering](sdk/filter/README.md) can be added as part of Options. Multiple filters can be added and they will be run in sequence until a filter returns true (request is blocked), or all filters are run.
 

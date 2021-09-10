@@ -33,9 +33,9 @@ deps-ci:
 	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 check-examples:
-	find ./examples -type d -print | \
-	xargs -I {} bash -c 'if [ -f "{}/main.go" ] ; then cd {}; go build -o ./build_example main.go ; fi'
-	find . -name "build_example" -delete
+	@find ./examples -type d -print | \
+	xargs -I {} bash -c 'if [ -f "{}/main.go" ] ; then cd {}; echo "=> {}"; go build -o ./build_example main.go ; fi'
+	@find . -name "build_example" -delete
 
 .PHONY: fmt
 fmt:

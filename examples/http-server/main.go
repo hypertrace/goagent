@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -14,7 +15,6 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/net/hyperhttp"
-	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 
 func main() {
@@ -28,7 +28,6 @@ func main() {
 	r.Handle("/foo", hyperhttp.NewHandler(
 		http.HandlerFunc(fooHandler),
 		"/foo",
-		&sdkhttp.Options{},
 	))
 	log.Fatal(http.ListenAndServe(":8081", r))
 }

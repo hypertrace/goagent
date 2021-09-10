@@ -55,15 +55,17 @@ func main() {
 #### Options
 
 ##### Filter
-[Filtering](sdk/filter/README.md) can be added as part of Options. Multiple filters can be added and they will be run in sequence until a filter returns true (request is blocked), or all filters are run.
+[Filtering](sdk/filter/README.md) can be added as part of options. Multiple filters can be added and they will be run in sequence until a filter returns true (request is blocked), or all filters are run.
 
 ```go
 
 // ...
 
-&sdkhttp.Options {
-  Filter: filter.NewMultiFilter(filter1, filter2)
-}
+    r.Handle("/foo/{bar}", hyperhttp.NewHandler(
+        fooHandler,
+        "/foo/{bar}",
+        hyperhttp.WithFilter(filter.NewMultiFilter(filter1, filter2)),
+    ))
 
 // ...
 
@@ -148,15 +150,17 @@ server := grpc.NewServer(
 #### Options
 
 ##### Filter
-[Filtering](sdk/filter/README.md) can be added as part of Options. Multiple filters can be added and they will be run in sequence until a filter returns true (request is blocked), or all filters are run.
+[Filtering](sdk/filter/README.md) can be added as part of options. Multiple filters can be added and they will be run in sequence until a filter returns true (request is blocked), or all filters are run.
 
 ```go
 
 // ...
 
-&sdkhttp.Options {
-  Filter: filter.NewMultiFilter(filter1, filter2)
-}
+    grpc.UnaryInterceptor(
+        hypergrpc.UnaryServerInterceptor(
+            hypergrpc.WithFilter(filter.NewMultiFilter(filter1, filter2))
+        ),
+    ),
 
 // ...
 

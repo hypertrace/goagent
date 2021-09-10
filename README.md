@@ -101,13 +101,13 @@ res, err := client.Do(req)
 In terminal 1 run the client:
 
 ```bash
-go run ./instrumentation/hypertrace/net/hyperhttp/examples/client/main.go
+go run ./examples/http-client/main.go
 ```
 
 In terminal 2 run the server:
 
 ```bash
-go run ./instrumentation/hypertrace/net/hyperhttp/examples/server/main.go
+go run ./examples/http-server/main.go
 ```
 
 
@@ -204,13 +204,13 @@ func main() {
 In terminal 1 run the client:
 
 ```bash
-go run ./instrumentation/hypertrace/google.golang.org/hypergrpc/examples/client/main.go
+go run ./examples/grpc-client/main.go
 ```
 
 In terminal 2 run the server:
 
 ```bash
-go run ./instrumentation/hypertrace/google.golang.org/hypergrpc/examples/server/main.go
+go run ./examples/grpc-server/main.go
 ```
 
 ## Other instrumentations

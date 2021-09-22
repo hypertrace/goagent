@@ -41,6 +41,14 @@ func (s *Span) SetError(err error) {
 	s.Span.AddAttributes(trace.StringAttribute("error", err.Error()))
 }
 
+// Borrowed from https://github.com/open-telemetry/opentelemetry-go/blob/d18c13/bridge/opencensus/internal/span.go#L75
+func (s *Span) SetStatus(code sdk.Code, message string) {
+	s.Span.SetStatus(trace.Status{
+		Code:    int32(code),
+		Message: message,
+	})
+}
+
 func SpanFromContext(ctx context.Context) sdk.Span {
 	return &Span{trace.FromContext(ctx)}
 }

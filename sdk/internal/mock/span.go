@@ -9,12 +9,18 @@ import (
 
 var _ sdk.Span = &Span{}
 
+type Status struct {
+	Code    sdk.Code
+	Message string
+}
+
 type Span struct {
 	Name       string
 	Attributes map[string]interface{}
 	Options    sdk.SpanOptions
 	err        error
 	Noop       bool
+	Status     Status
 	mux        *sync.Mutex
 }
 
@@ -47,6 +53,13 @@ func (s *Span) ReadAttribute(key string) interface{} {
 
 func (s *Span) RemainingAttributes() int {
 	return len(s.Attributes)
+}
+
+func (s *Span) SetStatus(code sdk.Code, description string) {
+	s.Status = Status{
+		Code:    code,
+		Message: description,
+	}
 }
 
 func (s *Span) SetError(err error) {

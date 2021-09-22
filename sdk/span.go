@@ -31,11 +31,11 @@ type SpanFromContext func(ctx context.Context) Span
 type SpanKind string
 
 const (
-	Undetermined SpanKind = ""
-	Client       SpanKind = "CLIENT"
-	Server       SpanKind = "SERVER"
-	Producer     SpanKind = "PRODUCER"
-	Consumer     SpanKind = "CONSUMER"
+	SpanKindUndetermined SpanKind = ""
+	SpanKindClient       SpanKind = "CLIENT"
+	SpanKindServer       SpanKind = "SERVER"
+	SpanKindProducer     SpanKind = "PRODUCER"
+	SpanKindConsumer     SpanKind = "CONSUMER"
 )
 
 // SpanOptions describes the options for starting a span

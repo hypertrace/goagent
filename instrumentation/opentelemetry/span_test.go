@@ -28,10 +28,10 @@ func TestIsNoop(t *testing.T) {
 }
 
 func TestMapSpanKind(t *testing.T) {
-	assert.Equal(t, trace.SpanKindClient, mapSpanKind(sdk.Client))
-	assert.Equal(t, trace.SpanKindServer, mapSpanKind(sdk.Server))
-	assert.Equal(t, trace.SpanKindProducer, mapSpanKind(sdk.Producer))
-	assert.Equal(t, trace.SpanKindConsumer, mapSpanKind(sdk.Consumer))
+	assert.Equal(t, trace.SpanKindClient, mapSpanKind(sdk.SpanKindClient))
+	assert.Equal(t, trace.SpanKindServer, mapSpanKind(sdk.SpanKindServer))
+	assert.Equal(t, trace.SpanKindProducer, mapSpanKind(sdk.SpanKindProducer))
+	assert.Equal(t, trace.SpanKindConsumer, mapSpanKind(sdk.SpanKindConsumer))
 }
 
 func TestSetAttributeSuccess(t *testing.T) {

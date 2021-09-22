@@ -66,9 +66,9 @@ func StartSpan(ctx context.Context, name string, opts *sdk.SpanOptions) (context
 
 func mapSpanKind(kind sdk.SpanKind) int {
 	switch kind {
-	case sdk.Client:
+	case sdk.SpanKindClient:
 		return trace.SpanKindClient
-	case sdk.Server:
+	case sdk.SpanKindServer:
 		return trace.SpanKindServer
 	default:
 		return trace.SpanKindUnspecified

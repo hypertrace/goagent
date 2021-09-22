@@ -65,7 +65,7 @@ func TestQuerySuccess(t *testing.T) {
 
 	span := spans[0]
 	assert.Equal(t, "db:query", span.Name)
-	assert.Equal(t, sdk.Client, span.Options.Kind)
+	assert.Equal(t, sdk.SpanKindClient, span.Options.Kind)
 
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", span.ReadAttribute("db.statement").(string))
 	assert.Equal(t, "sqlite", span.ReadAttribute("db.system").(string))
@@ -95,7 +95,7 @@ func TestExecSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
-	assert.Equal(t, sdk.Client, span.Options.Kind)
+	assert.Equal(t, sdk.SpanKindClient, span.Options.Kind)
 	assert.Equal(t, "db:exec", span.Name)
 	assert.Nil(t, span.ReadAttribute("error"))
 }
@@ -141,7 +141,7 @@ func TestTxWithCommitSuccess(t *testing.T) {
 	assert.Equal(t, "db:commit", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
-		assert.Equal(t, sdk.Client, spans[i].Options.Kind)
+		assert.Equal(t, sdk.SpanKindClient, spans[i].Options.Kind)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
 
@@ -186,7 +186,7 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 	assert.Equal(t, "db:rollback", spans[4].Name)
 
 	for i := 0; i < 5; i++ {
-		assert.Equal(t, sdk.Client, spans[i].Options.Kind)
+		assert.Equal(t, sdk.SpanKindClient, spans[i].Options.Kind)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
 

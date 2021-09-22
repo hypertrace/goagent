@@ -58,7 +58,7 @@ func (r *wrappedRow) Scan(dest ...interface{}) error {
 }
 
 func (w *wrappedConn) Query(ctx context.Context, query string, optionsAndArgs ...interface{}) (pgx.Rows, error) {
-	ctx, span, closer := opentelemetry.StartSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, closer := opentelemetry.StartSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer closer()
 
 	for k, v := range w.connAttrs {
@@ -75,7 +75,7 @@ func (w *wrappedConn) Query(ctx context.Context, query string, optionsAndArgs ..
 }
 
 func (w *wrappedConn) QueryRow(ctx context.Context, sql string, optionsAndArgs ...interface{}) pgx.Row {
-	ctx, span, closer := opentelemetry.StartSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, closer := opentelemetry.StartSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer closer()
 
 	for k, v := range w.connAttrs {
@@ -87,7 +87,7 @@ func (w *wrappedConn) QueryRow(ctx context.Context, sql string, optionsAndArgs .
 }
 
 func (w *wrappedConn) Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error) {
-	ctx, span, closer := opentelemetry.StartSpan(ctx, "exec", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, closer := opentelemetry.StartSpan(ctx, "exec", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer closer()
 
 	for k, v := range w.connAttrs {
@@ -108,7 +108,7 @@ func (w *wrappedConn) Ping(ctx context.Context) error {
 }
 
 func (w *wrappedConn) QueryFunc(ctx context.Context, sql string, args []interface{}, scans []interface{}, f func(pgx.QueryFuncRow) error) (pgconn.CommandTag, error) {
-	ctx, span, closer := opentelemetry.StartSpan(ctx, "exec", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, closer := opentelemetry.StartSpan(ctx, "exec", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer closer()
 
 	for k, v := range w.connAttrs {

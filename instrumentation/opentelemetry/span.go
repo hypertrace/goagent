@@ -7,6 +7,7 @@ import (
 	"github.com/hypertrace/goagent/sdk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -22,6 +23,10 @@ func (s *Span) SetAttribute(key string, value interface{}) {
 
 func (s *Span) SetError(err error) {
 	s.Span.RecordError(err)
+}
+
+func (s *Span) SetStatus(code sdk.Code, description string) {
+	s.Span.SetStatus(codes.Code(code), description)
 }
 
 func (s *Span) IsNoop() bool {

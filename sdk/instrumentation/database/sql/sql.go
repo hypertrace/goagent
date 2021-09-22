@@ -22,7 +22,7 @@ type interceptor struct {
 }
 
 func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQueryContext, query string, args []driver.NamedValue) (driver.Rows, error) {
-	ctx, span, end := in.startSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, end := in.startSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -39,7 +39,7 @@ func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQue
 }
 
 func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExecContext, query string, args []driver.NamedValue) (driver.Result, error) {
-	ctx, span, end := in.startSpan(ctx, "db:exec", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, end := in.startSpan(ctx, "db:exec", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -56,7 +56,7 @@ func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExec
 }
 
 func (in *interceptor) ConnQueryContext(ctx context.Context, conn driver.QueryerContext, query string, args []driver.NamedValue) (driver.Rows, error) {
-	ctx, span, end := in.startSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, end := in.startSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -73,7 +73,7 @@ func (in *interceptor) ConnQueryContext(ctx context.Context, conn driver.Queryer
 }
 
 func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerContext, query string, args []driver.NamedValue) (driver.Result, error) {
-	ctx, span, end := in.startSpan(ctx, "db:exec", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, end := in.startSpan(ctx, "db:exec", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -90,7 +90,7 @@ func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerCo
 }
 
 func (in *interceptor) ConnBeginTx(ctx context.Context, conn driver.ConnBeginTx, txOpts driver.TxOptions) (driver.Tx, error) {
-	ctx, span, end := in.startSpan(ctx, "db:begin_transaction", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, end := in.startSpan(ctx, "db:begin_transaction", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -106,7 +106,7 @@ func (in *interceptor) ConnBeginTx(ctx context.Context, conn driver.ConnBeginTx,
 }
 
 func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnPrepareContext, query string) (driver.Stmt, error) {
-	ctx, span, end := in.startSpan(ctx, "db:prepare", &sdk.SpanOptions{Kind: sdk.Client})
+	ctx, span, end := in.startSpan(ctx, "db:prepare", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -122,7 +122,7 @@ func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnP
 }
 
 func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
-	_, span, end := in.startSpan(ctx, "db:commit", &sdk.SpanOptions{Kind: sdk.Client})
+	_, span, end := in.startSpan(ctx, "db:commit", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
 
 	for key, value := range in.defaultAttributes {
@@ -138,7 +138,7 @@ func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
 }
 
 func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
-	_, span, end := in.startSpan(ctx, "db:rollback", &sdk.SpanOptions{Kind: sdk.Client})
+	_, span, end := in.startSpan(ctx, "db:rollback", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
 
 	for key, value := range in.defaultAttributes {

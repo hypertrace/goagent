@@ -62,13 +62,13 @@ var StartSpan = startSpan(otel.GetTracerProvider)
 
 func mapSpanKind(kind sdk.SpanKind) trace.SpanKind {
 	switch kind {
-	case sdk.Client:
+	case sdk.SpanKindClient:
 		return trace.SpanKindClient
-	case sdk.Server:
+	case sdk.SpanKindServer:
 		return trace.SpanKindServer
-	case sdk.Producer:
+	case sdk.SpanKindProducer:
 		return trace.SpanKindProducer
-	case sdk.Consumer:
+	case sdk.SpanKindConsumer:
 		return trace.SpanKindConsumer
 	default:
 		return trace.SpanKindUnspecified

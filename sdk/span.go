@@ -14,6 +14,8 @@ type Span interface {
 	// SetError sets an error for the span.
 	SetError(err error)
 
+	// SetStatus sets the status of the Span in the form of a code and a
+	// description.
 	SetStatus(code Code, description string)
 
 	// IsNoop tells whether the span is noop or not, useful for avoiding

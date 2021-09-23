@@ -18,7 +18,7 @@ type Span struct {
 	Name       string
 	Attributes map[string]interface{}
 	Options    sdk.SpanOptions
-	err        error
+	Err        error
 	Noop       bool
 	Status     Status
 	mux        *sync.Mutex
@@ -63,7 +63,7 @@ func (s *Span) SetStatus(code sdk.Code, description string) {
 }
 
 func (s *Span) SetError(err error) {
-	s.err = err
+	s.Err = err
 }
 
 func (s *Span) IsNoop() bool {

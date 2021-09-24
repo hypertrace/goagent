@@ -21,6 +21,15 @@ type interceptor struct {
 	defaultAttributes map[string]string
 }
 
+func setError(s sdk.Span, err error) {
+	if err != nil {
+		s.SetError(err)
+		s.SetStatus(sdk.StatusCodeError, "")
+	} else {
+		s.SetStatus(sdk.StatusCodeOk, "")
+	}
+}
+
 func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQueryContext, query string, args []driver.NamedValue) (driver.Rows, error) {
 	ctx, span, end := in.startSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
 	defer end()
@@ -31,9 +40,7 @@ func (in *interceptor) StmtQueryContext(ctx context.Context, conn driver.StmtQue
 	span.SetAttribute("db.statement", query)
 
 	rows, err := conn.QueryContext(ctx, args)
-	if err != nil {
-		span.SetError(err)
-	}
+	setError(span, err)
 
 	return rows, err
 }
@@ -48,9 +55,7 @@ func (in *interceptor) StmtExecContext(ctx context.Context, conn driver.StmtExec
 	span.SetAttribute("db.statement", query)
 
 	rows, err := conn.ExecContext(ctx, args)
-	if err != nil {
-		span.SetError(err)
-	}
+	setError(span, err)
 
 	return rows, err
 }
@@ -65,9 +70,7 @@ func (in *interceptor) ConnQueryContext(ctx context.Context, conn driver.Queryer
 	span.SetAttribute("db.statement", query)
 
 	rows, err := conn.QueryContext(ctx, query, args)
-	if err != nil {
-		span.SetError(err)
-	}
+	setError(span, err)
 
 	return rows, err
 }
@@ -82,9 +85,7 @@ func (in *interceptor) ConnExecContext(ctx context.Context, conn driver.ExecerCo
 	span.SetAttribute("db.statement", query)
 
 	rows, err := conn.ExecContext(ctx, query, args)
-	if err != nil {
-		span.SetError(err)
-	}
+	setError(span, err)
 
 	return rows, err
 }
@@ -98,9 +99,7 @@ func (in *interceptor) ConnBeginTx(ctx context.Context, conn driver.ConnBeginTx,
 	}
 
 	tx, err := conn.BeginTx(ctx, txOpts)
-	if err != nil {
-		span.SetError(err)
-	}
+	setError(span, err)
 
 	return tx, err
 }
@@ -114,9 +113,7 @@ func (in *interceptor) ConnPrepareContext(ctx context.Context, conn driver.ConnP
 	}
 
 	tx, err := conn.PrepareContext(ctx, query)
-	if err != nil {
-		span.SetError(err)
-	}
+	setError(span, err)
 
 	return tx, err
 }
@@ -130,9 +127,7 @@ func (in *interceptor) TxCommit(ctx context.Context, tx driver.Tx) error {
 	}
 
 	err := tx.Commit()
-	if err != nil {
-		span.SetError(err)
-	}
+	setError(span, err)
 
 	return err
 }
@@ -146,9 +141,7 @@ func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 	}
 
 	err := tx.Rollback()
-	if err != nil {
-		span.SetError(err)
-	}
+	setError(span, err)
 
 	return err
 }

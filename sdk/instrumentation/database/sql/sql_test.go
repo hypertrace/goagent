@@ -11,6 +11,7 @@ import (
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type spansBuffer struct {
@@ -66,11 +67,30 @@ func TestQuerySuccess(t *testing.T) {
 	span := spans[0]
 	assert.Equal(t, "db:query", span.Name)
 	assert.Equal(t, sdk.SpanKindClient, span.Options.Kind)
+	assert.Equal(t, sdk.StatusCodeOk, span.Status.Code)
 
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", span.ReadAttribute("db.statement").(string))
 	assert.Equal(t, "sqlite", span.ReadAttribute("db.system").(string))
 	assert.Nil(t, span.ReadAttribute("error"))
 	assert.Zero(t, span.RemainingAttributes())
+
+	db.Close()
+}
+
+func TestQueryFails(t *testing.T) {
+	db, flusher := createDB(t)
+
+	_, err := db.Query("SELECT * FROM unexistent")
+	require.Error(t, err)
+
+	spans := flusher()
+	assert.Equal(t, 1, len(spans))
+
+	span := spans[0]
+	assert.Equal(t, "db:query", span.Name)
+	assert.Equal(t, "no such table: unexistent", span.Err.Error())
+	assert.Equal(t, sdk.SpanKindClient, span.Options.Kind)
+	assert.Equal(t, sdk.StatusCodeError, span.Status.Code)
 
 	db.Close()
 }
@@ -95,6 +115,7 @@ func TestExecSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(spans))
 
 	span := spans[0]
+	assert.Equal(t, sdk.StatusCodeOk, span.Status.Code)
 	assert.Equal(t, sdk.SpanKindClient, span.Options.Kind)
 	assert.Equal(t, "db:exec", span.Name)
 	assert.Nil(t, span.ReadAttribute("error"))
@@ -142,6 +163,7 @@ func TestTxWithCommitSuccess(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		assert.Equal(t, sdk.SpanKindClient, spans[i].Options.Kind)
+		assert.Equal(t, sdk.StatusCodeOk, spans[i].Status.Code)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
 
@@ -187,6 +209,7 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		assert.Equal(t, sdk.SpanKindClient, spans[i].Options.Kind)
+		assert.Equal(t, sdk.StatusCodeOk, spans[i].Status.Code)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
 

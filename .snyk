@@ -1,0 +1,4 @@
+ignore:
+  SNYK-GOLANG-GITHUBCOMGINGONICGIN-1041736:
+    - '*':
+        reason: we don't provide gin but are used together with it

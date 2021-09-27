@@ -2,6 +2,7 @@ package opentelemetry // import "github.com/hypertrace/goagent/instrumentation/o
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/hypertrace/goagent/sdk"
@@ -17,8 +18,35 @@ type Span struct {
 	trace.Span
 }
 
+func generateAttribute(key string, value interface{}) attribute.KeyValue {
+	switch v := value.(type) {
+	case bool:
+		return attribute.Bool(key, v)
+	case []bool:
+		return attribute.BoolSlice(key, v)
+	case int:
+		return attribute.Int(key, v)
+	case []int:
+		return attribute.IntSlice(key, v)
+	case int64:
+		return attribute.Int64(key, v)
+	case []int64:
+		return attribute.Int64Slice(key, v)
+	case float64:
+		return attribute.Float64(key, v)
+	case []float64:
+		return attribute.Float64Slice(key, v)
+	case string:
+		return attribute.String(key, v)
+	case []string:
+		return attribute.StringSlice(key, v)
+	default:
+		return attribute.String(key, fmt.Sprintf("%v", v))
+	}
+}
+
 func (s *Span) SetAttribute(key string, value interface{}) {
-	s.Span.SetAttributes(attribute.Any(key, value))
+	s.Span.SetAttributes(generateAttribute(key, value))
 }
 
 func (s *Span) SetError(err error) {

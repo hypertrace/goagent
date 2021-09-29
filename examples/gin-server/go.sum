@@ -85,8 +85,8 @@ github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB7
 github.com/grpc-ecosystem/grpc-gateway v1.16.0 h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4M0+kPpLofRdBo=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
-github.com/hypertrace/agent-config/gen/go v0.0.0-20210928112209-7d8c328af51c h1:T2Q+GrBpAGy2cz119JwSLg1FwZiKehF1D6Fn3f7J528=
-github.com/hypertrace/agent-config/gen/go v0.0.0-20210928112209-7d8c328af51c/go.mod h1:LjKDF0vbkemwirXM+v4aH+ARjX9y8EwVTIe3BDrqj0I=
+github.com/hypertrace/agent-config/gen/go v0.0.0-20210928174043-f66d46bdfecb h1:0+2ExqTCP7CTMJiE4EFqUj2mOmlYKa5FJePxQdjrnrs=
+github.com/hypertrace/agent-config/gen/go v0.0.0-20210928174043-f66d46bdfecb/go.mod h1:LjKDF0vbkemwirXM+v4aH+ARjX9y8EwVTIe3BDrqj0I=
 github.com/json-iterator/go v1.1.9 h1:9yzud/Ht36ygwatGx56VwCZtlI/2AD15T1X2sjSuGns=
 github.com/json-iterator/go v1.1.9/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

@@ -28,5 +28,6 @@ var defaultConfig = agentconfig.AgentConfig{
 		Endpoint:          agentconfig.String("http://localhost:9411/api/v2/spans"),
 		Secure:            agentconfig.Bool(false),
 		TraceReporterType: agentconfig.TraceReporterType_ZIPKIN,
+		CertFile:          agentconfig.String(""),
 	},
 }

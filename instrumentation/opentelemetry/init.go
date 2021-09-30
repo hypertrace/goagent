@@ -3,7 +3,9 @@ package opentelemetry // import "github.com/hypertrace/goagent/instrumentation/o
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -29,6 +31,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"google.golang.org/grpc/credentials"
 )
 
 var batchTimeout = time.Duration(200) * time.Millisecond
@@ -72,10 +75,11 @@ func removeProtocolPrefixForOTLP(endpoint string) string {
 func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter, error) {
 	switch cfg.Reporting.TraceReporterType {
 	case config.TraceReporterType_ZIPKIN:
-		client := &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
-		}}
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: createTLSConfig(cfg.GetReporting()),
+			},
+		}
 
 		return func() (sdktrace.SpanExporter, error) {
 			return zipkin.New(
@@ -92,6 +96,15 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			opts = append(opts, otlpgrpc.WithInsecure())
 		}
 
+		certFile := cfg.GetReporting().GetCertFile().GetValue()
+		if len(certFile) > 0 {
+			if tlsCredentials, err := credentials.NewClientTLSFromFile(certFile, ""); err == nil {
+				opts = append(opts, otlpgrpc.WithTLSCredentials(tlsCredentials))
+			} else {
+				log.Printf("error while creating tls credentials from cert path %s: %v", certFile, err)
+			}
+		}
+
 		return func() (sdktrace.SpanExporter, error) {
 			return otlptrace.New(
 				context.Background(),
@@ -99,6 +112,35 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			)
 		}
 	}
+}
+
+func createTLSConfig(reportingCfg *config.Reporting) *tls.Config {
+	tlsConfig := &tls.Config{}
+	tlsConfig.InsecureSkipVerify = !reportingCfg.GetSecure().GetValue()
+	certFile := reportingCfg.GetCertFile().GetValue()
+	if len(certFile) > 0 {
+		tlsConfig.RootCAs = createCaCertPoolFromFile(certFile)
+	}
+
+	return tlsConfig
+}
+
+// createCaCertPoolFromFile creates a CA Cert Pool from a file path containing
+// a raw CA certificate to verify a server certificate. The file path is the
+// reporting.cert_file config value.
+func createCaCertPoolFromFile(certFile string) *x509.CertPool {
+	certBytes, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		log.Printf("error while reading cert path: %v", err)
+		return nil
+	}
+	cp := x509.NewCertPool()
+	if ok := cp.AppendCertsFromPEM(certBytes); !ok {
+		log.Printf("error while configuring tls: failed to append certificate to the cert pool")
+		return nil
+	}
+
+	return cp
 }
 
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately

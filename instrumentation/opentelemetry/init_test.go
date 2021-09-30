@@ -267,3 +267,11 @@ func TestCreateTLSConfigCertFilePresentAndSecure(t *testing.T) {
 	assert.False(t, tlsConfig.InsecureSkipVerify)
 	assert.NotNil(t, tlsConfig.RootCAs)
 }
+
+func TestCreateCaCertPoolFromFileThatDoesNotExist(t *testing.T) {
+	assert.Nil(t, createCaCertPoolFromFile("testdata/nonExistentCA.crt"))
+}
+
+func TestCreateCaCertPoolFromFileThatIsBogus(t *testing.T) {
+	assert.Nil(t, createCaCertPoolFromFile("testdata/fakeRootCA.crt"))
+}

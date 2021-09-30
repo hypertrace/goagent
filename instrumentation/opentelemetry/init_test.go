@@ -46,11 +46,7 @@ func ExampleRegisterService() {
 
 func TestInitWithCertfileAndSecure(t *testing.T) {
 	cfg := config.Load()
-	cfg.ServiceName = config.String("my_example_svc")
-	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
-	cfg.Reporting.Endpoint = config.String("api.traceable.ai:4317")
 	cfg.Reporting.Secure = config.Bool(true)
-	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
 	cfg.Reporting.CertFile = config.String("testdata/rootCA.crt")
 
 	shutdown := Init(cfg)
@@ -238,7 +234,7 @@ func TestRemoveProtocolPrefixForOTLP(t *testing.T) {
 func TestCreateTLSConfigNoCertFileAndInsecure(t *testing.T) {
 	// Just using default values
 	cfg := config.Load()
-	tlsConfig := createTLSConfig(cfg)
+	tlsConfig := createTLSConfig(cfg.GetReporting())
 
 	assert.True(t, tlsConfig.InsecureSkipVerify)
 	assert.Nil(t, tlsConfig.RootCAs)
@@ -247,7 +243,7 @@ func TestCreateTLSConfigNoCertFileAndInsecure(t *testing.T) {
 func TestCreateTLSConfigNoCertFileButSecure(t *testing.T) {
 	cfg := config.Load()
 	cfg.Reporting.Secure = config.Bool(true)
-	tlsConfig := createTLSConfig(cfg)
+	tlsConfig := createTLSConfig(cfg.GetReporting())
 
 	assert.False(t, tlsConfig.InsecureSkipVerify)
 	assert.Nil(t, tlsConfig.RootCAs)
@@ -256,7 +252,7 @@ func TestCreateTLSConfigNoCertFileButSecure(t *testing.T) {
 func TestCreateTLSConfigCertFilePresentButInsecure(t *testing.T) {
 	cfg := config.Load()
 	cfg.Reporting.CertFile = config.String("testdata/rootCA.crt")
-	tlsConfig := createTLSConfig(cfg)
+	tlsConfig := createTLSConfig(cfg.GetReporting())
 
 	assert.True(t, tlsConfig.InsecureSkipVerify)
 	assert.NotNil(t, tlsConfig.RootCAs)
@@ -266,7 +262,7 @@ func TestCreateTLSConfigCertFilePresentAndSecure(t *testing.T) {
 	cfg := config.Load()
 	cfg.Reporting.Secure = config.Bool(true)
 	cfg.Reporting.CertFile = config.String("testdata/rootCA.crt")
-	tlsConfig := createTLSConfig(cfg)
+	tlsConfig := createTLSConfig(cfg.GetReporting())
 
 	assert.False(t, tlsConfig.InsecureSkipVerify)
 	assert.NotNil(t, tlsConfig.RootCAs)

@@ -77,7 +77,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 	case config.TraceReporterType_ZIPKIN:
 		client := &http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: createTLSConfig(cfg),
+				TLSClientConfig: createTLSConfig(cfg.GetReporting()),
 			},
 		}
 
@@ -96,11 +96,12 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			opts = append(opts, otlpgrpc.WithInsecure())
 		}
 
-		if len(cfg.GetReporting().GetCertFile().GetValue()) > 0 {
-			if tlsCredentials, err := credentials.NewClientTLSFromFile(cfg.GetReporting().GetCertFile().GetValue(), ""); err == nil {
+		certFile := cfg.GetReporting().GetCertFile().GetValue()
+		if len(certFile) > 0 {
+			if tlsCredentials, err := credentials.NewClientTLSFromFile(certFile, ""); err == nil {
 				opts = append(opts, otlpgrpc.WithTLSCredentials(tlsCredentials))
 			} else {
-				log.Printf("error while creating tls credentials from cert path %s: %v", cfg.GetReporting().GetCertFile().GetValue(), err)
+				log.Printf("error while creating tls credentials from cert path %s: %v", certFile, err)
 			}
 		}
 
@@ -113,10 +114,13 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 	}
 }
 
-func createTLSConfig(cfg *config.AgentConfig) *tls.Config {
+func createTLSConfig(reportingCfg *config.Reporting) *tls.Config {
 	tlsConfig := &tls.Config{}
-	tlsConfig.InsecureSkipVerify = !cfg.GetReporting().GetSecure().GetValue()
-	tlsConfig.RootCAs = createCaCertPoolFromFile(cfg)
+	tlsConfig.InsecureSkipVerify = !reportingCfg.GetSecure().GetValue()
+	certFile := reportingCfg.GetCertFile().GetValue()
+	if len(certFile) > 0 {
+		tlsConfig.RootCAs = createCaCertPoolFromFile(certFile)
+	}
 
 	return tlsConfig
 }
@@ -124,12 +128,8 @@ func createTLSConfig(cfg *config.AgentConfig) *tls.Config {
 // createCaCertPoolFromFile creates a CA Cert Pool from a file path containing
 // a raw CA certificate to verify a server certificate. The file path is the
 // reporting.cert_file config value.
-func createCaCertPoolFromFile(cfg *config.AgentConfig) *x509.CertPool {
-	if len(cfg.GetReporting().GetCertFile().GetValue()) == 0 {
-		return nil
-	}
-
-	certBytes, err := ioutil.ReadFile(cfg.GetReporting().GetCertFile().GetValue())
+func createCaCertPoolFromFile(certFile string) *x509.CertPool {
+	certBytes, err := ioutil.ReadFile(certFile)
 	if err != nil {
 		log.Printf("error while reading cert path: %v", err)
 		return nil

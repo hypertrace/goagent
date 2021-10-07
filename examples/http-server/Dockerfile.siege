@@ -1,0 +1,5 @@
+# docker build -t tmwangi/siege:0.1.0 -f Dockerfile.siege .
+FROM ubuntu:20.10
+
+RUN apt-get update -y
+RUN apt install siege curl -y

@@ -1,0 +1,122 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hackgoapp
+  labels:
+    traceableai-inject-proxy: enabled
+---
+# Useful for setting memory and CPU limits on the containers injected into this.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: resources-limit-ranger
+  namespace: hackgoapp
+spec:
+  limits:
+  - default:
+      cpu: 500m
+      memory: 512Mi
+    defaultRequest:
+      cpu: 200m
+      memory: 256Mi
+    type: Container
+---
+# Server A
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hackgoapp
+  namespace: hackgoapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hackgoapp
+  template:
+    metadata:
+      labels:
+        app: hackgoapp
+
+    spec:
+      containers:
+        - name: hackgoapp
+          image: tmwangi/hackgoapp:0.1.0
+          # Need to define container port for traffic to go through the injected sidecar when sidecar injection is enabled.
+          ports:
+            - containerPort: 8081
+          resources:
+            limits:
+              cpu: 512m
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hackgoapp
+  namespace: hackgoapp
+spec:
+  type: ClusterIP
+  selector:
+    app: hackgoapp
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hackgoapp-external
+  namespace: hackgoapp
+spec:
+  type: LoadBalancer
+  selector:
+    app: hackgoapp
+  ports:
+    - name: hackgoapp-external
+      protocol: TCP
+      port: 8081
+      targetPort: 8081
+#---
+## For istio
+#apiVersion: networking.istio.io/v1alpha3
+#kind: Gateway
+#metadata:
+#  name: hackgoapp-gateway
+#  namespace: hackgoapp
+#spec:
+#  selector:
+#    istio: ingressgateway # use istio default controller
+#  servers:
+#    - port:
+#        number: 80
+#        name: http
+#        protocol: HTTP
+#      hosts:
+#        - "*"
+#---
+#apiVersion: networking.istio.io/v1alpha3
+#kind: VirtualService
+#metadata:
+#  name: hackgoapp
+#  namespace: hackgoapp
+#spec:
+#  hosts:
+#    - "*"
+#  gateways:
+#    - hackgoapp-gateway
+#  http:
+#    - match:
+#      - uri:
+#          prefix: /hackgoapp
+#      rewrite:
+#        uri: /
+#      route:
+#        - destination:
+#            host: hackgoapp
+#            port:
+#              number: 8081

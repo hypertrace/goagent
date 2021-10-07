@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siege
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: siege
+  template:
+    metadata:
+      labels:
+        app: siege
+
+    spec:
+      containers:
+        - name: siege
+          image: tmwangi/siege:0.1.0
+          command: ["/bin/bash", "-c", "--"]
+          args: [ "while true; do curl --silent -XPOST http://hackgoapp.hackgoapp:8081/bigfoo -H 'Content-type: application/json'  -d '{\"name\": \"Seldon\",\"iterations\": 1000, \"sleep_ms\": 20}' > /dev/null; done;" ]

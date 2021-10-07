@@ -1,0 +1,4 @@
+service_name: tim-go-service
+reporting:
+  endpoint: "agent.traceableai:4317"
+  trace_reporter_type: OTLP

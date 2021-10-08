@@ -9,4 +9,5 @@ type Span opentelemetry.Span
 var (
 	SpanFromContext = opentelemetry.SpanFromContext
 	StartSpan       = opentelemetry.StartSpan
+	NoopStartSpan   = opentelemetry.NoopStartSpan
 )

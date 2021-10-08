@@ -87,6 +87,7 @@ func startSpan(provider getTracerProvider) sdk.StartSpan {
 }
 
 var StartSpan = startSpan(otel.GetTracerProvider)
+var NoopStartSpan = startSpan(trace.NewNoopTracerProvider)
 
 func mapSpanKind(kind sdk.SpanKind) trace.SpanKind {
 	switch kind {

@@ -11,19 +11,20 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/trace"
-	"gotest.tools/assert"
 )
 
 // inspired in https://github.com/jcchavezs/httptest-php/blob/e6a65c73/src/HttpTest/HttpTestServer.php#L150
 func findAvailablePort() (int, error) {
 	for port := 60000; port < 65535; port++ {
 		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-		defer l.Close()
 
 		if err == nil {
 			return port, nil
 		}
+
+		l.Close()
 	}
 
 	return 0, errors.New("failed to find an available port")

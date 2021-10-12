@@ -19,12 +19,10 @@ import (
 func findAvailablePort() (int, error) {
 	for port := 60000; port < 65535; port++ {
 		l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-
 		if err == nil {
+			l.Close()
 			return port, nil
 		}
-
-		l.Close()
 	}
 
 	return 0, errors.New("failed to find an available port")

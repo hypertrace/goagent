@@ -32,6 +32,7 @@ func TestClientHelloWorldSuccess(t *testing.T) {
 	conn, err := grpc.DialContext(
 		ctx,
 		"bufnet",
+		grpc.WithBlock(),
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
 		grpc.WithStatsHandler(WrapClientHandler(&ocgrpc.ClientHandler{})),

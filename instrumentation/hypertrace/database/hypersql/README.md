@@ -17,7 +17,7 @@ if err != nil {
 }
 
 // Connect to a MySQL database using the hypersql driver wrapper.
-db, err = sql.Open(driverName, "postgres://user:pass@127.0.0.1:5432/db")
+db, err = sql.Open(driverName, "user:password@/dbname")
 
 ```
 
@@ -26,7 +26,7 @@ You can also wrap your own driver with goagent instrumentation as follows:
 ```go
 
 import (
-    mysql "github.com/go-sql-driver/mysql"
+    "github.com/go-sql-driver/mysql"
     "github.com/hypertrace/goagent/instrumentation/hypertrace/database/hypersql"
 )
 
@@ -37,5 +37,5 @@ driver := hypersql.Wrap(&mysql.MySQLDriver{})
 sql.Register("ht-mysql", driver)
 
 // Connect to a MySQL database using the hypersql driver wrapper
-db, err = sql.Open("ht-mysql", "postgres://user:pass@127.0.0.1:5432/db")
+db, err = sql.Open("ht-mysql", "user:password@/dbname")
 ```

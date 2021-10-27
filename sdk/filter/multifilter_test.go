@@ -11,7 +11,7 @@ import (
 func TestMultiFilterEmpty(t *testing.T) {
 	f := NewMultiFilter()
 	assert.False(t, f.EvaluateURLAndHeaders(nil, "", nil))
-	assert.False(t, f.EvaluateBody(nil, nil))
+	assert.False(t, f.EvaluateBody(nil, nil, nil))
 }
 
 func TestMultiFilterStopsAfterTrue(t *testing.T) {
@@ -46,17 +46,17 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 			expectedBodyFilterResult: true,
 			multiFilter: NewMultiFilter(
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
 						return false
 					},
 				},
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
 						return true
 					},
 				},
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
 						assert.Fail(t, "should not be called")
 						return false
 					},
@@ -68,7 +68,7 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 	for name, tCase := range tCases {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, tCase.expectedURLAndHeadersFilterResult, tCase.multiFilter.EvaluateURLAndHeaders(nil, "", nil))
-			assert.Equal(t, tCase.expectedBodyFilterResult, tCase.multiFilter.EvaluateBody(nil, nil))
+			assert.Equal(t, tCase.expectedBodyFilterResult, tCase.multiFilter.EvaluateBody(nil, nil, nil))
 		})
 	}
 }

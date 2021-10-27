@@ -95,8 +95,10 @@ func wrapHandler(
 			len(reqBody) > 0 && err == nil {
 			setTruncatedBodyAttribute("request", reqBody, int(dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 
-			if filter.EvaluateBody(span, reqBody) {
-				return nil, status.Error(codes.PermissionDenied, "Permission Denied")
+			if md, ok := metadata.FromIncomingContext(ctx); ok {
+				if filter.EvaluateBody(span, reqBody, md) {
+					return nil, status.Error(codes.PermissionDenied, "Permission Denied")
+				}
 			}
 		}
 

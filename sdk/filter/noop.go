@@ -13,6 +13,6 @@ func (NoopFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[s
 }
 
 // EvaluateBody that always returns false
-func (NoopFilter) EvaluateBody(span sdk.Span, body []byte) bool {
+func (NoopFilter) EvaluateBody(span sdk.Span, body []byte, headers map[string][]string) bool {
 	return false
 }

@@ -301,7 +301,7 @@ func TestServerRequestFilter(t *testing.T) {
 						assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
 						return false
 					},
-					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
 						assert.Equal(t, []byte("haha"), body)
 						return false
 					},
@@ -337,7 +337,7 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte) bool {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
 						return true
 					},
 				},

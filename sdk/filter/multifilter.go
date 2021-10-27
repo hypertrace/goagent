@@ -25,9 +25,9 @@ func (m *MultiFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers m
 }
 
 // EvaluateBody runs body evaluators for each filter until one returns true
-func (m *MultiFilter) EvaluateBody(span sdk.Span, body []byte) bool {
+func (m *MultiFilter) EvaluateBody(span sdk.Span, body []byte, headers map[string][]string) bool {
 	for _, f := range (*m).filters {
-		if f.EvaluateBody(span, body) {
+		if f.EvaluateBody(span, body, headers) {
 			return true
 		}
 	}

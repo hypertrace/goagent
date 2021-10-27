@@ -112,7 +112,7 @@ func TestServerInterceptorFilter(t *testing.T) {
 		"body filter": {
 			expectedFilterResult: true,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				BodyEvaluator: func(span sdk.Span, body []byte) bool {
+				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
 					assert.Equal(t, "{\"name\":\"Pupo\"}", string(body))
 					return true
 				},

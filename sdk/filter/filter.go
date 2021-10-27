@@ -8,5 +8,5 @@ type Filter interface {
 	EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool
 
 	// EvaluateBody can be used to evaluate the body content
-	EvaluateBody(span sdk.Span, body []byte) bool
+	EvaluateBody(span sdk.Span, body []byte, headers map[string][]string) bool
 }

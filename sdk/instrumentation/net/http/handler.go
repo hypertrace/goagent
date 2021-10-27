@@ -90,7 +90,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// run body filters
-		if h.filter.EvaluateBody(span, body) {
+		if h.filter.EvaluateBody(span, body, headers) {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}

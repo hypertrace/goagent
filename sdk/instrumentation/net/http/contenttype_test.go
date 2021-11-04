@@ -22,6 +22,8 @@ func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
 		{"application/json", true},
 		{"application/json; charset=utf-8", true},
 		{"application/x-www-form-urlencoded", true},
+		{"application/vnd.api+json", true},
+		{"application/grpc+json", true},
 	}
 
 	for _, tCase := range tCases {
@@ -42,6 +44,7 @@ func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 		{[]string{"application/json; charset=utf-8"}, true},
 		{[]string{"application/x-www-form-urlencoded"}, true},
 		{[]string{"charset=utf-8", "application/json"}, true},
+		{[]string{"charset=utf-8", "application/vnd.api+json"}, true},
 	}
 
 	for _, tCase := range tCases {

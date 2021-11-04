@@ -4,10 +4,14 @@ import (
 	"strings"
 )
 
-// contentTypeAllowList is the list of allowed content types in lowercase
+// contentTypeAllowList is the list of allowed "stems" of content types in lowercase.
+// Example headers that will match this include:
+// - application/json
+// - application/vnd.api+json
+// - application/x-www-form-urlencoded'
 var contentTypeAllowListLowerCase = []string{
-	"application/json",
-	"application/x-www-form-urlencoded",
+	"json",
+	"x-www-form-urlencoded",
 }
 
 // ShouldRecordBodyOfContentType checks if the body is meant

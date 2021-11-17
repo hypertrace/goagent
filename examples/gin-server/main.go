@@ -7,7 +7,6 @@ import (
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/gin-gonic/hypergin"
-	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 
 func setupRouter() *gin.Engine {
@@ -15,7 +14,7 @@ func setupRouter() *gin.Engine {
 	// hypergin.DisableConsoleColor()
 	r := gin.Default()
 
-	r.Use(hypergin.Middleware(&sdkhttp.Options{}))
+	r.Use(hypergin.Middleware())
 
 	// Ping test
 	r.GET("/ping", func(c *gin.Context) {

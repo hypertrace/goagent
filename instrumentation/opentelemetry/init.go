@@ -156,6 +156,7 @@ func Init(cfg *config.AgentConfig) func() {
 
 	enabled = cfg.GetEnabled().Value
 	if !enabled {
+		initialized = true
 		otel.SetTracerProvider(trace.NewNoopTracerProvider())
 		// even if the tracer isn't enabled, propagation is still enabled
 		// to not to break the full workflow of the tracing system. Even

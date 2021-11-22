@@ -44,6 +44,13 @@ func ExampleRegisterService() {
 	defer shutdown()
 }
 
+func TestInitDisabledAgent(t *testing.T) {
+	cfg := config.Load()
+	cfg.Enabled = config.Bool(true)
+	shutdown := Init(cfg)
+	defer shutdown()
+}
+
 func TestInitWithCertfileAndSecure(t *testing.T) {
 	cfg := config.Load()
 	cfg.Reporting.Secure = config.Bool(true)

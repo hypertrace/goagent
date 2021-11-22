@@ -40,7 +40,7 @@ var (
 	traceProviders  map[string]*sdktrace.TracerProvider
 	globalSampler   sdktrace.Sampler
 	initialized     = false
-	enabled         bool
+	enabled         = false
 	mu              sync.Mutex
 	exporterFactory func() (sdktrace.SpanExporter, error)
 )
@@ -154,7 +154,7 @@ func Init(cfg *config.AgentConfig) func() {
 	}
 	sdkconfig.InitConfig(cfg)
 
-	enabled := cfg.GetEnabled().Value
+	enabled = cfg.GetEnabled().Value
 	if !enabled {
 		otel.SetTracerProvider(trace.NewNoopTracerProvider())
 		// even if the tracer isn't enabled, propagation is still enabled
@@ -162,7 +162,9 @@ func Init(cfg *config.AgentConfig) func() {
 		// if this service will not report spans and the trace might look
 		// broken, spans can still be grouped by trace ID.
 		otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
-		return func() {}
+		return func() {
+			sdkconfig.ResetConfig()
+		}
 	}
 
 	exporterFactory = makeExporterFactory(cfg)
@@ -205,6 +207,8 @@ func Init(cfg *config.AgentConfig) func() {
 		}
 		tp.Shutdown(context.Background())
 		initialized = false
+		enabled = false
+		sdkconfig.ResetConfig()
 	}
 }
 

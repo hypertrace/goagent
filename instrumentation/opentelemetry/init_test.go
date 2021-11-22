@@ -157,6 +157,8 @@ func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {
 	requestIsReceived := false
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		requestIsReceived = true
+		rw.WriteHeader(http.StatusAccepted)
+
 	}))
 	defer srv.Close()
 

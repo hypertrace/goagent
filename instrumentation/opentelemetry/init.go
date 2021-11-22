@@ -164,6 +164,7 @@ func Init(cfg *config.AgentConfig) func() {
 		// broken, spans can still be grouped by trace ID.
 		otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 		return func() {
+			initialized = false
 			sdkconfig.ResetConfig()
 		}
 	}

@@ -132,7 +132,6 @@ func TestMultipleTraceProviders(t *testing.T) {
 	_, _, spanEnder := StartSpan(context.Background(), "example_span", nil)
 	spanEnder()
 
-	fmt.Println(enabled)
 	startServiceSpan, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)

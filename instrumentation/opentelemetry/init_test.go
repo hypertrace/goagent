@@ -2,7 +2,6 @@ package opentelemetry
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"

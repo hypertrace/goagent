@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 )
 
@@ -47,6 +48,12 @@ func TestInitDisabledAgent(t *testing.T) {
 	cfg.Enabled = config.Bool(false)
 	shutdown := Init(cfg)
 	defer shutdown()
+
+	startSpan, err := RegisterService("test_service", nil)
+	require.NoError(t, err)
+	_, s, _ := startSpan(context.Background(), "test_span", nil)
+	require.NoError(t, err)
+	assert.True(t, s.IsNoop())
 }
 
 func TestInitWithCertfileAndSecure(t *testing.T) {

@@ -207,6 +207,7 @@ func Init(cfg *config.AgentConfig) func() {
 			tracerProvider.Shutdown(context.Background())
 			delete(traceProviders, serviceName)
 		}
+		traceProviders = map[string]*sdktrace.TracerProvider{}
 		tp.Shutdown(context.Background())
 		initialized = false
 		enabled = false
@@ -236,12 +237,12 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 		return nil, fmt.Errorf("hypertrace hadn't been initialized")
 	}
 
-	if _, ok := traceProviders[serviceName]; ok {
-		return nil, fmt.Errorf("service %v already initialized", serviceName)
-	}
-
 	if !enabled {
 		return NoopStartSpan, nil
+	}
+
+	if _, ok := traceProviders[serviceName]; ok {
+		return nil, fmt.Errorf("service %v already initialized", serviceName)
 	}
 
 	exporter, err := exporterFactory()

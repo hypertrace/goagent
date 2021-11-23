@@ -2,7 +2,6 @@ package opentelemetry
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 )
 
@@ -35,19 +35,33 @@ func ExampleRegisterService() {
 	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
 
 	shutdown := Init(cfg)
+	defer shutdown()
 
 	_, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
+}
 
+func TestInitDisabledAgent(t *testing.T) {
+	cfg := config.Load()
+	cfg.Enabled = config.Bool(false)
+	shutdown := Init(cfg)
 	defer shutdown()
+
+	startSpan, err := RegisterService("test_service", nil)
+	require.NoError(t, err)
+	_, s, _ := startSpan(context.Background(), "test_span", nil)
+	require.NoError(t, err)
+	assert.True(t, s.IsNoop())
 }
 
 func TestInitWithCertfileAndSecure(t *testing.T) {
 	cfg := config.Load()
 	cfg.Reporting.Secure = config.Bool(true)
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
 	cfg.Reporting.CertFile = config.String("testdata/rootCA.crt")
+	cfg.Enabled = config.Bool(true)
 
 	shutdown := Init(cfg)
 	defer shutdown()
@@ -59,21 +73,22 @@ func TestOtlpService(t *testing.T) {
 	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
 	cfg.Reporting.Endpoint = config.String("http://api.traceable.ai:4317")
 	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
+	cfg.Enabled = config.Bool(true)
 
 	shutdown := Init(cfg)
+	defer shutdown()
 
 	_, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
-
-	defer shutdown()
 }
 
 func TestShutdownFlushesAllSpans(t *testing.T) {
 	requestIsReceived := false
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		requestIsReceived = true
+		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer srv.Close()
 
@@ -81,6 +96,7 @@ func TestShutdownFlushesAllSpans(t *testing.T) {
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.Reporting.Endpoint = config.String(srv.URL)
 	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
+	cfg.Enabled = config.Bool(true)
 
 	// By doing this we make sure a batching isn't happening
 	batchTimeout = time.Duration(10) * time.Second
@@ -101,6 +117,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	count := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		count++
+		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer srv.Close()
 
@@ -108,11 +125,13 @@ func TestMultipleTraceProviders(t *testing.T) {
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.Reporting.Endpoint = config.String(srv.URL)
 	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
+	cfg.Enabled = config.Bool(true)
 
 	// By doing this we make sure a batching isn't happening
 	batchTimeout = time.Duration(10) * time.Second
 
 	shutdown := Init(cfg)
+
 	assert.True(t, initialized)
 	assert.Equal(t, 0, len(traceProviders))
 
@@ -128,17 +147,23 @@ func TestMultipleTraceProviders(t *testing.T) {
 	_, _, serviceSpanEnder := startServiceSpan(context.Background(), "my_span", nil)
 	serviceSpanEnder()
 
-	assert.Equal(t, 0, count)
-	shutdown()
-	assert.Equal(t, 2, count)
-	assert.Equal(t, 0, len(traceProviders))
-	fmt.Println("Count: ", count)
+	t.Run("test no requests before flush", func(t *testing.T) {
+		assert.Equal(t, 0, count)
+	})
+
+	t.Run("test 2 requests after flush", func(t *testing.T) {
+		shutdown()
+		assert.Equal(t, 2, count)
+		assert.Equal(t, 0, len(traceProviders))
+	})
 }
 
 func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {
 	requestIsReceived := false
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		requestIsReceived = true
+		rw.WriteHeader(http.StatusAccepted)
+
 	}))
 	defer srv.Close()
 
@@ -146,6 +171,7 @@ func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.Reporting.Endpoint = config.String(srv.URL)
 	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
+	cfg.Enabled = config.Bool(true)
 
 	// By doing this we make sure a batching isn't happening
 	batchTimeout = time.Duration(10) * time.Second
@@ -199,7 +225,11 @@ func TestPropagationFormats(t *testing.T) {
 		config.PropagationFormat_B3,
 		config.PropagationFormat_TRACECONTEXT,
 	)
-	Init(cfg)
+	cfg.Enabled = config.Bool(true)
+
+	shutdown := Init(cfg)
+	defer shutdown()
+
 	tracer := otel.Tracer("b3")
 	ctx, _ := tracer.Start(context.Background(), "test")
 	propagator := otel.GetTextMapPropagator()
@@ -214,7 +244,10 @@ func TestPropagationFormats(t *testing.T) {
 func TestTraceReporterType(t *testing.T) {
 	cfg := config.Load()
 	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
-	Init(cfg)
+	cfg.Enabled = config.Bool(true)
+
+	shutdown := Init(cfg)
+	defer shutdown()
 }
 
 func TestRemoveProtocolPrefixForOTLP(t *testing.T) {

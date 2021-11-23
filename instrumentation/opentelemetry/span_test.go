@@ -22,7 +22,9 @@ func TestIsNoop(t *testing.T) {
 	span := &Span{newNoopSpan()}
 	assert.True(t, span.IsNoop())
 
-	Init(config.Load())
+	shutdown := Init(config.Load())
+	defer shutdown()
+
 	_, delegateSpan := otel.Tracer(TracerDomain).Start(context.Background(), "test_span")
 	span = &Span{delegateSpan}
 	assert.False(t, span.IsNoop())

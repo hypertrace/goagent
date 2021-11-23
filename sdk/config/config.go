@@ -9,3 +9,7 @@ import (
 func InitConfig(c *agentconfig.AgentConfig) {
 	internalconfig.InitConfig(c)
 }
+
+func ResetConfig() {
+	internalconfig.ResetConfig()
+}

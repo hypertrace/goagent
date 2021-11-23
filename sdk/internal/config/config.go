@@ -40,3 +40,9 @@ func GetConfig() *agentconfig.AgentConfig {
 
 	return cfg
 }
+
+func ResetConfig() {
+	cfgMux.Lock()
+	defer cfgMux.Unlock()
+	cfg = nil
+}

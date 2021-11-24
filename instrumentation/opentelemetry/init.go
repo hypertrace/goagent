@@ -119,7 +119,11 @@ func Init(cfg *config.AgentConfig) func() {
 		log.Fatal(err)
 	}
 
-	batcher := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
+	batcher := sdktrace.NewBatchSpanProcessor(
+		exporter,
+		sdktrace.WithBatchTimeout(batchTimeout),
+		sdktrace.WithMaxExportBatchSize(128),
+	)
 
 	resources, err := resource.New(
 		context.Background(),

@@ -10,7 +10,7 @@ import (
 func TestBodyTruncationSuccess(t *testing.T) {
 	s := mock.NewSpan()
 	setTruncatedBodyAttribute("request", []byte("text"), 2, s)
-	assert.Equal(t, "te", s.ReadAttribute("rpc.request.body"))
+	assert.Nil(t, s.ReadAttribute("rpc.request.body"))
 	assert.True(t, (s.ReadAttribute("rpc.request.body.truncated")).(bool))
 	assert.Zero(t, s.RemainingAttributes())
 }

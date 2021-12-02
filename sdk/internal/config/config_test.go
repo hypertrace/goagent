@@ -11,6 +11,7 @@ func TestConfig(t *testing.T) {
 	InitConfig(&config.AgentConfig{
 		ServiceName: config.String("my_service"),
 	})
-	assert.Equal(t, "my_service", GetConfig().ServiceName.Value)
 	defer ResetConfig()
+
+	assert.Equal(t, "my_service", GetConfig().ServiceName.Value)
 }

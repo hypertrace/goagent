@@ -89,8 +89,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			setTruncatedBodyAttribute("request", body, int(h.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 		}
 
+		processingBody := body
+		if int(h.dataCaptureConfig.BodyMaxProcessingSizeBytes.Value) < len(body) {
+			processingBody = body[:h.dataCaptureConfig.BodyMaxProcessingSizeBytes.Value]
+		}
+
 		// run body filters
-		if h.filter.EvaluateBody(span, body, headers) {
+		if h.filter.EvaluateBody(span, processingBody, headers) {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}

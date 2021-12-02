@@ -4,9 +4,11 @@ import (
 	"context"
 	"testing"
 
+	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/sdk/filter"
 	"github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc/internal/helloworld"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -27,6 +29,8 @@ func makeMockUnaryServerInterceptor(mockSpans *[]*mock.Span) grpc.UnaryServerInt
 }
 
 func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
 	spans := []*mock.Span{}
 	mockUnaryInterceptor := makeMockUnaryServerInterceptor(&spans)
 
@@ -47,6 +51,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 		ctx,
 		"bufnet",
 		grpc.WithContextDialer(dialer),
+		grpc.WithBlock(),
 		grpc.WithInsecure(),
 	)
 	if err != nil {
@@ -92,6 +97,8 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 }
 
 func TestServerInterceptorFilter(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
 	tCases := map[string]struct {
 		expectedFilterResult bool
 		multiFilter          *filter.MultiFilter
@@ -142,6 +149,7 @@ func TestServerInterceptorFilter(t *testing.T) {
 				ctx,
 				"bufnet",
 				grpc.WithContextDialer(dialer),
+				grpc.WithBlock(),
 				grpc.WithInsecure(),
 			)
 			if err != nil {
@@ -164,7 +172,61 @@ func TestServerInterceptorFilter(t *testing.T) {
 	}
 }
 
+func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
+	spans := []*mock.Span{}
+	mockUnaryInterceptor := makeMockUnaryServerInterceptor(&spans)
+
+	cfg := &config.AgentConfig{
+		DataCapture: &config.DataCapture{
+			BodyMaxProcessingSizeBytes: config.Int32(1),
+		},
+	}
+	cfg.LoadFromEnv()
+
+	internalconfig.InitConfig(cfg)
+	defer internalconfig.ResetConfig()
+
+	// wrap interceptor with filter
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{Filter: mock.Filter{
+				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
+					assert.Empty(t, body)
+					return true
+				},
+			}}),
+		),
+	)
+	defer s.Stop()
+
+	helloworld.RegisterGreeterServer(s, &server{})
+
+	dialer := createDialer(s)
+
+	ctx := context.Background()
+	conn, err := grpc.DialContext(
+		ctx,
+		"bufnet",
+		grpc.WithContextDialer(dialer),
+		grpc.WithBlock(),
+		grpc.WithInsecure(),
+	)
+	if err != nil {
+		t.Fatalf("failed to dial bufnet: %v", err)
+	}
+	defer conn.Close()
+
+	client := helloworld.NewGreeterClient(conn)
+
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
+	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
+		Name: "Pupo",
+	})
+}
+
 func TestServerHandlerHelloWorldSuccess(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
 	mockHandler := &mockHandler{}
 
 	s := grpc.NewServer(
@@ -182,6 +244,7 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithInsecure(),
+		grpc.WithBlock(),
 		grpc.WithUserAgent("test_agent"),
 	)
 	if err != nil {
@@ -233,10 +296,9 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }
 
-type fakeALTSAuthInfo struct {
-}
+type fakeALTSAuthInfo struct{}
 
-func (f fakeALTSAuthInfo) AuthType() string {
+func (fakeALTSAuthInfo) AuthType() string {
 	return "tls"
 }
 

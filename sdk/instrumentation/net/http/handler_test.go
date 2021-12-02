@@ -13,6 +13,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var emptyTestConfig = &config.DataCapture{
+	HttpHeaders: &config.Message{
+		Request:  config.Bool(false),
+		Response: config.Bool(false),
+	},
+	HttpBody: &config.Message{
+		Request:  config.Bool(false),
+		Response: config.Bool(false),
+	},
+	BodyMaxSizeBytes: config.Int32(1000),
+}
+
 var _ http.Handler = &mockHandler{}
 
 type mockHandler struct {
@@ -33,16 +45,7 @@ func TestServerRequestWithNilBodyIsntChanged(t *testing.T) {
 	})
 
 	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
-	wh.dataCaptureConfig = &config.DataCapture{
-		HttpHeaders: &config.Message{
-			Request:  config.Bool(false),
-			Response: config.Bool(false),
-		},
-		HttpBody: &config.Message{
-			Request:  config.Bool(true),
-			Response: config.Bool(false),
-		},
-	}
+	wh.dataCaptureConfig = emptyTestConfig
 
 	ih := &mockHandler{baseHandler: wh}
 

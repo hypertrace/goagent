@@ -55,9 +55,9 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, trace.SpanKindClient, span.SpanKind)
 
 	assert.Equal(t, "POST", span.Attributes["http.method"].(string))
-	assert.Equal(t, "abc123xyz", span.Attributes["http.request.header.Api_key"].(string))
+	assert.Equal(t, "abc123xyz", span.Attributes["http.request.header.api_key"].(string))
 	assert.Equal(t, `{"name":"Jacinto"}`, span.Attributes["http.request.body"].(string))
-	assert.Equal(t, "xyz123abc", span.Attributes["http.response.header.Request_id"].(string))
+	assert.Equal(t, "xyz123abc", span.Attributes["http.response.header.request_id"].(string))
 	assert.Equal(t, `{"id":123}`, span.Attributes["http.response.body"].(string))
 }
 

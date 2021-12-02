@@ -6,18 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/instrumentation/opencensus/internal"
-	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 )
-
-func TestMain(m *testing.M) {
-	sdkconfig.InitConfig(&config.AgentConfig{})
-}
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	flusher := internal.InitTracer()
@@ -46,8 +40,8 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, trace.SpanKindServer, span.SpanKind)
 
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", span.Attributes["http.url"].(string))
-	assert.Equal(t, "xyz123abc", span.Attributes["http.request.header.Api_key"].(string))
-	assert.Equal(t, "abc123xyz", span.Attributes["http.response.header.Request_id"].(string))
+	assert.Equal(t, "xyz123abc", span.Attributes["http.request.header.api_key"].(string))
+	assert.Equal(t, "abc123xyz", span.Attributes["http.response.header.request_id"].(string))
 }
 
 func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {

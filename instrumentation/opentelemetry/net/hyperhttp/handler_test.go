@@ -15,11 +15,21 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func TestMain(m *testing.M) {
-	sdkconfig.InitConfig(&config.AgentConfig{})
-}
-
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
+	sdkconfig.InitConfig(&config.AgentConfig{
+		DataCapture: &config.DataCapture{
+			HttpHeaders: &config.Message{
+				Request:  config.Bool(true),
+				Response: config.Bool(true),
+			},
+			HttpBody: &config.Message{
+				Request:  config.Bool(false),
+				Response: config.Bool(false),
+			},
+		},
+	})
+	defer sdkconfig.ResetConfig()
+
 	_, flusher := tracetesting.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -41,13 +51,13 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	spans := flusher()
 	assert.Equal(t, 1, len(spans))
 
-	assert.Equal(t, "test_name", spans[0].Name)
-	assert.Equal(t, trace.SpanKindServer, spans[0].SpanKind)
+	assert.Equal(t, "test_name", spans[0].Name())
+	assert.Equal(t, trace.SpanKindServer, spans[0].SpanKind())
 
 	attrs := tracetesting.LookupAttributes(spans[0].Attributes())
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", attrs.Get("http.url").AsString())
-	assert.Equal(t, "xyz123abc", attrs.Get("http.request.header.Api_key").AsString())
-	assert.Equal(t, "abc123xyz", attrs.Get("http.response.header.Request_id").AsString())
+	assert.Equal(t, "xyz123abc", attrs.Get("http.request.header.api_key").AsString())
+	assert.Equal(t, "abc123xyz", attrs.Get("http.response.header.request_id").AsString())
 }
 
 func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {

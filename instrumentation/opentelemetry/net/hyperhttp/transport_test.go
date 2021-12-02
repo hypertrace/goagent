@@ -10,7 +10,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
+	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/stretchr/testify/assert"
@@ -20,6 +22,21 @@ import (
 )
 
 func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
+	sdkconfig.InitConfig(&config.AgentConfig{
+		DataCapture: &config.DataCapture{
+			HttpHeaders: &config.Message{
+				Request:  config.Bool(true),
+				Response: config.Bool(true),
+			},
+			HttpBody: &config.Message{
+				Request:  config.Bool(true),
+				Response: config.Bool(true),
+			},
+			BodyMaxSizeBytes: config.Int32(1024),
+		},
+	})
+	defer sdkconfig.ResetConfig()
+
 	_, flusher := tracetesting.InitTracer()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -54,14 +71,14 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, 1, len(spans), "unexpected number of spans")
 
 	span := spans[0]
-	assert.Equal(t, span.Name(), "POST")
-	assert.Equal(t, span.SpanKind, trace.SpanKindClient)
+	assert.Equal(t, span.Name(), "HTTP POST")
+	assert.Equal(t, trace.SpanKindClient, span.SpanKind())
 
 	attrs := tracetesting.LookupAttributes(span.Attributes())
 	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
-	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.Api_key").AsString())
+	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
-	assert.Equal(t, "xyz123abc", attrs.Get("http.response.header.Request_id").AsString())
+	assert.Equal(t, "xyz123abc", attrs.Get("http.response.header.request_id").AsString())
 	assert.Equal(t, `{"id":123}`, attrs.Get("http.response.body").AsString())
 }
 
@@ -188,7 +205,7 @@ func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
 		ctx := b3.New().Extract(context.Background(), propagation.HeaderCarrier(req.Header))
 		_, extractedSpan := tracer.Start(ctx, "test2")
 		defer extractedSpan.End()
-		assert.Equal(t, span.SpanContext().TraceID, extractedSpan.SpanContext().TraceID)
+		assert.Equal(t, span.SpanContext().TraceID().String(), extractedSpan.SpanContext().TraceID().String())
 	}))
 	defer srv.Close()
 

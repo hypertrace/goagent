@@ -81,32 +81,24 @@ func addResourceToSpans(e trace.SpanExporter, r *resource.Resource) trace.SpanEx
 // all the the tracing servers can handle the load of big attributes like body or headers.
 type shieldAttrsSpan struct {
 	trace.ReadOnlySpan
+	prefixes []string
 }
 
 func (s *shieldAttrsSpan) Attributes() []attribute.KeyValue {
 	attrs := []attribute.KeyValue{}
 	for _, attr := range s.ReadOnlySpan.Attributes() {
-		if strings.HasPrefix(string(attr.Key), "http.request.header.") ||
-			string(attr.Key) == "http.request.body" {
-			continue
+		key := string(attr.Key)
+		hasPrefix := false
+		for _, prefix := range s.prefixes {
+			if strings.HasPrefix(key, prefix) {
+				hasPrefix = true
+				break
+			}
 		}
 
-		if strings.HasPrefix(string(attr.Key), "http.response.header.") ||
-			string(attr.Key) == "http.response.body" {
-			continue
+		if !hasPrefix {
+			attrs = append(attrs, attr)
 		}
-
-		if strings.HasPrefix(string(attr.Key), "rpc.request.metadata.") ||
-			string(attr.Key) == "rpc.request.body" {
-			continue
-		}
-
-		if strings.HasPrefix(string(attr.Key), "rpc.response.metadata.") ||
-			string(attr.Key) == "rpc.response.body" {
-			continue
-		}
-
-		attrs = append(attrs, attr)
 	}
 
 	return attrs
@@ -114,23 +106,39 @@ func (s *shieldAttrsSpan) Attributes() []attribute.KeyValue {
 
 type attrsRemover struct {
 	trace.SpanExporter
+	prefixes []string
 }
 
 func (e *attrsRemover) ExportSpans(ctx context.Context, spans []trace.ReadOnlySpan) error {
 	newSpans := []trace.ReadOnlySpan{}
 	for _, span := range spans {
-		newSpans = append(newSpans, &shieldAttrsSpan{span})
+		newSpans = append(newSpans, &shieldAttrsSpan{span, e.prefixes})
 	}
 
 	return e.SpanExporter.ExportSpans(ctx, newSpans)
 }
 
+var attrsRemovalPrefixes = []string{
+	"http.request.header.",
+	"http.response.header.",
+	"http.request.body",
+	"http.response.body",
+	"rpc.request.metadata.",
+	"rpc.response.metadata.",
+	"rpc.request.body",
+	"rpc.response.body",
+}
+
+var RemoveGoAgentAttrs = MakeRemoveGoAgentAttrs(attrsRemovalPrefixes)
+
 // RemoveGoAgentAttrs removes custom goagent attributes from the spans so that other tracing servers
 // don't receive them and don't have to handle the load.
-func RemoveGoAgentAttrs(sp trace.SpanExporter) trace.SpanExporter {
-	if sp == nil {
-		return sp
-	}
+func MakeRemoveGoAgentAttrs(attrsRemovalPrefixes []string) func(sp trace.SpanExporter) trace.SpanExporter {
+	return func(sp trace.SpanExporter) trace.SpanExporter {
+		if sp == nil {
+			return sp
+		}
 
-	return &attrsRemover{sp}
+		return &attrsRemover{sp, attrsRemovalPrefixes}
+	}
 }

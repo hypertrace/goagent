@@ -14,6 +14,11 @@ import (
 // WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON.
 func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor, spanFromContext sdk.SpanFromContext) grpc.UnaryClientInterceptor {
+	cfg := internalconfig.GetConfig()
+	if cfg.Enabled != nil && !cfg.Enabled.Value {
+		return delegateInterceptor
+	}
+
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
 	}

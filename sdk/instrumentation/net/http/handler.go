@@ -29,6 +29,11 @@ type Options struct {
 // WrapHandler wraps an uninstrumented handler (e.g. a handleFunc) and returns a new one
 // that should be used as base to an instrumented handler
 func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, options *Options) http.Handler {
+	cfg := internalconfig.GetConfig()
+	if cfg.Enabled != nil && !cfg.Enabled.Value {
+		return delegate
+	}
+
 	defaultAttributes := make(map[string]string)
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
@@ -37,7 +42,7 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, opt
 	if options != nil && options.Filter != nil {
 		f = options.Filter
 	}
-	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), f}
+	return &handler{delegate, defaultAttributes, spanFromContext, cfg.GetDataCapture(), f}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

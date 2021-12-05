@@ -19,7 +19,7 @@ import (
 
 var otherSpanExporter trace.SpanExporter = nil
 
-func ExampleInitAdditional() {
+func ExampleInitAsAdditional() {
 	hyperSpanProcessor, shutdown := hyperotel.InitAsAdditional(config.Load())
 	defer shutdown()
 

@@ -55,7 +55,7 @@ func WrapUnaryServerInterceptor(
 			ctx,
 			req,
 			info,
-			wrapHandler(info.FullMethod, handler, spanFromContext, defaultAttributes, internalconfig.GetConfig().GetDataCapture(), options),
+			wrapHandler(info.FullMethod, handler, spanFromContext, defaultAttributes, cfg.GetDataCapture(), options),
 		)
 	}
 }
@@ -246,7 +246,7 @@ func WrapStatsHandler(delegate stats.Handler, spanFromContext sdk.SpanFromContex
 		Handler:           delegate,
 		spanFromContext:   spanFromContext,
 		defaultAttributes: defaultAttributes,
-		dataCaptureConfig: internalconfig.GetConfig().GetDataCapture(),
+		dataCaptureConfig: cfg.GetDataCapture(),
 	}
 }
 

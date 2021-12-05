@@ -26,7 +26,7 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 		defaultAttributes["container_id"] = containerID
 	}
 
-	dataCaptureConfig := internalconfig.GetConfig().GetDataCapture()
+	dataCaptureConfig := cfg.GetDataCapture()
 
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		var header metadata.MD

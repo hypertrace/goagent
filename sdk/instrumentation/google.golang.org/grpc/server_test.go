@@ -222,6 +222,8 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
 		Name: "Pupo",
 	})
+
+	assert.NoError(t, err)
 }
 
 func TestServerHandlerHelloWorldSuccess(t *testing.T) {

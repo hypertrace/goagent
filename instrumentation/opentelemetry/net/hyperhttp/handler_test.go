@@ -15,21 +15,23 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var emptyConfig = config.AgentConfig{
-	DataCapture: &config.DataCapture{
-		HttpHeaders: &config.Message{
-			Request:  config.Bool(false),
-			Response: config.Bool(false),
+func makeEmptyConfig() config.AgentConfig {
+	return config.AgentConfig{
+		DataCapture: &config.DataCapture{
+			HttpHeaders: &config.Message{
+				Request:  config.Bool(false),
+				Response: config.Bool(false),
+			},
+			HttpBody: &config.Message{
+				Request:  config.Bool(false),
+				Response: config.Bool(false),
+			},
 		},
-		HttpBody: &config.Message{
-			Request:  config.Bool(false),
-			Response: config.Bool(false),
-		},
-	},
+	}
 }
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
-	cfg := emptyConfig
+	cfg := makeEmptyConfig()
 	cfg.DataCapture.HttpHeaders = &config.Message{
 		Request:  config.Bool(true),
 		Response: config.Bool(true),

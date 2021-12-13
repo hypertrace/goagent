@@ -363,7 +363,7 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{
 		Filter: mock.Filter{
 			BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
-				assert.Len(t, body, bodyMaxProcessingSizeBytes)
+				assert.Equal(t, "{", string(body)) // body is truncated
 				return true
 			},
 		},

@@ -178,6 +178,9 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 
 	cfg := &config.AgentConfig{
 		DataCapture: &config.DataCapture{
+			RpcBody: &config.Message{
+				Request: config.Bool(true),
+			},
 			BodyMaxProcessingSizeBytes: config.Int32(1),
 		},
 	}
@@ -191,8 +194,8 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 		grpc.UnaryInterceptor(
 			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{Filter: mock.Filter{
 				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
-					assert.Empty(t, body)
-					return true
+					assert.Equal(t, "{", string(body)) // body is truncated
+					return false
 				},
 			}}),
 		),

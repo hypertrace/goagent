@@ -23,7 +23,8 @@ var defaultConfig = agentconfig.AgentConfig{
 			Request:  agentconfig.Bool(true),
 			Response: agentconfig.Bool(true),
 		},
-		BodyMaxSizeBytes: agentconfig.Int32(131072),
+		BodyMaxSizeBytes:           agentconfig.Int32(131072),
+		BodyMaxProcessingSizeBytes: agentconfig.Int32(1048576),
 	},
 	Reporting: &agentconfig.Reporting{
 		Endpoint:          agentconfig.String("http://localhost:9411/api/v2/spans"),

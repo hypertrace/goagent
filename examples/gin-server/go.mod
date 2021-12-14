@@ -6,5 +6,5 @@ replace github.com/hypertrace/goagent => ../..
 
 require (
 	github.com/gin-gonic/gin v1.7.2
-	github.com/hypertrace/goagent v0.2.1
+	github.com/hypertrace/goagent v0.0.0-00010101000000-000000000000
 )

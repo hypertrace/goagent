@@ -9,6 +9,7 @@ import (
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/sdk"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +23,8 @@ var emptyTestConfig = &config.DataCapture{
 		Request:  config.Bool(false),
 		Response: config.Bool(false),
 	},
-	BodyMaxSizeBytes: config.Int32(1000),
+	BodyMaxSizeBytes:           config.Int32(1000),
+	BodyMaxProcessingSizeBytes: config.Int32(1000),
 }
 
 var _ http.Handler = &mockHandler{}
@@ -40,6 +42,8 @@ func (h *mockHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 func TestServerRequestWithNilBodyIsntChanged(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		assert.Nil(t, r.Body)
 	})
@@ -59,6 +63,8 @@ func TestServerRequestWithNilBodyIsntChanged(t *testing.T) {
 }
 
 func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("request_id", "abc123xyz")
 		rw.WriteHeader(202)
@@ -67,17 +73,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	})
 
 	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
-	wh.dataCaptureConfig = &config.DataCapture{
-		HttpHeaders: &config.Message{
-			Request:  config.Bool(false),
-			Response: config.Bool(false),
-		},
-		HttpBody: &config.Message{
-			Request:  config.Bool(false),
-			Response: config.Bool(false),
-		},
-	}
-
+	wh.dataCaptureConfig = emptyTestConfig
 	ih := &mockHandler{baseHandler: wh}
 
 	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
@@ -98,21 +94,14 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 }
 
 func TestHostIsSuccessfullyRecorded(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		assert.Nil(t, r.Body)
 	})
 
 	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
-	wh.dataCaptureConfig = &config.DataCapture{
-		HttpHeaders: &config.Message{
-			Request:  config.Bool(false),
-			Response: config.Bool(false),
-		},
-		HttpBody: &config.Message{
-			Request:  config.Bool(true),
-			Response: config.Bool(false),
-		},
-	}
+	wh.dataCaptureConfig = emptyTestConfig
 
 	ih := &mockHandler{baseHandler: wh}
 
@@ -130,6 +119,8 @@ func TestHostIsSuccessfullyRecorded(t *testing.T) {
 }
 
 func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
 	tCases := []struct {
 		captureHTTPHeadersRequestConfig  bool
 		captureHTTPHeadersResponseConfig bool
@@ -147,16 +138,10 @@ func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {
 
 		wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
 		ih := &mockHandler{baseHandler: wh}
-		wh.dataCaptureConfig = &config.DataCapture{
-			HttpHeaders: &config.Message{
-				Request:  config.Bool(tCase.captureHTTPHeadersRequestConfig),
-				Response: config.Bool(tCase.captureHTTPHeadersResponseConfig),
-			},
-			HttpBody: &config.Message{
-				Request:  config.Bool(false),
-				Response: config.Bool(false),
-			},
-			BodyMaxSizeBytes: config.Int32(1000),
+		wh.dataCaptureConfig = emptyTestConfig
+		wh.dataCaptureConfig.HttpHeaders = &config.Message{
+			Request:  config.Bool(tCase.captureHTTPHeadersRequestConfig),
+			Response: config.Bool(tCase.captureHTTPHeadersResponseConfig),
 		}
 
 		r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
@@ -241,16 +226,10 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			})
 
 			wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
-			wh.dataCaptureConfig = &config.DataCapture{
-				HttpBody: &config.Message{
-					Request:  config.Bool(tCase.captureHTTPBodyConfig),
-					Response: config.Bool(tCase.captureHTTPBodyConfig),
-				},
-				HttpHeaders: &config.Message{
-					Request:  config.Bool(false),
-					Response: config.Bool(false),
-				},
-				BodyMaxSizeBytes: config.Int32(1000),
+			wh.dataCaptureConfig = emptyTestConfig
+			wh.dataCaptureConfig.HttpBody = &config.Message{
+				Request:  config.Bool(tCase.captureHTTPBodyConfig),
+				Response: config.Bool(tCase.captureHTTPBodyConfig),
 			}
 			ih := &mockHandler{baseHandler: wh}
 
@@ -372,4 +351,33 @@ func TestServerRequestFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProcessingBodyIsTrimmed(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
+	bodyMaxProcessingSizeBytes := 1
+
+	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
+
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{
+		Filter: mock.Filter{
+			BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
+				assert.Equal(t, "{", string(body)) // body is truncated
+				return true
+			},
+		},
+	}).(*handler)
+	wh.dataCaptureConfig = emptyTestConfig
+	wh.dataCaptureConfig.HttpBody.Request = config.Bool(true)
+	wh.dataCaptureConfig.BodyMaxProcessingSizeBytes = config.Int32(int32(bodyMaxProcessingSizeBytes))
+
+	ih := &mockHandler{baseHandler: wh}
+
+	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("{\"foo\":\"bar\"}"))
+	r.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	ih.ServeHTTP(w, r)
 }

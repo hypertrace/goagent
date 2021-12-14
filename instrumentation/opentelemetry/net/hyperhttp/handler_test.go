@@ -15,19 +15,29 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
-	sdkconfig.InitConfig(&config.AgentConfig{
+func makeEmptyConfig() config.AgentConfig {
+	return config.AgentConfig{
 		DataCapture: &config.DataCapture{
 			HttpHeaders: &config.Message{
-				Request:  config.Bool(true),
-				Response: config.Bool(true),
+				Request:  config.Bool(false),
+				Response: config.Bool(false),
 			},
 			HttpBody: &config.Message{
 				Request:  config.Bool(false),
 				Response: config.Bool(false),
 			},
 		},
-	})
+	}
+}
+
+func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
+	cfg := makeEmptyConfig()
+	cfg.DataCapture.HttpHeaders = &config.Message{
+		Request:  config.Bool(true),
+		Response: config.Bool(true),
+	}
+
+	sdkconfig.InitConfig(&cfg)
 	defer sdkconfig.ResetConfig()
 
 	_, flusher := tracetesting.InitTracer()
@@ -61,6 +71,8 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 }
 
 func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
+	defer sdkconfig.ResetConfig()
+
 	_, flusher := tracetesting.InitTracer()
 
 	tCases := map[string]struct {
@@ -129,6 +141,8 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 }
 
 func TestRequestExtractsIncomingHeadersSuccessfully(t *testing.T) {
+	defer sdkconfig.ResetConfig()
+
 	_, flusher := tracetesting.InitTracer()
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -81,7 +82,9 @@ func startSpan(provider getTracerProvider) sdk.StartSpan {
 			}
 		}
 
-		ctx, span := provider().Tracer(TracerDomain).Start(ctx, name, startOpts...)
+		ctx, span := provider().
+			Tracer(TracerDomain, trace.WithInstrumentationVersion(version.Version)).
+			Start(ctx, name, startOpts...)
 		return ctx, &Span{span}, func() { span.End() }
 	}
 }

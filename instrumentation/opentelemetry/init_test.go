@@ -31,8 +31,7 @@ func ExampleRegisterService() {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("my_example_svc")
 	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
-	cfg.Reporting.Endpoint = config.String("http://api.traceable.ai:9411/api/v2/spans")
-	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_LOGGING
 
 	shutdown := Init(cfg)
 	defer shutdown()

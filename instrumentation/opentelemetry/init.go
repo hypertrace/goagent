@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel"
 	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -87,6 +88,11 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 				cfg.GetReporting().GetEndpoint().GetValue(),
 				zipkin.WithClient(client),
 			)
+		}
+	case config.TraceReporterType_LOGGING:
+		return func() (sdktrace.SpanExporter, error) {
+			// TODO: Define if endpoint could be a filepath to write into a file.
+			return stdouttrace.New()
 		}
 	default:
 		opts := []otlpgrpc.Option{

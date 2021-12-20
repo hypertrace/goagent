@@ -92,7 +92,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 	case config.TraceReporterType_LOGGING:
 		return func() (sdktrace.SpanExporter, error) {
 			// TODO: Define if endpoint could be a filepath to write into a file.
-			return stdouttrace.New()
+			return stdouttrace.New(stdouttrace.WithPrettyPrint())
 		}
 	default:
 		opts := []otlpgrpc.Option{

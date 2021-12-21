@@ -36,6 +36,7 @@ var (
 	Int32                          = agentconfig.Int32
 	TraceReporterType_OTLP         = agentconfig.TraceReporterType_OTLP
 	TraceReporterType_ZIPKIN       = agentconfig.TraceReporterType_ZIPKIN
+	TraceReporterType_LOGGING      = agentconfig.TraceReporterType_LOGGING
 	PropagationFormat_B3           = agentconfig.PropagationFormat_B3
 	PropagationFormat_TRACECONTEXT = agentconfig.PropagationFormat_TRACECONTEXT
 )

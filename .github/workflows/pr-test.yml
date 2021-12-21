@@ -26,6 +26,12 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
+      - name: Check go.mods
+        uses: evantorrie/mott-the-tidier@v1-beta
+        with:
+          gomods: |
+            **/go.mod
+
       - name: download dependencies
         run: |
           make deps

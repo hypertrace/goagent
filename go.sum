@@ -112,8 +112,8 @@ github.com/grpc-ecosystem/grpc-gateway v1.16.0 h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
 github.com/hashicorp/go-uuid v1.0.2/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/bN7x4byOro=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
-github.com/hypertrace/agent-config/gen/go v0.0.0-20220209154926-7571a808f748 h1:0MibtnjFXuObkQiwVWZkgYSitjHARFgvkxr25FSXL50=
-github.com/hypertrace/agent-config/gen/go v0.0.0-20220209154926-7571a808f748/go.mod h1:mAjMCmZXb0eL7I20pNuPz0tTPx8Ow3IE1J5fHhnLyZs=
+github.com/hypertrace/agent-config/gen/go v0.0.0-20220209183558-95cc7dcabb51 h1:be7Skj74loff4ogxQurGjhB/1jBFySN/wA8xSqDz2t4=
+github.com/hypertrace/agent-config/gen/go v0.0.0-20220209183558-95cc7dcabb51/go.mod h1:mAjMCmZXb0eL7I20pNuPz0tTPx8Ow3IE1J5fHhnLyZs=
 github.com/jcmturner/aescts/v2 v2.0.0/go.mod h1:AiaICIRyfYg35RUkr8yESTqvSy7csK90qZ5xfvvsoNs=
 github.com/jcmturner/dnsutils/v2 v2.0.0/go.mod h1:b0TnjGOvI/n42bZa+hmXL+kFJZsFT7G4t3HTlQ184QM=
 github.com/jcmturner/gofork v1.0.0/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=

@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/otel"
 	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 
+	"github.com/go-logr/logr"
+	"github.com/go-logr/stdr"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
@@ -155,6 +157,8 @@ func createCaCertPoolFromFile(certFile string) *x509.CertPool {
 func Init(cfg *config.AgentConfig) func() {
 	mu.Lock()
 	defer mu.Unlock()
+	l := stdr.New(log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile))
+	otel.SetLogger(l)
 	if initialized {
 		return func() {}
 	}

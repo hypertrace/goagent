@@ -5,10 +5,9 @@ go 1.15
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/gin-gonic/gin v1.7.2
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
-	github.com/hypertrace/agent-config/gen/go v0.0.0-20211201093046-a7ed863ff59e
+	github.com/hypertrace/agent-config/gen/go v0.0.0-20220209183558-95cc7dcabb51
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.4
 	github.com/ngrok/sqlmw v0.0.0-20200129213757-d5c93a81bec6

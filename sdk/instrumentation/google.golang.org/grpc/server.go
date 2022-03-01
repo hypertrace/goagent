@@ -30,6 +30,11 @@ func WrapUnaryServerInterceptor(
 	spanFromContext sdk.SpanFromContext,
 	options *Options,
 ) grpc.UnaryServerInterceptor {
+	cfg := internalconfig.GetConfig()
+	if cfg.Enabled != nil && !cfg.Enabled.Value {
+		return delegateInterceptor
+	}
+
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
 	}
@@ -50,7 +55,7 @@ func WrapUnaryServerInterceptor(
 			ctx,
 			req,
 			info,
-			wrapHandler(info.FullMethod, handler, spanFromContext, defaultAttributes, internalconfig.GetConfig().GetDataCapture(), options),
+			wrapHandler(info.FullMethod, handler, spanFromContext, defaultAttributes, cfg.GetDataCapture(), options),
 		)
 	}
 }
@@ -229,6 +234,11 @@ func (s *handler) TagRPC(ctx context.Context, rti *stats.RPCTagInfo) context.Con
 // WrapStatsHandler wraps an instrumented StatsHandler and returns a new one that records
 // the request/response body and metadata.
 func WrapStatsHandler(delegate stats.Handler, spanFromContext sdk.SpanFromContext) stats.Handler {
+	cfg := internalconfig.GetConfig()
+	if cfg.Enabled != nil && !cfg.Enabled.Value {
+		return delegate
+	}
+
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
 	}
@@ -240,7 +250,7 @@ func WrapStatsHandler(delegate stats.Handler, spanFromContext sdk.SpanFromContex
 		Handler:           delegate,
 		spanFromContext:   spanFromContext,
 		defaultAttributes: defaultAttributes,
-		dataCaptureConfig: internalconfig.GetConfig().GetDataCapture(),
+		dataCaptureConfig: cfg.GetDataCapture(),
 	}
 }
 

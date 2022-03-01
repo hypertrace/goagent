@@ -11,6 +11,8 @@ import (
 	"github.com/ngrok/sqlmw"
 
 	"reflect"
+
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 )
 
 var regMu sync.Mutex
@@ -190,6 +192,11 @@ func (w *dsnReadWrapper) parseDSNAttributes(dsn string) map[string]string {
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.
 func Wrap(d driver.Driver, startSpan sdk.StartSpan) driver.Driver {
+	cfg := internalconfig.GetConfig()
+	if cfg.Enabled != nil && !cfg.Enabled.Value {
+		return d
+	}
+
 	driverName := getDriverName(d)
 	in := &interceptor{startSpan: startSpan}
 	return &dsnReadWrapper{Driver: sqlmw.Driver(d, in), driverName: driverName, inDefaultAttributes: &in.defaultAttributes}
@@ -199,6 +206,11 @@ func Wrap(d driver.Driver, startSpan sdk.StartSpan) driver.Driver {
 // identified by its driverName. On success it
 // returns the generated driverName to use when calling hypersql.Open.
 func Register(driverName string, startSpan sdk.StartSpan) (string, error) {
+	cfg := internalconfig.GetConfig()
+	if cfg.Enabled != nil && !cfg.Enabled.Value {
+		return driverName, nil
+	}
+
 	// retrieve the driver implementation we need to wrap with instrumentation
 	db, err := stdSQL.Open(driverName, "")
 	if err != nil {

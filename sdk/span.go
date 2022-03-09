@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Span is an interface that accept attributed and can be
+// Span is an interface that accepts attributes and can be
 // distinguished as noop
 type Span interface {
 	// SetAttribute sets an attribute for the span.
@@ -21,6 +21,9 @@ type Span interface {
 	// IsNoop tells whether the span is noop or not, useful for avoiding
 	// expensive recording.
 	IsNoop() bool
+
+	// AddEvent adds an event to the Span with the provided name, timestamp and attributes.
+	AddEvent(name string, ts time.Time, attributes map[string]interface{})
 }
 
 // SpanFromContext retrieves the existing span from a context

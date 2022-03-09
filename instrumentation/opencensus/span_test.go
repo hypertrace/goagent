@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"go.opencensus.io/trace"
 
@@ -42,4 +43,16 @@ func TestGenerateAttributeSuccess(t *testing.T) {
 	for _, tCase := range tCases {
 		assert.Equal(t, tCase.expectedAttr, generateAttribute(attrKey, tCase.value))
 	}
+}
+
+func TestAddEvents(t *testing.T) {
+	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	m := make(map[string]interface{})
+	s.AddEvent("test_event_1", time.Now(), m)
+	m["k1"] = "v1"
+	s.AddEvent("test_event_2", time.Now(), m)
+	m["k2"] = 23
+	s.AddEvent("test_event_3", time.Now(), m)
+	m["k3"] = true
+	s.AddEvent("test_event_4", time.Now(), m)
 }

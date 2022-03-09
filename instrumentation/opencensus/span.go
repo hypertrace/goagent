@@ -3,6 +3,7 @@ package opencensus // import "github.com/hypertrace/goagent/instrumentation/open
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/hypertrace/goagent/sdk"
 	"go.opencensus.io/trace"
@@ -47,6 +48,15 @@ func (s *Span) SetStatus(code sdk.Code, message string) {
 		Code:    int32(code),
 		Message: message,
 	})
+}
+
+// There is no method matching adding span events in oc.
+func (s *Span) AddEvent(name string, _ time.Time, attributes map[string]interface{}) {
+	var ocAttributes []trace.Attribute
+	for k, v := range attributes {
+		ocAttributes = append(ocAttributes, generateAttribute(k, v))
+	}
+	s.Span.Annotate(ocAttributes, name)
 }
 
 func SpanFromContext(ctx context.Context) sdk.Span {

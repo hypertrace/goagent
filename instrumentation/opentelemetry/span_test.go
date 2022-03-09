@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/sdk"
@@ -61,4 +62,16 @@ func TestGenerateAttribute(t *testing.T) {
 	attr := generateAttribute("key", errors.New("x"))
 	assert.Equal(t, attribute.STRING, attr.Value.Type())
 	assert.Equal(t, "x", attr.Value.AsString())
+}
+
+func TestAddEvent(t *testing.T) {
+	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	m := make(map[string]interface{})
+	s.AddEvent("test_event_1", time.Now(), m)
+	m["k1"] = "v1"
+	s.AddEvent("test_event_2", time.Now(), m)
+	m["k2"] = 23
+	s.AddEvent("test_event_3", time.Now(), m)
+	m["k3"] = true
+	s.AddEvent("test_event_4", time.Now(), m)
 }

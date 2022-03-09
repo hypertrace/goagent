@@ -62,6 +62,14 @@ func (s *Span) IsNoop() bool {
 	return !s.Span.IsRecording()
 }
 
+func (s *Span) AddEvent(name string, ts time.Time, attributes map[string]interface{}) {
+	otAttributes := []attribute.KeyValue{}
+	for k, v := range attributes {
+		otAttributes = append(otAttributes, generateAttribute(k, v))
+	}
+	s.Span.AddEvent(name, trace.WithTimestamp(ts), trace.WithAttributes(otAttributes...))
+}
+
 func SpanFromContext(ctx context.Context) sdk.Span {
 	return &Span{trace.SpanFromContext(ctx)}
 }

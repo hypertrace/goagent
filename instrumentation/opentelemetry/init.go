@@ -153,6 +153,12 @@ func createCaCertPoolFromFile(certFile string) *x509.CertPool {
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately
 // on a termination signal.
 func Init(cfg *config.AgentConfig) func() {
+	return InitWithSpanProcessorWrapper(cfg, nil)
+}
+
+// InitWithSpanProcessorWrapper initializes opentelemetry tracing with a wrapper over span processor
+// and returns a shutdown function to flush data immediately on a termination signal.
+func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessorWrapper) func() {
 	mu.Lock()
 	defer mu.Unlock()
 	if initialized {
@@ -182,7 +188,10 @@ func Init(cfg *config.AgentConfig) func() {
 		log.Fatal(err)
 	}
 
-	batcher := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
+	sp := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
+	if wrapper != nil {
+		sp = &spanProcessorWithWrapper{wrapper, sp}
+	}
 
 	resources, err := resource.New(
 		context.Background(),
@@ -195,7 +204,7 @@ func Init(cfg *config.AgentConfig) func() {
 	sampler := sdktrace.AlwaysSample()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sampler),
-		sdktrace.WithSpanProcessor(batcher),
+		sdktrace.WithSpanProcessor(sp),
 		sdktrace.WithResource(resources),
 	)
 	otel.SetTracerProvider(tp)
@@ -237,6 +246,12 @@ func createResources(serviceName string, resources map[string]string) []attribut
 
 // RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans
 func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, error) {
+	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil)
+}
+
+// RegisterService creates tracerprovider for a new service with a wrapper over opentelemetry span processor
+// and returns a func which can be used to create spans
+func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string, wrapper SpanProcessorWrapper) (sdk.StartSpan, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if !initialized {
@@ -256,7 +271,10 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 		log.Fatal(err)
 	}
 
-	batcher := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
+	sp := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
+	if wrapper != nil {
+		sp = &spanProcessorWithWrapper{wrapper, sp}
+	}
 
 	resources, err := resource.New(
 		context.Background(),
@@ -267,7 +285,7 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 	}
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(globalSampler),
-		sdktrace.WithSpanProcessor(batcher),
+		sdktrace.WithSpanProcessor(sp),
 		sdktrace.WithResource(resources),
 	)
 
@@ -275,4 +293,32 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 	return startSpan(func() trace.TracerProvider {
 		return tp
 	}), nil
+}
+
+// SpanProcessorWrapper wraps otel span processor
+// and is responsible to delegate calls to the wrapped processor
+type SpanProcessorWrapper interface {
+	OnStart(parent context.Context, s sdktrace.ReadWriteSpan, delegate sdktrace.SpanProcessor)
+	OnEnd(s sdktrace.ReadOnlySpan, delegate sdktrace.SpanProcessor)
+}
+
+type spanProcessorWithWrapper struct {
+	wrapper   SpanProcessorWrapper
+	processor sdktrace.SpanProcessor
+}
+
+func (sp *spanProcessorWithWrapper) OnStart(parent context.Context, s sdktrace.ReadWriteSpan) {
+	sp.wrapper.OnStart(parent, s, sp.processor)
+}
+
+func (sp *spanProcessorWithWrapper) OnEnd(s sdktrace.ReadOnlySpan) {
+	sp.wrapper.OnEnd(s, sp.processor)
+}
+
+func (sp *spanProcessorWithWrapper) Shutdown(ctx context.Context) error {
+	return sp.processor.Shutdown(ctx)
+}
+
+func (sp *spanProcessorWithWrapper) ForceFlush(ctx context.Context) error {
+	return sp.processor.ForceFlush(ctx)
 }

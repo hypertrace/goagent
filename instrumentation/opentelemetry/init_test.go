@@ -11,6 +11,7 @@ import (
 	"github.com/hypertrace/goagent/config"
 
 	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -306,4 +307,53 @@ func TestCreateCaCertPoolFromFileThatDoesNotExist(t *testing.T) {
 
 func TestCreateCaCertPoolFromFileThatIsBogus(t *testing.T) {
 	assert.Nil(t, createCaCertPoolFromFile("testdata/fakeRootCA.crt"))
+}
+
+type mockSpanProcessorWrapper struct {
+	onStartCount int
+	onEndCount   int
+}
+
+func (spw *mockSpanProcessorWrapper) OnStart(parent context.Context, s sdktrace.ReadWriteSpan, delegate sdktrace.SpanProcessor) {
+	spw.onStartCount++
+	delegate.OnStart(parent, s)
+}
+
+func (spw *mockSpanProcessorWrapper) OnEnd(s sdktrace.ReadOnlySpan, delegate sdktrace.SpanProcessor) {
+	spw.onEndCount++
+	delegate.OnEnd(s)
+}
+
+func TestInitWithSpanProcessorWrapper(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	cfg := config.Load()
+	cfg.ServiceName = config.String("my_example_svc")
+	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
+	cfg.Reporting.Endpoint = config.String(srv.URL)
+
+	wrapper := &mockSpanProcessorWrapper{}
+	shutdown := InitWithSpanProcessorWrapper(cfg, wrapper)
+	defer shutdown()
+
+	// test wrapper is called for spans created by global trace provider
+	_, _, spanEnder := StartSpan(context.Background(), "my_span", nil)
+	spanEnder()
+
+	assert.Equal(t, 1, wrapper.onStartCount)
+	assert.Equal(t, 1, wrapper.onEndCount)
+
+	// test wrapper is called for spans created by service trace provider
+	startSpan, err := RegisterServiceWithSpanProcessorWrapper("custom_service", map[string]string{"test1": "val1"}, wrapper)
+	if err != nil {
+		log.Fatalf("Error while initializing service: %v", err)
+	}
+
+	_, _, spanEnder = startSpan(context.Background(), "service_span", nil)
+	spanEnder()
+	assert.Equal(t, 2, wrapper.onStartCount)
+	assert.Equal(t, 2, wrapper.onEndCount)
 }

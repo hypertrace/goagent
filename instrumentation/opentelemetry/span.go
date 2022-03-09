@@ -63,7 +63,7 @@ func (s *Span) IsNoop() bool {
 }
 
 func (s *Span) AddEvent(name string, ts time.Time, attributes map[string]interface{}) {
-	var otAttributes []attribute.KeyValue
+	otAttributes := []attribute.KeyValue{}
 	for k, v := range attributes {
 		otAttributes = append(otAttributes, generateAttribute(k, v))
 	}

@@ -3,11 +3,18 @@ package mock
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/hypertrace/goagent/sdk"
 )
 
 var _ sdk.Span = &Span{}
+
+type spanEvent struct {
+	name       string
+	ts         time.Time
+	attributes map[string]interface{}
+}
 
 type Status struct {
 	Code    sdk.Code
@@ -21,6 +28,7 @@ type Span struct {
 	Err        error
 	Noop       bool
 	Status     Status
+	spanEvents []spanEvent
 	mux        *sync.Mutex
 }
 
@@ -68,6 +76,13 @@ func (s *Span) SetError(err error) {
 
 func (s *Span) IsNoop() bool {
 	return s.Noop
+}
+
+func (s *Span) AddEvent(name string, ts time.Time, attributes map[string]interface{}) {
+	s.mux.Lock() // avoids race conditions
+	defer s.mux.Unlock()
+
+	s.spanEvents = append(s.spanEvents, spanEvent{name, ts, attributes})
 }
 
 type spanKey string

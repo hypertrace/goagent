@@ -249,7 +249,7 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil)
 }
 
-// RegisterService creates tracerprovider for a new service with a wrapper over opentelemetry span processor
+// RegisterServiceWithSpanProcessorWrapper creates tracerprovider for a new service with a wrapper over opentelemetry span processor
 // and returns a func which can be used to create spans
 func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string, wrapper SpanProcessorWrapper) (sdk.StartSpan, error) {
 	mu.Lock()

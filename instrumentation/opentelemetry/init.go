@@ -244,6 +244,12 @@ func createResources(serviceName string, resources map[string]string) []attribut
 	return retValues
 }
 
+// RegisterServiceAndReturnTracerProvider creates tracerprovider for a new service and returns a func which can be used to create spans
+// + a tracer provider
+func RegisterServiceAndReturnTracerProvider(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
+	return RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider(serviceName, resourceAttributes, nil)
+}
+
 // RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans
 func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, error) {
 	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil)
@@ -252,18 +258,67 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 // RegisterServiceWithSpanProcessorWrapper creates tracerprovider for a new service with a wrapper over opentelemetry span processor
 // and returns a func which can be used to create spans
 func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string, wrapper SpanProcessorWrapper) (sdk.StartSpan, error) {
+	spanStarter, _, err := RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider(serviceName, resourceAttributes, wrapper)
+	return spanStarter, err
+	// mu.Lock()
+	// defer mu.Unlock()
+	// if !initialized {
+	// 	return nil, fmt.Errorf("hypertrace hadn't been initialized")
+	// }
+
+	// if !enabled {
+	// 	return NoopStartSpan, nil
+	// }
+
+	// if _, ok := traceProviders[serviceName]; ok {
+	// 	return nil, fmt.Errorf("service %v already initialized", serviceName)
+	// }
+
+	// exporter, err := exporterFactory()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// sp := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
+	// if wrapper != nil {
+	// 	sp = &spanProcessorWithWrapper{wrapper, sp}
+	// }
+
+	// resources, err := resource.New(
+	// 	context.Background(),
+	// 	resource.WithAttributes(createResources(serviceName, resourceAttributes)...),
+	// )
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// tp := sdktrace.NewTracerProvider(
+	// 	sdktrace.WithSampler(globalSampler),
+	// 	sdktrace.WithSpanProcessor(sp),
+	// 	sdktrace.WithResource(resources),
+	// )
+
+	// traceProviders[serviceName] = tp
+	// return startSpan(func() trace.TracerProvider {
+	// 	return tp
+	// }), nil
+}
+
+// RegisterServiceWithSpanProcessorWrapper creates tracerprovider for a new service with a wrapper over opentelemetry span processor
+// and returns a func which can be used to create spans
+func RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider(serviceName string, resourceAttributes map[string]string,
+	wrapper SpanProcessorWrapper) (sdk.StartSpan, trace.TracerProvider, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if !initialized {
-		return nil, fmt.Errorf("hypertrace hadn't been initialized")
+		return nil, trace.NewNoopTracerProvider(), fmt.Errorf("hypertrace hadn't been initialized")
 	}
 
 	if !enabled {
-		return NoopStartSpan, nil
+		return NoopStartSpan, trace.NewNoopTracerProvider(), nil
 	}
 
 	if _, ok := traceProviders[serviceName]; ok {
-		return nil, fmt.Errorf("service %v already initialized", serviceName)
+		return nil, trace.NewNoopTracerProvider(), fmt.Errorf("service %v already initialized", serviceName)
 	}
 
 	exporter, err := exporterFactory()
@@ -292,7 +347,7 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 	traceProviders[serviceName] = tp
 	return startSpan(func() trace.TracerProvider {
 		return tp
-	}), nil
+	}), tp, nil
 }
 
 // SpanProcessorWrapper wraps otel span processor

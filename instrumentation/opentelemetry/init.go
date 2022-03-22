@@ -260,51 +260,10 @@ func RegisterService(serviceName string, resourceAttributes map[string]string) (
 func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string, wrapper SpanProcessorWrapper) (sdk.StartSpan, error) {
 	spanStarter, _, err := RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider(serviceName, resourceAttributes, wrapper)
 	return spanStarter, err
-	// mu.Lock()
-	// defer mu.Unlock()
-	// if !initialized {
-	// 	return nil, fmt.Errorf("hypertrace hadn't been initialized")
-	// }
-
-	// if !enabled {
-	// 	return NoopStartSpan, nil
-	// }
-
-	// if _, ok := traceProviders[serviceName]; ok {
-	// 	return nil, fmt.Errorf("service %v already initialized", serviceName)
-	// }
-
-	// exporter, err := exporterFactory()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// sp := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
-	// if wrapper != nil {
-	// 	sp = &spanProcessorWithWrapper{wrapper, sp}
-	// }
-
-	// resources, err := resource.New(
-	// 	context.Background(),
-	// 	resource.WithAttributes(createResources(serviceName, resourceAttributes)...),
-	// )
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// tp := sdktrace.NewTracerProvider(
-	// 	sdktrace.WithSampler(globalSampler),
-	// 	sdktrace.WithSpanProcessor(sp),
-	// 	sdktrace.WithResource(resources),
-	// )
-
-	// traceProviders[serviceName] = tp
-	// return startSpan(func() trace.TracerProvider {
-	// 	return tp
-	// }), nil
 }
 
-// RegisterServiceWithSpanProcessorWrapper creates tracerprovider for a new service with a wrapper over opentelemetry span processor
-// and returns a func which can be used to create spans
+// RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider creates tracerprovider for a new service with a wrapper over opentelemetry span processor
+// and returns a func which can be used to create spans. It returns the TracerProvider as well
 func RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider(serviceName string, resourceAttributes map[string]string,
 	wrapper SpanProcessorWrapper) (sdk.StartSpan, trace.TracerProvider, error) {
 	mu.Lock()

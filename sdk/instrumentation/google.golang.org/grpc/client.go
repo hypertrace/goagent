@@ -13,9 +13,12 @@ import (
 
 // WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON.
-func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor, spanFromContext sdk.SpanFromContext) grpc.UnaryClientInterceptor {
+func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor, spanFromContext sdk.SpanFromContext, spanAttributes map[string]string) grpc.UnaryClientInterceptor {
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
+	}
+	for k, v := range spanAttributes {
+		defaultAttributes[k] = v
 	}
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID

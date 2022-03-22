@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -36,7 +37,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{}),
+			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{}, map[string]string{"foo": "bar"}),
 		),
 	)
 	defer s.Stop()
@@ -52,7 +53,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithBlock(),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -78,6 +79,7 @@ func TestServerInterceptorHelloWorldSuccess(t *testing.T) {
 	assert.Equal(t, "SayHello", span.ReadAttribute("rpc.method").(string))
 	assert.Equal(t, "test_value", span.ReadAttribute("rpc.request.metadata.test_key").(string))
 	assert.Equal(t, "POST", span.ReadAttribute("rpc.request.metadata.:method").(string))
+	assert.Equal(t, "bar", span.ReadAttribute("foo").(string))
 
 	expectedBody := "{\"name\":\"Pupo\"}"
 	actualBody := span.ReadAttribute("rpc.request.body").(string)
@@ -135,7 +137,7 @@ func TestServerInterceptorFilter(t *testing.T) {
 			// wrap interceptor with filter
 			s := grpc.NewServer(
 				grpc.UnaryInterceptor(
-					WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{Filter: tCase.multiFilter}),
+					WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{Filter: tCase.multiFilter}, map[string]string{}),
 				),
 			)
 			defer s.Stop()
@@ -150,7 +152,7 @@ func TestServerInterceptorFilter(t *testing.T) {
 				"bufnet",
 				grpc.WithContextDialer(dialer),
 				grpc.WithBlock(),
-				grpc.WithInsecure(),
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
 			)
 			if err != nil {
 				t.Fatalf("failed to dial bufnet: %v", err)
@@ -197,7 +199,7 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 					assert.Equal(t, "{", string(body)) // body is truncated
 					return false
 				},
-			}}),
+			}}, nil),
 		),
 	)
 	defer s.Stop()
@@ -212,7 +214,7 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 		"bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithBlock(),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		t.Fatalf("failed to dial bufnet: %v", err)
@@ -248,7 +250,7 @@ func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 		ctx,
 		"bufnet",
 		grpc.WithContextDialer(dialer),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 		grpc.WithUserAgent("test_agent"),
 	)

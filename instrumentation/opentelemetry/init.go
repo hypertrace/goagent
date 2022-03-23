@@ -244,27 +244,14 @@ func createResources(serviceName string, resources map[string]string) []attribut
 	return retValues
 }
 
-// RegisterServiceAndReturnTracerProvider creates tracerprovider for a new service and returns a func which can be used to create spans
-// + a tracer provider
-func RegisterServiceAndReturnTracerProvider(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
-	return RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider(serviceName, resourceAttributes, nil)
-}
-
-// RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans
-func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, error) {
+// RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans and the TracerProvider
+func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
 	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil)
 }
 
-// RegisterServiceWithSpanProcessorWrapper creates tracerprovider for a new service with a wrapper over opentelemetry span processor
-// and returns a func which can be used to create spans
-func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string, wrapper SpanProcessorWrapper) (sdk.StartSpan, error) {
-	spanStarter, _, err := RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider(serviceName, resourceAttributes, wrapper)
-	return spanStarter, err
-}
-
-// RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider creates tracerprovider for a new service with a wrapper over opentelemetry span processor
-// and returns a func which can be used to create spans. It returns the TracerProvider as well
-func RegisterServiceWithSpanProcessorWrapperAndReturnTracerProvider(serviceName string, resourceAttributes map[string]string,
+// RegisterServiceWithSpanProcessorWrapper creates a tracerprovider for a new service with a wrapper over opentelemetry span processor
+// and returns a func which can be used to create spans and the TracerProvider
+func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string,
 	wrapper SpanProcessorWrapper) (sdk.StartSpan, trace.TracerProvider, error) {
 	mu.Lock()
 	defer mu.Unlock()

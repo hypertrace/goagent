@@ -9,5 +9,3 @@ import (
 var Init = opentelemetry.Init
 
 var RegisterService = opentelemetry.RegisterService
-
-var RegisterServiceAndReturnTracerProvider = opentelemetry.RegisterServiceAndReturnTracerProvider

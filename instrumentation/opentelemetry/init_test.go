@@ -52,7 +52,7 @@ func TestInitDisabledAgent(t *testing.T) {
 
 	startSpan, tp, err := RegisterService("test_service", nil)
 	require.NoError(t, err)
-	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	assert.Equal(t, trace.NewNoopTracerProvider(), tp)
 	_, s, _ := startSpan(context.Background(), "test_span", nil)
 	require.NoError(t, err)
 	assert.True(t, s.IsNoop())
@@ -80,7 +80,8 @@ func TestOtlpService(t *testing.T) {
 	shutdown := Init(cfg)
 	defer shutdown()
 
-	_, _, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	_, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}

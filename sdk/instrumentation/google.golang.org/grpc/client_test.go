@@ -8,6 +8,7 @@ import (
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -38,11 +39,12 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 		ctx,
 		"bufnet",
 		grpc.WithContextDialer(dialer),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
 				makeMockUnaryClientInterceptor(&spans),
 				mock.SpanFromContext,
+				map[string]string{"foo": "bar"},
 			),
 		),
 	)
@@ -75,6 +77,7 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 	assert.Equal(t, "test_header_value", span.ReadAttribute("rpc.response.metadata.test_header_key").(string))
 	assert.Equal(t, "test_trailer_value", span.ReadAttribute("rpc.response.metadata.test_trailer_key").(string))
 	assert.Equal(t, "application/grpc", span.ReadAttribute("rpc.response.metadata.content-type").(string))
+	assert.Equal(t, "bar", span.ReadAttribute("foo").(string))
 
 	expectedBody := "{\"name\":\"Cuchi\"}"
 	actualBody := span.ReadAttribute("rpc.request.body").(string)
@@ -114,7 +117,7 @@ func TestClientHandlerHelloWorldSuccess(t *testing.T) {
 		ctx,
 		"bufnet",
 		grpc.WithContextDialer(dialer),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithStatsHandler(WrapStatsHandler(mockHandler, mock.SpanFromContext)),
 	)
 	if err != nil {

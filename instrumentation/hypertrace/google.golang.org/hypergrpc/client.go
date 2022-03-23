@@ -13,5 +13,6 @@ func UnaryClientInterceptor() grpc.UnaryClientInterceptor {
 	return sdkgrpc.WrapUnaryClientInterceptor(
 		otelgrpc.UnaryClientInterceptor(),
 		opentelemetry.SpanFromContext,
+		map[string]string{},
 	)
 }

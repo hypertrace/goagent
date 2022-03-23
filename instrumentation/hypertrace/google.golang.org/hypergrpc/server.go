@@ -19,5 +19,6 @@ func UnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 		otelgrpc.UnaryServerInterceptor(),
 		opentelemetry.SpanFromContext,
 		o.toSDKOptions(),
+		map[string]string{},
 	)
 }

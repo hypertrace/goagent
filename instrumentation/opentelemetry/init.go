@@ -244,26 +244,27 @@ func createResources(serviceName string, resources map[string]string) []attribut
 	return retValues
 }
 
-// RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans
-func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, error) {
+// RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans and the TracerProvider
+func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
 	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil)
 }
 
-// RegisterServiceWithSpanProcessorWrapper creates tracerprovider for a new service with a wrapper over opentelemetry span processor
-// and returns a func which can be used to create spans
-func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string, wrapper SpanProcessorWrapper) (sdk.StartSpan, error) {
+// RegisterServiceWithSpanProcessorWrapper creates a tracerprovider for a new service with a wrapper over opentelemetry span processor
+// and returns a func which can be used to create spans and the TracerProvider
+func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string,
+	wrapper SpanProcessorWrapper) (sdk.StartSpan, trace.TracerProvider, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if !initialized {
-		return nil, fmt.Errorf("hypertrace hadn't been initialized")
+		return nil, trace.NewNoopTracerProvider(), fmt.Errorf("hypertrace hadn't been initialized")
 	}
 
 	if !enabled {
-		return NoopStartSpan, nil
+		return NoopStartSpan, trace.NewNoopTracerProvider(), nil
 	}
 
 	if _, ok := traceProviders[serviceName]; ok {
-		return nil, fmt.Errorf("service %v already initialized", serviceName)
+		return nil, trace.NewNoopTracerProvider(), fmt.Errorf("service %v already initialized", serviceName)
 	}
 
 	exporter, err := exporterFactory()
@@ -292,7 +293,7 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 	traceProviders[serviceName] = tp
 	return startSpan(func() trace.TracerProvider {
 		return tp
-	}), nil
+	}), tp, nil
 }
 
 // SpanProcessorWrapper wraps otel span processor

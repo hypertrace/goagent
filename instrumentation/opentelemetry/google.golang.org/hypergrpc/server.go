@@ -9,5 +9,5 @@ import (
 // WrapUnaryServerInterceptor returns a new unary server interceptor that will
 // complement existing OpenTelemetry instrumentation
 func WrapUnaryServerInterceptor(delegate grpc.UnaryServerInterceptor, options *sdkgrpc.Options) grpc.UnaryServerInterceptor {
-	return sdkgrpc.WrapUnaryServerInterceptor(delegate, opentelemetry.SpanFromContext, options)
+	return sdkgrpc.WrapUnaryServerInterceptor(delegate, opentelemetry.SpanFromContext, options, map[string]string{})
 }

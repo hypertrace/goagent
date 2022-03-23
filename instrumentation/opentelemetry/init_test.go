@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +38,7 @@ func ExampleRegisterService() {
 	shutdown := Init(cfg)
 	defer shutdown()
 
-	_, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	_, _, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
@@ -49,8 +50,9 @@ func TestInitDisabledAgent(t *testing.T) {
 	shutdown := Init(cfg)
 	defer shutdown()
 
-	startSpan, err := RegisterService("test_service", nil)
+	startSpan, tp, err := RegisterService("test_service", nil)
 	require.NoError(t, err)
+	assert.Equal(t, trace.NewNoopTracerProvider(), tp)
 	_, s, _ := startSpan(context.Background(), "test_span", nil)
 	require.NoError(t, err)
 	assert.True(t, s.IsNoop())
@@ -78,7 +80,8 @@ func TestOtlpService(t *testing.T) {
 	shutdown := Init(cfg)
 	defer shutdown()
 
-	_, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	_, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
@@ -138,11 +141,12 @@ func TestMultipleTraceProviders(t *testing.T) {
 	_, _, spanEnder := StartSpan(context.Background(), "example_span", nil)
 	spanEnder()
 
-	startServiceSpan, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	startServiceSpan, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
 	assert.Equal(t, 1, len(traceProviders))
+	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
 
 	_, _, serviceSpanEnder := startServiceSpan(context.Background(), "my_span", nil)
 	serviceSpanEnder()
@@ -180,7 +184,7 @@ func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {
 	assert.True(t, initialized)
 	assert.Equal(t, 0, len(traceProviders))
 
-	startServiceSpan, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	startServiceSpan, _, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
@@ -347,7 +351,7 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 	assert.Equal(t, 1, wrapper.onEndCount)
 
 	// test wrapper is called for spans created by service trace provider
-	startSpan, err := RegisterServiceWithSpanProcessorWrapper("custom_service", map[string]string{"test1": "val1"}, wrapper)
+	startSpan, _, err := RegisterServiceWithSpanProcessorWrapper("custom_service", map[string]string{"test1": "val1"}, wrapper)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}

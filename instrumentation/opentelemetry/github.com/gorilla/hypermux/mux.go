@@ -32,7 +32,7 @@ func spanNameFormatter(operation string, r *http.Request) (spanName string) {
 func NewMiddleware(options *sdkhttp.Options) mux.MiddlewareFunc {
 	return func(delegate http.Handler) http.Handler {
 		return otelhttp.NewHandler(
-			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options),
+			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options, map[string]string{}),
 			"",
 			otelhttp.WithSpanNameFormatter(spanNameFormatter),
 		)

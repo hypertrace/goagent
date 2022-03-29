@@ -16,7 +16,7 @@ func NewHandler(base http.Handler, operation string, opts ...Option) http.Handle
 	}
 
 	return otelhttp.NewHandler(
-		sdkhttp.WrapHandler(base, opentelemetry.SpanFromContext, o.toSDKOptions()),
+		sdkhttp.WrapHandler(base, opentelemetry.SpanFromContext, o.toSDKOptions(), map[string]string{}),
 		operation,
 	)
 }

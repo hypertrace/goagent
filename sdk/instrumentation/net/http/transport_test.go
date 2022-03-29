@@ -35,7 +35,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+	rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext, map[string]string{"foo": "bar"}).(*roundTripper)
 	rt.dataCaptureConfig = &config.DataCapture{
 		HttpHeaders: &config.Message{
 			Request:  config.Bool(false),
@@ -73,6 +73,8 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	span := spans[0]
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
+	// custom attribute
+	assert.Equal(t, "bar", span.ReadAttribute("foo").(string))
 	// We make sure we read all attributes and covered them with tests
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }
@@ -97,7 +99,7 @@ func TestClientRequestHeadersAreCapturedAccordingly(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+		rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext, map[string]string{"foo": "bar"}).(*roundTripper)
 		rt.dataCaptureConfig = &config.DataCapture{
 			HttpHeaders: &config.Message{
 				Request:  config.Bool(tCase.captureHTTPHeadersRequestConfig),
@@ -146,6 +148,7 @@ func TestClientRequestHeadersAreCapturedAccordingly(t *testing.T) {
 		} else {
 			assert.Nil(t, span.ReadAttribute("http.response.header.request_id"))
 		}
+		assert.Equal(t, "bar", span.ReadAttribute("foo").(string))
 	}
 }
 
@@ -164,7 +167,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 	expectedErr := errors.New("roundtrip error")
 	client := &http.Client{
 		Transport: &mockTransport{
-			baseRoundTripper: WrapTransport(failingTransport{expectedErr}, mock.SpanFromContext),
+			baseRoundTripper: WrapTransport(failingTransport{expectedErr}, mock.SpanFromContext, map[string]string{}),
 		},
 	}
 
@@ -244,7 +247,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext).(*roundTripper)
+			rt := WrapTransport(http.DefaultTransport, mock.SpanFromContext, map[string]string{}).(*roundTripper)
 			rt.dataCaptureConfig = &config.DataCapture{
 				HttpBody: &config.Message{
 					Request:  config.Bool(tCase.captureHTTPBodyConfig),

@@ -48,7 +48,7 @@ func TestServerRequestWithNilBodyIsntChanged(t *testing.T) {
 		assert.Nil(t, r.Body)
 	})
 
-	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}).(*handler)
 	wh.dataCaptureConfig = emptyTestConfig
 
 	ih := &mockHandler{baseHandler: wh}
@@ -72,7 +72,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{"foo": "bar"}).(*handler)
 	wh.dataCaptureConfig = emptyTestConfig
 	ih := &mockHandler{baseHandler: wh}
 
@@ -88,6 +88,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 	span := ih.spans[0]
 	assert.Equal(t, "http://traceable.ai/foo?user_id=1", span.ReadAttribute("http.url").(string))
 	assert.Equal(t, "traceable.ai", span.ReadAttribute("http.request.header.host"))
+	assert.Equal(t, "bar", span.ReadAttribute("foo"))
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
@@ -100,7 +101,7 @@ func TestHostIsSuccessfullyRecorded(t *testing.T) {
 		assert.Nil(t, r.Body)
 	})
 
-	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}).(*handler)
 	wh.dataCaptureConfig = emptyTestConfig
 
 	ih := &mockHandler{baseHandler: wh}
@@ -136,7 +137,7 @@ func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {
 			rw.WriteHeader(202)
 		})
 
-		wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
+		wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}).(*handler)
 		ih := &mockHandler{baseHandler: wh}
 		wh.dataCaptureConfig = emptyTestConfig
 		wh.dataCaptureConfig.HttpHeaders = &config.Message{
@@ -225,7 +226,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}).(*handler)
+			wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}).(*handler)
 			wh.dataCaptureConfig = emptyTestConfig
 			wh.dataCaptureConfig.HttpBody = &config.Message{
 				Request:  config.Bool(tCase.captureHTTPBodyConfig),
@@ -334,7 +335,7 @@ func TestServerRequestFilter(t *testing.T) {
 				rw.WriteHeader(http.StatusOK)
 			})
 
-			wh, _ := WrapHandler(h, mock.SpanFromContext, tCase.options).(*handler)
+			wh, _ := WrapHandler(h, mock.SpanFromContext, tCase.options, map[string]string{}).(*handler)
 			ih := &mockHandler{baseHandler: wh}
 			r, _ := http.NewRequest("POST", tCase.url, strings.NewReader(tCase.body))
 			for i := 0; i < len(tCase.headerKeys); i++ {
@@ -367,7 +368,7 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 				return true
 			},
 		},
-	}).(*handler)
+	}, map[string]string{}).(*handler)
 	wh.dataCaptureConfig = emptyTestConfig
 	wh.dataCaptureConfig.HttpBody.Request = config.Bool(true)
 	wh.dataCaptureConfig.BodyMaxProcessingSizeBytes = config.Int32(int32(bodyMaxProcessingSizeBytes))

@@ -86,8 +86,11 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // WrapTransport returns a new http.RoundTripper that should be wrapped
 // by an instrumented http.RoundTripper
-func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext) http.RoundTripper {
+func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext, spanAttributes map[string]string) http.RoundTripper {
 	defaultAttributes := make(map[string]string)
+	for k, v := range spanAttributes {
+		defaultAttributes[k] = v
+	}
 	if containerID, err := container.GetID(); err == nil {
 		defaultAttributes["container_id"] = containerID
 	}

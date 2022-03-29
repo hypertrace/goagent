@@ -20,6 +20,9 @@ import (
 func main() {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("http-server")
+	// Switch to OTLP since default reporting endpoint is ZIPKIN
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
+	cfg.Reporting.Endpoint = config.String("localhost:4317")
 
 	flusher := hypertrace.Init(cfg)
 	defer flusher()

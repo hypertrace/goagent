@@ -91,7 +91,7 @@ func Middleware(options *sdkhttp.Options) gin.HandlerFunc {
 			wrappedHandler.c.Request = wrappedHandler.c.Request.WithContext(ctx)
 		}
 		return otelhttp.NewHandler(
-			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options),
+			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options, map[string]string{}),
 			"",
 			otelhttp.WithSpanNameFormatter(spanNameFormatter),
 		)

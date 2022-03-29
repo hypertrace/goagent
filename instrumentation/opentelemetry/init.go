@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/otel"
 	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 
+	"github.com/go-logr/stdr"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
@@ -181,6 +183,12 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 		}
 	}
 
+	// setup logger
+	loggerSink := newLoggerSink(os.Stderr)
+	stdr.SetVerbosity(5)
+	logger := stdr.New(log.New(loggerSink, "", log.LstdFlags|log.Lshortfile))
+	otel.SetLogger(logger)
+
 	exporterFactory = makeExporterFactory(cfg)
 
 	exporter, err := exporterFactory()
@@ -214,6 +222,16 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler
 	initialized = true
+
+	// Start the logs as spans routine
+	go func() {
+		startSpan, _, err := RegisterService("ht-goagent", map[string]string{})
+		if err != nil {
+			log.Fatal("failed to register internal telemetry service")
+		} else {
+			loggerSink.LogsAsSpans(startSpan)
+		}
+	}()
 
 	return func() {
 		mu.Lock()

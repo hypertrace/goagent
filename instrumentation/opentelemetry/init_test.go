@@ -138,7 +138,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	assert.True(t, initialized)
 	assert.Equal(t, 0, len(traceProviders))
 
-	_, _, spanEnder := StartSpan(context.Background(), "example_span", nil)
+	_, _, spanEnder := StartSpan(context.Background(), "example_spa", nil)
 	spanEnder()
 
 	startServiceSpan, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})

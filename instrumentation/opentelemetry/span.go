@@ -64,6 +64,9 @@ func generateAttribute(key string, value interface{}) attribute.KeyValue {
 }
 
 func (s *Span) GetAttributes() sdk.AttributeList {
+	if s.IsNoop() {
+		panic("GetAttributes cannot be called with no op span")
+	}
 	readableSpan := s.Span.(sdktrace.ReadOnlySpan)
 	return &AttributeList{
 		attrs: readableSpan.Attributes(),

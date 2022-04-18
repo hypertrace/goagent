@@ -309,7 +309,6 @@ type spanProcessorWithWrapper struct {
 }
 
 func (sp *spanProcessorWithWrapper) OnStart(parent context.Context, s sdktrace.ReadWriteSpan) {
-	s.Attributes()
 	sp.wrapper.OnStart(parent, s, sp.processor)
 }
 

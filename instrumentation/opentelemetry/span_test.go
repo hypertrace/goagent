@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -74,4 +75,17 @@ func TestAddEvent(t *testing.T) {
 	s.AddEvent("test_event_3", time.Now(), m)
 	m["k3"] = true
 	s.AddEvent("test_event_4", time.Now(), m)
+}
+
+func TestGetAttributes(t *testing.T) {
+	sampler := sdktrace.AlwaysSample()
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sampler),
+	)
+	otel.SetTracerProvider(tp)
+	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	s.SetAttribute("string_key", "string_value")
+	attrs := s.GetAttributes()
+	assert.Equal(t, "string_value", attrs.GetValue("string_key"))
+	assert.Equal(t, nil, attrs.GetValue("non_existent"))
 }

@@ -34,6 +34,10 @@ func generateAttribute(key string, value interface{}) trace.Attribute {
 	}
 }
 
+func (s *Span) GetAttributes() sdk.AttributeList {
+	panic("GetAttributes not implemented")
+}
+
 func (s *Span) SetAttribute(key string, value interface{}) {
 	s.Span.AddAttributes(generateAttribute(key, value))
 }

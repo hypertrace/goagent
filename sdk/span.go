@@ -5,9 +5,15 @@ import (
 	"time"
 )
 
+type AttributeList interface {
+	GetValue(key string) interface{}
+}
+
 // Span is an interface that accepts attributes and can be
 // distinguished as noop
 type Span interface {
+	GetAttributes() AttributeList
+
 	// SetAttribute sets an attribute for the span.
 	SetAttribute(key string, value interface{})
 

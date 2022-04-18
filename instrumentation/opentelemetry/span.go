@@ -10,8 +10,25 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
+
+var _ sdk.AttributeList = (*AttributeList)(nil)
+
+type AttributeList struct {
+	attrs []attribute.KeyValue
+}
+
+func (l *AttributeList) GetValue(key string) interface{} {
+	for _, attr := range l.attrs {
+		if string(attr.Key) == key {
+			return attr.Value.AsInterface()
+		}
+	}
+
+	return nil
+}
 
 var _ sdk.Span = (*Span)(nil)
 
@@ -43,6 +60,13 @@ func generateAttribute(key string, value interface{}) attribute.KeyValue {
 		return attribute.StringSlice(key, v)
 	default:
 		return attribute.String(key, fmt.Sprintf("%v", v))
+	}
+}
+
+func (s *Span) GetAttributes() sdk.AttributeList {
+	readableSpan := s.Span.(sdktrace.ReadOnlySpan)
+	return &AttributeList{
+		attrs: readableSpan.Attributes(),
 	}
 }
 

@@ -45,7 +45,7 @@ jobs:
           # See https://github.com/golangci/golangci-lint-action/issues/135#issuecomment-791775296
           skip-pkg-cache: true
           skip-build-cache: true
-
+          args: --skip-dirs google --skip-dirs proto
       - name: Check vanity import
         run: |
           make install-tools check-vanity-import

@@ -40,13 +40,12 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.38
+          version: v1.42.1
           # work around for "file exists" errors.
           # See https://github.com/golangci/golangci-lint-action/issues/135#issuecomment-791775296
-          skip-pkg-cache: true
-          skip-build-cache: true
           skip-go-installation: true
-          args: --skip-dirs google --skip-dirs proto
+          skip-pkg-cache: true
+          only-new-issues: true
       - name: Check vanity import
         run: |
           make install-tools check-vanity-import

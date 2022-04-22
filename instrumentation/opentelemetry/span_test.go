@@ -78,7 +78,7 @@ func TestAddEvent(t *testing.T) {
 }
 
 func TestGetAttributesNoopSpan(t *testing.T) {
-	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	_, s, _ := NoopStartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
 	s.SetAttribute("string_key", "string_value")
 
 	// as this is no op span the attributes cannot be retrieved

@@ -77,6 +77,15 @@ func TestAddEvent(t *testing.T) {
 	s.AddEvent("test_event_4", time.Now(), m)
 }
 
+func TestGetAttributesNoopSpan(t *testing.T) {
+	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	s.SetAttribute("string_key", "string_value")
+
+	// as this is no op span the attributes cannot be retrieved
+	attrs := s.GetAttributes()
+	assert.Equal(t, nil, attrs.GetValue("string_key"))
+}
+
 func TestGetAttributes(t *testing.T) {
 	sampler := sdktrace.AlwaysSample()
 	tp := sdktrace.NewTracerProvider(

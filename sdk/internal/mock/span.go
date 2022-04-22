@@ -8,8 +8,6 @@ import (
 	"github.com/hypertrace/goagent/sdk"
 )
 
-var _ sdk.Span = &Span{}
-
 type spanEvent struct {
 	name       string
 	ts         time.Time
@@ -20,6 +18,18 @@ type Status struct {
 	Code    sdk.Code
 	Message string
 }
+
+var _ sdk.AttributeList = (*AttributeList)(nil)
+
+type AttributeList struct {
+	attrs map[string]interface{}
+}
+
+func (l *AttributeList) GetValue(key string) interface{} {
+	return l.attrs[key]
+}
+
+var _ sdk.Span = &Span{}
 
 type Span struct {
 	Name       string
@@ -34,6 +44,12 @@ type Span struct {
 
 func NewSpan() *Span {
 	return &Span{mux: &sync.Mutex{}}
+}
+
+func (s *Span) GetAttributes() sdk.AttributeList {
+	return &AttributeList{
+		attrs: s.Attributes,
+	}
 }
 
 func (s *Span) SetAttribute(key string, value interface{}) {

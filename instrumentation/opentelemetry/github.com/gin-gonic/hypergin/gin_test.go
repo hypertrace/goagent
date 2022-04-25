@@ -2,7 +2,10 @@ package hypergin
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -86,11 +89,17 @@ func TestTraceContextIsPropagated(t *testing.T) {
 		})
 	})
 
+	p1, err := findOpenPort(65534)
+	require.NoError(t, err)
+
+	p2, err := findOpenPort(p1 - 1)
+	require.NoError(t, err)
+
 	r2 := gin.Default()
 	r2.Use(Middleware(&sdkhttp.Options{}))
 	r2.GET("/send_thing_request", func(c *gin.Context) {
 		req, _ := http.NewRequest("POST",
-			"http://localhost:60543/things/123",
+			fmt.Sprintf("http://localhost:%d/things/123", p1),
 			bytes.NewBufferString(`{"name":"Jacinto"}`))
 
 		req = req.WithContext(c.Request.Context())
@@ -109,16 +118,16 @@ func TestTraceContextIsPropagated(t *testing.T) {
 		})
 	})
 
-	server := &http.Server{Addr: ":60543", Handler: r}
+	server := &http.Server{Addr: fmt.Sprintf(":%d", p1), Handler: r}
 	defer server.Close()
 	go server.ListenAndServe()
 
-	server2 := &http.Server{Addr: ":60544", Handler: r2}
+	server2 := &http.Server{Addr: fmt.Sprintf(":%d", p2), Handler: r2}
 	defer server2.Close()
 	go server2.ListenAndServe()
 
 	req, _ := http.NewRequest("GET",
-		"http://localhost:60544/send_thing_request", nil)
+		fmt.Sprintf("http://localhost:%d/send_thing_request", p2), nil)
 
 	res, err := client.Do(req)
 	_, readErr := ioutil.ReadAll(res.Body)
@@ -149,5 +158,29 @@ func TestTraceContextIsPropagated(t *testing.T) {
 	traceId := spans[0].SpanContext().TraceID().String()
 	for _, span := range spans {
 		assert.Equal(t, traceId, span.SpanContext().TraceID().String())
+	}
+}
+
+// findOpenPort looks for an available port to launch a TCP server
+// used in the test.
+func findOpenPort(startPort int) (int, error) {
+	var (
+		l   net.Listener
+		err error
+	)
+
+	port := startPort
+	for {
+		l, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
+		if err == nil {
+			// Will be reopened by the caller
+			l.Close()
+			return port, nil
+		}
+
+		if port == 1 {
+			return 0, errors.New("no port available")
+		}
+		port--
 	}
 }

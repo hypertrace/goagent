@@ -2,7 +2,6 @@ package hypergin
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -89,11 +88,15 @@ func TestTraceContextIsPropagated(t *testing.T) {
 		})
 	})
 
-	p1, err := findOpenPort(65534)
+	l1, err := net.Listen("tcp", ":0")
 	require.NoError(t, err)
+	defer l1.Close()
+	p1 := l1.Addr().(*net.TCPAddr).Port
 
-	p2, err := findOpenPort(p1 - 1)
+	l2, err := net.Listen("tcp", ":0")
 	require.NoError(t, err)
+	defer l2.Close()
+	p2 := l2.Addr().(*net.TCPAddr).Port
 
 	r2 := gin.Default()
 	r2.Use(Middleware(&sdkhttp.Options{}))
@@ -118,13 +121,13 @@ func TestTraceContextIsPropagated(t *testing.T) {
 		})
 	})
 
-	server := &http.Server{Addr: fmt.Sprintf(":%d", p1), Handler: r}
+	server := &http.Server{Handler: r}
 	defer server.Close()
-	go server.ListenAndServe()
+	go server.Serve(l1)
 
-	server2 := &http.Server{Addr: fmt.Sprintf(":%d", p2), Handler: r2}
+	server2 := &http.Server{Handler: r2}
 	defer server2.Close()
-	go server2.ListenAndServe()
+	go server2.Serve(l2)
 
 	req, _ := http.NewRequest("GET",
 		fmt.Sprintf("http://localhost:%d/send_thing_request", p2), nil)
@@ -158,29 +161,5 @@ func TestTraceContextIsPropagated(t *testing.T) {
 	traceId := spans[0].SpanContext().TraceID().String()
 	for _, span := range spans {
 		assert.Equal(t, traceId, span.SpanContext().TraceID().String())
-	}
-}
-
-// findOpenPort looks for an available port to launch a TCP server
-// used in the test.
-func findOpenPort(startPort int) (int, error) {
-	var (
-		l   net.Listener
-		err error
-	)
-
-	port := startPort
-	for {
-		l, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
-		if err == nil {
-			// Will be reopened by the caller
-			l.Close()
-			return port, nil
-		}
-
-		if port == 1 {
-			return 0, errors.New("no port available")
-		}
-		port--
 	}
 }

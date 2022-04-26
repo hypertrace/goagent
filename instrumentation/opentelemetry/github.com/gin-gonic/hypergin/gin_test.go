@@ -2,7 +2,9 @@ package hypergin
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -86,11 +88,21 @@ func TestTraceContextIsPropagated(t *testing.T) {
 		})
 	})
 
+	l1, err := net.Listen("tcp", ":0")
+	require.NoError(t, err)
+	defer l1.Close()
+	p1 := l1.Addr().(*net.TCPAddr).Port
+
+	l2, err := net.Listen("tcp", ":0")
+	require.NoError(t, err)
+	defer l2.Close()
+	p2 := l2.Addr().(*net.TCPAddr).Port
+
 	r2 := gin.Default()
 	r2.Use(Middleware(&sdkhttp.Options{}))
 	r2.GET("/send_thing_request", func(c *gin.Context) {
 		req, _ := http.NewRequest("POST",
-			"http://localhost:60543/things/123",
+			fmt.Sprintf("http://localhost:%d/things/123", p1),
 			bytes.NewBufferString(`{"name":"Jacinto"}`))
 
 		req = req.WithContext(c.Request.Context())
@@ -109,16 +121,16 @@ func TestTraceContextIsPropagated(t *testing.T) {
 		})
 	})
 
-	server := &http.Server{Addr: ":60543", Handler: r}
+	server := &http.Server{Handler: r}
 	defer server.Close()
-	go server.ListenAndServe()
+	go server.Serve(l1)
 
-	server2 := &http.Server{Addr: ":60544", Handler: r2}
+	server2 := &http.Server{Handler: r2}
 	defer server2.Close()
-	go server2.ListenAndServe()
+	go server2.Serve(l2)
 
 	req, _ := http.NewRequest("GET",
-		"http://localhost:60544/send_thing_request", nil)
+		fmt.Sprintf("http://localhost:%d/send_thing_request", p2), nil)
 
 	res, err := client.Do(req)
 	_, readErr := ioutil.ReadAll(res.Body)

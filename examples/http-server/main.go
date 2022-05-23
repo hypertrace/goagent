@@ -32,6 +32,10 @@ func main() {
 		http.HandlerFunc(fooHandler),
 		"/foo",
 	))
+	r.Handle("/outgoing", hyperhttp.NewHandler(
+		http.HandlerFunc(outgoingCallHandler),
+		"/outgoing",
+	))
 	log.Fatal(http.ListenAndServe(":8081", r))
 }
 
@@ -59,4 +63,32 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", p.Name)))
+}
+
+func outgoingCallHandler(w, http.ResponseWriter, r *http.Request) {
+	client := http.Client{
+		Transport: hyperhttp.NewTransport(
+			http.DefaultTransport,
+		),
+	}
+
+	req, _ := http.NewRequestWithContext(r.Context(), "GET", "https://httpbin.org/get", nil)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		panic(err)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		panic(err)
+	}
+
+	sb := string(body)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, sb)
 }

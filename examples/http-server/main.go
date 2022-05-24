@@ -71,7 +71,7 @@ func outgoingCallHandler(w, http.ResponseWriter, r *http.Request) {
 			http.DefaultTransport,
 		),
 	}
-
+	// "In order to correlate the server call to this client call we need to pass the server request's context."
 	req, _ := http.NewRequestWithContext(r.Context(), "GET", "https://httpbin.org/get", nil)
 
 	resp, err := client.Do(req)

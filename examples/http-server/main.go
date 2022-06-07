@@ -6,6 +6,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -65,7 +66,7 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", p.Name)))
 }
 
-func outgoingCallHandler(w, http.ResponseWriter, r *http.Request) {
+func outgoingCallHandler(w http.ResponseWriter, r *http.Request) {
 	client := http.Client{
 		Transport: hyperhttp.NewTransport(
 			http.DefaultTransport,

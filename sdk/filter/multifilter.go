@@ -33,3 +33,13 @@ func (m *MultiFilter) EvaluateBody(span sdk.Span, body []byte, headers map[strin
 	}
 	return false
 }
+
+// Evaluate runs body evaluators for each filter until one returns true
+func (m *MultiFilter) Evaluate(span sdk.Span, url string, body []byte, headers map[string][]string) bool {
+	for _, f := range (*m).filters {
+		if f.Evaluate(span, url, body, headers) {
+			return true
+		}
+	}
+	return false
+}

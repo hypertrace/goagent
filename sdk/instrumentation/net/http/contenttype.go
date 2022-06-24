@@ -17,7 +17,7 @@ var contentTypeAllowListLowerCase = []string{
 func EnableXMLDataCapture() {
 	// if XML already added, return
 	for _, x := range contentTypeAllowListLowerCase {
-		if x == "xml" {
+		if strings.Contains(x, "xml") {
 			return
 		}
 	}

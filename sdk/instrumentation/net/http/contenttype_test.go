@@ -55,3 +55,45 @@ func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
 }
+
+func TestEnableXMLDataCapture(t *testing.T) {
+	assert.Equal(t, len(contentTypeAllowListLowerCase), 2)
+	EnableXMLDataCapture()
+	assert.Equal(t, len(contentTypeAllowListLowerCase), 4)
+
+	// make sure xml content types wont be added to list more than once
+	EnableXMLDataCapture()
+	assert.Equal(t, len(contentTypeAllowListLowerCase), 4)
+
+	// reset to original state
+	contentTypeAllowListLowerCase = []string{
+		"json",
+		"x-www-form-urlencoded",
+	}
+}
+func TestXMLRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
+	tCases := []struct {
+		contentTypes []string
+		shouldRecord bool
+	}{
+		{[]string{"text/xml"}, true},
+		{[]string{"application/xml"}, true},
+		{[]string{"image/svg+xml"}, false},
+		{[]string{"application/xhtml+xml"}, false},
+		{[]string{"text/plain"}, false},
+	}
+
+	EnableXMLDataCapture()
+	for _, tCase := range tCases {
+		h := http.Header{}
+		for _, header := range tCase.contentTypes {
+			h.Add("Content-Type", header)
+		}
+		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
+	}
+	// reset to original state
+	contentTypeAllowListLowerCase = []string{
+		"json",
+		"x-www-form-urlencoded",
+	}
+}

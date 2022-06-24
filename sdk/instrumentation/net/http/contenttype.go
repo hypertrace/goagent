@@ -14,6 +14,16 @@ var contentTypeAllowListLowerCase = []string{
 	"x-www-form-urlencoded",
 }
 
+func EnableXMLDataCapture() {
+	// if XML already added, return
+	for _, x := range contentTypeAllowListLowerCase {
+		if x == "xml" {
+			return
+		}
+	}
+	contentTypeAllowListLowerCase = append(contentTypeAllowListLowerCase, "application/xml", "text/xml")
+}
+
 // ShouldRecordBodyOfContentType checks if the body is meant
 // to be recorded based on the content-type and the fact that body is
 // not streamed.

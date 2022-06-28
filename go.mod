@@ -8,7 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.7.2
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
-	github.com/hypertrace/agent-config/gen/go v0.0.0-20220627203712-00a3c5053ec6
+	github.com/hypertrace/agent-config/gen/go v0.0.0-20220628165827-297153d6497d
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.4

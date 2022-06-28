@@ -9,6 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func RestoreDefaults() {
+	SetContentTypeAllowList(&agentconfig.AgentConfig{
+		DataCapture: &agentconfig.DataCapture{
+			AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json"), wrapperspb.String("x-www-form-urlencoded")},
+		},
+	})
+}
+
 func TestRecordingDecissionReturnsFalseOnNoContentType(t *testing.T) {
 	assert.Equal(t, false, ShouldRecordBodyOfContentType(headerMapAccessor{http.Header{"A": []string{"B"}}}))
 }
@@ -38,12 +46,13 @@ func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
 		h.Set("Content-Type", tCase.contentType)
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
+	RestoreDefaults()
 }
 
 func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 	SetContentTypeAllowList(&agentconfig.AgentConfig{
 		DataCapture: &agentconfig.DataCapture{
-			AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json")},
+			AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json"), wrapperspb.String("x-www-form-urlencoded")},
 		},
 	})
 	tCases := []struct {
@@ -66,6 +75,7 @@ func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 		}
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
+	RestoreDefaults()
 }
 
 func TestXMLRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
@@ -93,4 +103,5 @@ func TestXMLRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
 		}
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
+	RestoreDefaults()
 }

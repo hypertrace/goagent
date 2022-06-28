@@ -1,6 +1,9 @@
 package config // import "github.com/hypertrace/goagent/config"
 
-import agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
+import (
+	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+)
 
 // defaultConfig holds the default config values for agent.
 var defaultConfig = agentconfig.AgentConfig{
@@ -25,6 +28,8 @@ var defaultConfig = agentconfig.AgentConfig{
 		},
 		BodyMaxSizeBytes:           agentconfig.Int32(131072),
 		BodyMaxProcessingSizeBytes: agentconfig.Int32(1048576),
+		AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json"),
+			wrapperspb.String("x-www-form-urlencoded")},
 	},
 	Reporting: &agentconfig.Reporting{
 		Endpoint:          agentconfig.String("http://localhost:9411/api/v2/spans"),

@@ -1,6 +1,7 @@
 package http // import "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 
 import (
+	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
 	"strings"
 )
 
@@ -10,18 +11,14 @@ import (
 // - application/vnd.api+json
 // - application/x-www-form-urlencoded'
 var contentTypeAllowListLowerCase = []string{
-	"json",
-	"x-www-form-urlencoded",
+	"json", "x-www-form-urlencoded",
 }
 
-func EnableXMLDataCapture() {
-	// if XML already added, return
-	for _, x := range contentTypeAllowListLowerCase {
-		if strings.Contains(x, "xml") {
-			return
-		}
+func SetContentTypeAllowList(config *agentconfig.AgentConfig) {
+	contentTypeAllowListLowerCase = []string{}
+	for _, contentType := range config.DataCapture.GetAllowedContentTypes() {
+		contentTypeAllowListLowerCase = append(contentTypeAllowListLowerCase, strings.ToLower(contentType.GetValue()))
 	}
-	contentTypeAllowListLowerCase = append(contentTypeAllowListLowerCase, "application/xml", "text/xml")
 }
 
 // ShouldRecordBodyOfContentType checks if the body is meant

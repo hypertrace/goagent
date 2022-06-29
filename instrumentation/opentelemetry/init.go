@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
-	hyperhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
@@ -165,7 +164,6 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 		return func() {}
 	}
 	sdkconfig.InitConfig(cfg)
-	hyperhttp.SetContentTypeAllowList(cfg)
 
 	enabled = cfg.GetEnabled().Value
 	if !enabled {

@@ -1,7 +1,7 @@
 package http
 
 import (
-	agentconfig "github.com/hypertrace/agent-config/gen/go/v1"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"net/http"
 	"testing"
@@ -9,24 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func RestoreDefaults() {
-	SetContentTypeAllowList(&agentconfig.AgentConfig{
-		DataCapture: &agentconfig.DataCapture{
-			AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json"), wrapperspb.String("x-www-form-urlencoded")},
-		},
-	})
-}
-
 func TestRecordingDecissionReturnsFalseOnNoContentType(t *testing.T) {
 	assert.Equal(t, false, ShouldRecordBodyOfContentType(headerMapAccessor{http.Header{"A": []string{"B"}}}))
 }
 
 func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
-	SetContentTypeAllowList(&agentconfig.AgentConfig{
-		DataCapture: &agentconfig.DataCapture{
-			AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json"), wrapperspb.String("x-www-form-urlencoded")},
-		},
-	})
+	internalconfig.ResetConfig()
 	tCases := []struct {
 		contentType  string
 		shouldRecord bool
@@ -46,15 +34,10 @@ func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
 		h.Set("Content-Type", tCase.contentType)
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
-	RestoreDefaults()
 }
 
 func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
-	SetContentTypeAllowList(&agentconfig.AgentConfig{
-		DataCapture: &agentconfig.DataCapture{
-			AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json"), wrapperspb.String("x-www-form-urlencoded")},
-		},
-	})
+	internalconfig.ResetConfig()
 	tCases := []struct {
 		contentTypes []string
 		shouldRecord bool
@@ -75,16 +58,11 @@ func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 		}
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
-	RestoreDefaults()
 }
 
 func TestXMLRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
-	SetContentTypeAllowList(&agentconfig.AgentConfig{
-		DataCapture: &agentconfig.DataCapture{
-			AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json"),
-				wrapperspb.String("xml")},
-		},
-	})
+	cfg := internalconfig.GetConfig()
+	cfg.DataCapture.AllowedContentTypes = []*wrapperspb.StringValue{wrapperspb.String("xml")}
 	tCases := []struct {
 		contentTypes []string
 		shouldRecord bool
@@ -103,5 +81,5 @@ func TestXMLRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
 		}
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
-	RestoreDefaults()
+	internalconfig.ResetConfig()
 }

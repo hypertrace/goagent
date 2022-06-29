@@ -63,6 +63,7 @@ func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 func TestXMLRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
 	cfg := internalconfig.GetConfig()
 	cfg.DataCapture.AllowedContentTypes = []*wrapperspb.StringValue{wrapperspb.String("xml")}
+
 	tCases := []struct {
 		contentTypes []string
 		shouldRecord bool

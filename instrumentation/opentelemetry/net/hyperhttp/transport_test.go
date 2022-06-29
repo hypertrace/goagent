@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -33,6 +34,8 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 				Response: config.Bool(true),
 			},
 			BodyMaxSizeBytes: config.Int32(1024),
+			AllowedContentTypes: []*wrapperspb.StringValue{wrapperspb.String("json"),
+				wrapperspb.String("x-www-form-urlencoded")},
 		},
 	})
 	defer sdkconfig.ResetConfig()

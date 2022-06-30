@@ -1,25 +1,19 @@
 package http // import "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 
 import (
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"strings"
 )
-
-// contentTypeAllowList is the list of allowed "stems" of content types in lowercase.
-// Example headers that will match this include:
-// - application/json
-// - application/vnd.api+json
-// - application/x-www-form-urlencoded'
-var contentTypeAllowListLowerCase = []string{
-	"json",
-	"x-www-form-urlencoded",
-}
 
 // ShouldRecordBodyOfContentType checks if the body is meant
 // to be recorded based on the content-type and the fact that body is
 // not streamed.
 func ShouldRecordBodyOfContentType(h HeaderAccessor) bool {
 	var contentTypeValues = h.Lookup("Content-Type") // "Content-Type" is the canonical key
-
+	cfg := internalconfig.GetConfig().GetDataCapture()
+	if cfg == nil || cfg.GetAllowedContentTypes() == nil {
+		return false
+	}
 	// we iterate all the values as userland code add the headers in the inverse order,
 	// e.g.
 	// ```
@@ -27,7 +21,7 @@ func ShouldRecordBodyOfContentType(h HeaderAccessor) bool {
 	//    header.Add("content-type", "application/json")
 	// ```
 	for _, contentTypeValue := range contentTypeValues {
-		for _, contentTypeAllowedLowerCase := range contentTypeAllowListLowerCase {
+		for _, contentTypeAllowed := range cfg.GetAllowedContentTypes() {
 			// userland code can set joint headers directly instead of adding
 			// them for example
 			//
@@ -42,7 +36,7 @@ func ShouldRecordBodyOfContentType(h HeaderAccessor) bool {
 			//    header.Add("content-type", "charset=utf-8")
 			// ```
 			// hence we need to inspect it by using contains.
-			if strings.Contains(strings.ToLower(contentTypeValue), contentTypeAllowedLowerCase) {
+			if strings.Contains(strings.ToLower(contentTypeValue), strings.ToLower(contentTypeAllowed.Value)) {
 				return true
 			}
 		}

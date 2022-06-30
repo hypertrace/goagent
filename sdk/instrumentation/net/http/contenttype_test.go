@@ -1,6 +1,8 @@
 package http
 
 import (
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"net/http"
 	"testing"
 
@@ -12,6 +14,7 @@ func TestRecordingDecissionReturnsFalseOnNoContentType(t *testing.T) {
 }
 
 func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
+	internalconfig.ResetConfig()
 	tCases := []struct {
 		contentType  string
 		shouldRecord bool
@@ -34,6 +37,7 @@ func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
 }
 
 func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
+	internalconfig.ResetConfig()
 	tCases := []struct {
 		contentTypes []string
 		shouldRecord bool
@@ -54,4 +58,29 @@ func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
 		}
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
+}
+
+func TestXMLRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
+	cfg := internalconfig.GetConfig()
+	cfg.DataCapture.AllowedContentTypes = []*wrapperspb.StringValue{wrapperspb.String("xml")}
+
+	tCases := []struct {
+		contentTypes []string
+		shouldRecord bool
+	}{
+		{[]string{"text/xml"}, true},
+		{[]string{"application/xml"}, true},
+		{[]string{"image/svg+xml"}, true},
+		{[]string{"application/xhtml+xml"}, true},
+		{[]string{"text/plain"}, false},
+	}
+
+	for _, tCase := range tCases {
+		h := http.Header{}
+		for _, header := range tCase.contentTypes {
+			h.Add("Content-Type", header)
+		}
+		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
+	}
+	internalconfig.ResetConfig()
 }

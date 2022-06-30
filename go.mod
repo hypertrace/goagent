@@ -3,16 +3,19 @@ module github.com/hypertrace/goagent
 go 1.15
 
 require (
+	cloud.google.com/go v0.81.0 // indirect
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/gin-gonic/gin v1.7.2
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
-	github.com/hypertrace/agent-config/gen/go v0.0.0-20220209183558-95cc7dcabb51
+	github.com/hypertrace/agent-config/gen/go v0.0.0-20220628165827-297153d6497d
+	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.4
+	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/ngrok/sqlmw v0.0.0-20200129213757-d5c93a81bec6
 	github.com/openzipkin/zipkin-go v0.4.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.5
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0

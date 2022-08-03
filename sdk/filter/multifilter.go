@@ -15,31 +15,34 @@ func NewMultiFilter(filter ...Filter) *MultiFilter {
 }
 
 // EvaluateURLAndHeaders runs URL and headers evaluation for each filter until one returns true
-func (m *MultiFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) bool {
+func (m *MultiFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
 	for _, f := range (*m).filters {
-		if f.EvaluateURLAndHeaders(span, url, headers) {
-			return true
+		block, blockingStatusCode := f.EvaluateURLAndHeaders(span, url, headers)
+		if block {
+			return block, blockingStatusCode
 		}
 	}
-	return false
+	return false, 0
 }
 
 // EvaluateBody runs body evaluators for each filter until one returns true
-func (m *MultiFilter) EvaluateBody(span sdk.Span, body []byte, headers map[string][]string) bool {
+func (m *MultiFilter) EvaluateBody(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
 	for _, f := range (*m).filters {
-		if f.EvaluateBody(span, body, headers) {
-			return true
+		block, blockingStatusCode := f.EvaluateBody(span, body, headers)
+		if block {
+			return block, blockingStatusCode
 		}
 	}
-	return false
+	return false, 0
 }
 
 // Evaluate runs body evaluators for each filter until one returns true
-func (m *MultiFilter) Evaluate(span sdk.Span, url string, body []byte, headers map[string][]string) bool {
+func (m *MultiFilter) Evaluate(span sdk.Span, url string, body []byte, headers map[string][]string) (bool, int32) {
 	for _, f := range (*m).filters {
-		if f.Evaluate(span, url, body, headers) {
-			return true
+		block, blockingStatusCode := f.Evaluate(span, url, body, headers)
+		if block {
+			return block, blockingStatusCode
 		}
 	}
-	return false
+	return false, 0
 }

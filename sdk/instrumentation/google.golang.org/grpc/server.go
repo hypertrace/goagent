@@ -104,8 +104,9 @@ func wrapHandler(
 				if int(dataCaptureConfig.BodyMaxProcessingSizeBytes.Value) < len(reqBody) {
 					processingBody = reqBody[:dataCaptureConfig.BodyMaxProcessingSizeBytes.Value]
 				}
-				if filter.EvaluateBody(span, processingBody, md) {
-					return nil, status.Error(codes.PermissionDenied, "Permission Denied")
+				block, blockingStatusCode := filter.EvaluateBody(span, processingBody, md)
+				if block {
+					return nil, status.Error(codes.Code(blockingStatusCode), "Permission Denied")
 				}
 			}
 		}
@@ -115,8 +116,9 @@ func wrapHandler(
 
 			if md, ok := metadata.FromIncomingContext(ctx); ok {
 				// TODO: decide what should be passed as URL in GRPC
-				if filter.EvaluateURLAndHeaders(span, "", md) {
-					return nil, status.Error(codes.PermissionDenied, "Permission Denied")
+				block, blockingStatusCode := filter.EvaluateURLAndHeaders(span, "", md)
+				if block {
+					return nil, status.Error(codes.Code(blockingStatusCode), "Permission Denied")
 				}
 			}
 		}

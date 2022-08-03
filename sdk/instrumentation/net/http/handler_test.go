@@ -278,15 +278,15 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
 						assert.Equal(t, "http://localhost/foo", url)
 						assert.Equal(t, 1, len(headers))
 						assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
-						return false
+						return false, 0
 					},
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
 						assert.Equal(t, []byte("haha"), body)
-						return false
+						return false, 0
 					},
 				},
 			},
@@ -295,8 +295,8 @@ func TestServerRequestFilter(t *testing.T) {
 			url: "http://localhost/foo",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
-						return true
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
+						return true, 403
 					},
 				},
 			},
@@ -306,8 +306,8 @@ func TestServerRequestFilter(t *testing.T) {
 			url: "http://localhost/foo",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
-						return true
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
+						return true, 403
 					},
 				},
 			},
@@ -320,8 +320,8 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
-						return true
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
+						return true, 403
 					},
 				},
 			},
@@ -363,9 +363,9 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 
 	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{
 		Filter: mock.Filter{
-			BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
+			BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
 				assert.Equal(t, "{", string(body)) // body is truncated
-				return true
+				return true, 403
 			},
 		},
 	}, map[string]string{}).(*handler)

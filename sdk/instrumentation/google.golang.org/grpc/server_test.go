@@ -112,18 +112,18 @@ func TestServerInterceptorFilter(t *testing.T) {
 		"headers filter": {
 			expectedFilterResult: true,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
+				URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
 					assert.Equal(t, []string{"test_value"}, headers["test_key"])
-					return true
+					return true, 403
 				},
 			}),
 		},
 		"body filter": {
 			expectedFilterResult: true,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
+				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
 					assert.Equal(t, "{\"name\":\"Pupo\"}", string(body))
-					return true
+					return true, 403
 				},
 			}),
 		},
@@ -166,7 +166,7 @@ func TestServerInterceptorFilter(t *testing.T) {
 				Name: "Pupo",
 			})
 			if tCase.expectedFilterResult {
-				assert.Equal(t, codes.PermissionDenied, status.Code(err))
+				assert.Equal(t, codes.Code(403), status.Code(err))
 			} else {
 				assert.Nil(t, err)
 			}
@@ -195,9 +195,9 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
 			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{Filter: mock.Filter{
-				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
+				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
 					assert.Equal(t, "{", string(body)) // body is truncated
-					return false
+					return false, 0
 				},
 			}}, nil),
 		),

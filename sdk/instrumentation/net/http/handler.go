@@ -72,8 +72,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// run filters on headers
-	if h.filter.EvaluateURLAndHeaders(span, url, headers) {
-		w.WriteHeader(http.StatusForbidden)
+	block, blockingStatusCode := h.filter.EvaluateURLAndHeaders(span, url, headers)
+	if block {
+		w.WriteHeader(int(blockingStatusCode))
 		return
 	}
 
@@ -98,8 +99,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// run body filters
-		if h.filter.EvaluateBody(span, processingBody, headers) {
-			w.WriteHeader(http.StatusForbidden)
+		block, blockingStatusCode := h.filter.EvaluateBody(span, processingBody, headers)
+		if block {
+			w.WriteHeader(int(blockingStatusCode))
 			return
 		}
 

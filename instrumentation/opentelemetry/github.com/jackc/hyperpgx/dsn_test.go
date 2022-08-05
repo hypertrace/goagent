@@ -33,37 +33,37 @@ func TestParseDSN(t *testing.T) {
 			inputDSN: "postgres://localhost/mydb",
 			expectedAttrs: map[string]string{
 				"net.peer.name": "localhost",
-				"db.name":       "mydb",
+				"db.name": "mydb",
 			},
 		},
 		{
 			inputDSN: "postgres://user@localhost",
 			expectedAttrs: map[string]string{
 				"net.peer.name": "localhost",
-				"db.user":       "user",
+				"db.user": "user",
 			},
 		},
 		{
 			inputDSN: "postgres://user:secret@localhost",
 			expectedAttrs: map[string]string{
 				"net.peer.name": "localhost",
-				"db.user":       "user",
+				"db.user": "user",
 			},
 		},
 		{
 			inputDSN: "postgres://other@localhost/otherdb?connect_timeout=10&application_name=myapp",
 			expectedAttrs: map[string]string{
 				"net.peer.name": "localhost",
-				"db.user":       "other",
-				"db.name":       "otherdb",
+				"db.user": "other",
+				"db.name": "otherdb",
 			},
 		},
 		{
 			inputDSN: "postgres://localhost/mydb?user=other&password=secret",
 			expectedAttrs: map[string]string{
 				"net.peer.name": "localhost",
-				"db.user":       "other",
-				"db.name":       "mydb",
+				"db.user": "other",
+				"db.name": "mydb",
 			},
 		},
 	}

@@ -7,6 +7,7 @@ import (
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/sdk/filter"
+	"github.com/hypertrace/goagent/sdk/filterutils"
 	"github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc/internal/helloworld"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
@@ -112,18 +113,18 @@ func TestServerInterceptorFilter(t *testing.T) {
 		"headers filter": {
 			expectedFilterResult: true,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
+				URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) filterutils.FilterResult {
 					assert.Equal(t, []string{"test_value"}, headers["test_key"])
-					return true, 403
+					return filterutils.FilterResult{Block: true, ResponseStatusCode: 403}
 				},
 			}),
 		},
 		"body filter": {
 			expectedFilterResult: true,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
+				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
 					assert.Equal(t, "{\"name\":\"Pupo\"}", string(body))
-					return true, 403
+					return filterutils.FilterResult{Block: true, ResponseStatusCode: 403}
 				},
 			}),
 		},
@@ -195,9 +196,9 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
 			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{Filter: mock.Filter{
-				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
+				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
 					assert.Equal(t, "{", string(body)) // body is truncated
-					return false, 0
+					return filterutils.FilterResult{}
 				},
 			}}, nil),
 		),

@@ -4,18 +4,19 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filterutils"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMultiFilterEmpty(t *testing.T) {
 	f := NewMultiFilter()
-	res, _ := f.EvaluateURLAndHeaders(nil, "", nil)
-	assert.False(t, res)
-	res, _ = f.EvaluateBody(nil, nil, nil)
-	assert.False(t, res)
-	res, _ = f.Evaluate(nil, "", nil, nil)
-	assert.False(t, res)
+	res := f.EvaluateURLAndHeaders(nil, "", nil)
+	assert.False(t, res.Block)
+	res = f.EvaluateBody(nil, nil, nil)
+	assert.False(t, res.Block)
+	res = f.Evaluate(nil, "", nil, nil)
+	assert.False(t, res.Block)
 }
 
 func TestMultiFilterStopsAfterTrue(t *testing.T) {
@@ -31,19 +32,19 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 			expectedFilterResult:              false,
 			multiFilter: NewMultiFilter(
 				mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
-						return false, 0
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) filterutils.FilterResult {
+						return filterutils.FilterResult{}
 					},
 				},
 				mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
-						return true, 403
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) filterutils.FilterResult {
+						return filterutils.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 				mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) filterutils.FilterResult {
 						assert.Fail(t, "should not be called")
-						return false, 0
+						return filterutils.FilterResult{}
 					},
 				},
 			),
@@ -52,19 +53,19 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 			expectedBodyFilterResult: true,
 			multiFilter: NewMultiFilter(
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
-						return false, 0
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
+						return filterutils.FilterResult{}
 					},
 				},
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
-						return true, 403
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
+						return filterutils.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
 						assert.Fail(t, "should not be called")
-						return false, 0
+						return filterutils.FilterResult{}
 					},
 				},
 			),
@@ -73,19 +74,19 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 			expectedFilterResult: true,
 			multiFilter: NewMultiFilter(
 				mock.Filter{
-					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) (bool, int32) {
-						return false, 0
+					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) filterutils.FilterResult {
+						return filterutils.FilterResult{}
 					},
 				},
 				mock.Filter{
-					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) (bool, int32) {
-						return true, 403
+					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) filterutils.FilterResult {
+						return filterutils.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 				mock.Filter{
-					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) (bool, int32) {
+					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) filterutils.FilterResult {
 						assert.Fail(t, "should not be called")
-						return false, 0
+						return filterutils.FilterResult{}
 					},
 				},
 			),
@@ -94,12 +95,12 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 
 	for name, tCase := range tCases {
 		t.Run(name, func(t *testing.T) {
-			res, _ := tCase.multiFilter.EvaluateURLAndHeaders(nil, "", nil)
-			assert.Equal(t, tCase.expectedURLAndHeadersFilterResult, res)
-			res, _ = tCase.multiFilter.EvaluateBody(nil, nil, nil)
-			assert.Equal(t, tCase.expectedBodyFilterResult, res)
-			res, _ = tCase.multiFilter.Evaluate(nil, "", nil, nil)
-			assert.Equal(t, tCase.expectedFilterResult, res)
+			res := tCase.multiFilter.EvaluateURLAndHeaders(nil, "", nil)
+			assert.Equal(t, tCase.expectedURLAndHeadersFilterResult, res.Block)
+			res = tCase.multiFilter.EvaluateBody(nil, nil, nil)
+			assert.Equal(t, tCase.expectedBodyFilterResult, res.Block)
+			res = tCase.multiFilter.Evaluate(nil, "", nil, nil)
+			assert.Equal(t, tCase.expectedFilterResult, res.Block)
 		})
 	}
 }

@@ -72,9 +72,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// run filters on headers
-	block, blockingStatusCode := h.filter.EvaluateURLAndHeaders(span, url, headers)
-	if block {
-		w.WriteHeader(int(blockingStatusCode))
+	filterResult := h.filter.EvaluateURLAndHeaders(span, url, headers)
+	if filterResult.Block {
+		w.WriteHeader(int(filterResult.ResponseStatusCode))
 		return
 	}
 
@@ -99,9 +99,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// run body filters
-		block, blockingStatusCode := h.filter.EvaluateBody(span, processingBody, headers)
-		if block {
-			w.WriteHeader(int(blockingStatusCode))
+		filterResult := h.filter.EvaluateBody(span, processingBody, headers)
+		if filterResult.Block {
+			w.WriteHeader(int(filterResult.ResponseStatusCode))
 			return
 		}
 

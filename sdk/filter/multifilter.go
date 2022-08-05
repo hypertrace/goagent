@@ -1,6 +1,9 @@
 package filter // import "github.com/hypertrace/goagent/sdk/filter"
 
-import "github.com/hypertrace/goagent/sdk"
+import (
+	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filterutils"
+)
 
 // MultiFilter encapsulates multiple filters
 type MultiFilter struct {
@@ -15,34 +18,34 @@ func NewMultiFilter(filter ...Filter) *MultiFilter {
 }
 
 // EvaluateURLAndHeaders runs URL and headers evaluation for each filter until one returns true
-func (m *MultiFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) (bool, int32) {
+func (m *MultiFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) filterutils.FilterResult {
 	for _, f := range (*m).filters {
-		block, blockingStatusCode := f.EvaluateURLAndHeaders(span, url, headers)
-		if block {
-			return block, blockingStatusCode
+		filterResult := f.EvaluateURLAndHeaders(span, url, headers)
+		if filterResult.Block {
+			return filterResult
 		}
 	}
-	return false, 0
+	return filterutils.FilterResult{}
 }
 
 // EvaluateBody runs body evaluators for each filter until one returns true
-func (m *MultiFilter) EvaluateBody(span sdk.Span, body []byte, headers map[string][]string) (bool, int32) {
+func (m *MultiFilter) EvaluateBody(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
 	for _, f := range (*m).filters {
-		block, blockingStatusCode := f.EvaluateBody(span, body, headers)
-		if block {
-			return block, blockingStatusCode
+		filterResult := f.EvaluateBody(span, body, headers)
+		if filterResult.Block {
+			return filterResult
 		}
 	}
-	return false, 0
+	return filterutils.FilterResult{}
 }
 
 // Evaluate runs body evaluators for each filter until one returns true
-func (m *MultiFilter) Evaluate(span sdk.Span, url string, body []byte, headers map[string][]string) (bool, int32) {
+func (m *MultiFilter) Evaluate(span sdk.Span, url string, body []byte, headers map[string][]string) filterutils.FilterResult {
 	for _, f := range (*m).filters {
-		block, blockingStatusCode := f.Evaluate(span, url, body, headers)
-		if block {
-			return block, blockingStatusCode
+		filterResult := f.Evaluate(span, url, body, headers)
+		if filterResult.Block {
+			return filterResult
 		}
 	}
-	return false, 0
+	return filterutils.FilterResult{}
 }

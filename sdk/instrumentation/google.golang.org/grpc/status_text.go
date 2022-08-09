@@ -3,7 +3,7 @@ package grpc
 func StatusText(code int) string {
 	switch code {
 	case 400:
-    return "Bad Request"
+		return "Bad Request"
 	case 401:
 		return "Unauthorized"
 	case 402:

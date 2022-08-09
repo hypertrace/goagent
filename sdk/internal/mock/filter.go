@@ -4,6 +4,7 @@ import (
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/sdk/filter/result"
 )
+
 type Filter struct {
 	URLAndHeadersEvaluator func(span sdk.Span, url string, headers map[string][]string) result.FilterResult
 	BodyEvaluator          func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult

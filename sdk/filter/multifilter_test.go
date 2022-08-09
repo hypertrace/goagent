@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/sdk"
-	"github.com/hypertrace/goagent/sdk/filterutils"
+	"github.com/hypertrace/goagent/sdk/filter/result"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,19 +32,19 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 			expectedFilterResult:              false,
 			multiFilter: NewMultiFilter(
 				mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) filterutils.FilterResult {
-						return filterutils.FilterResult{}
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{}
 					},
 				},
 				mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) filterutils.FilterResult {
-						return filterutils.FilterResult{Block: true, ResponseStatusCode: 403}
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 				mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) filterutils.FilterResult {
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
 						assert.Fail(t, "should not be called")
-						return filterutils.FilterResult{}
+						return result.FilterResult{}
 					},
 				},
 			),
@@ -53,19 +53,19 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 			expectedBodyFilterResult: true,
 			multiFilter: NewMultiFilter(
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
-						return filterutils.FilterResult{}
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{}
 					},
 				},
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
-						return filterutils.FilterResult{Block: true, ResponseStatusCode: 403}
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 				mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) filterutils.FilterResult {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
 						assert.Fail(t, "should not be called")
-						return filterutils.FilterResult{}
+						return result.FilterResult{}
 					},
 				},
 			),
@@ -74,19 +74,19 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 			expectedFilterResult: true,
 			multiFilter: NewMultiFilter(
 				mock.Filter{
-					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) filterutils.FilterResult {
-						return filterutils.FilterResult{}
+					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{}
 					},
 				},
 				mock.Filter{
-					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) filterutils.FilterResult {
-						return filterutils.FilterResult{Block: true, ResponseStatusCode: 403}
+					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 				mock.Filter{
-					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) filterutils.FilterResult {
+					Evaluator: func(span sdk.Span, url string, body []byte, headers map[string][]string) result.FilterResult {
 						assert.Fail(t, "should not be called")
-						return filterutils.FilterResult{}
+						return result.FilterResult{}
 					},
 				},
 			),

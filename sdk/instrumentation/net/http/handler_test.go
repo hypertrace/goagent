@@ -9,6 +9,7 @@ import (
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter/result"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
@@ -278,15 +279,15 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
 						assert.Equal(t, "http://localhost/foo", url)
 						assert.Equal(t, 1, len(headers))
 						assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
-						return false
+						return result.FilterResult{}
 					},
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
 						assert.Equal(t, []byte("haha"), body)
-						return false
+						return result.FilterResult{}
 					},
 				},
 			},
@@ -295,8 +296,8 @@ func TestServerRequestFilter(t *testing.T) {
 			url: "http://localhost/foo",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
-						return true
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 			},
@@ -306,8 +307,8 @@ func TestServerRequestFilter(t *testing.T) {
 			url: "http://localhost/foo",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) bool {
-						return true
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 			},
@@ -320,8 +321,8 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
-						return true
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
+						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
 			},
@@ -363,9 +364,9 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 
 	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{
 		Filter: mock.Filter{
-			BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) bool {
+			BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
 				assert.Equal(t, "{", string(body)) // body is truncated
-				return true
+				return result.FilterResult{Block: true, ResponseStatusCode: 403}
 			},
 		},
 	}, map[string]string{}).(*handler)

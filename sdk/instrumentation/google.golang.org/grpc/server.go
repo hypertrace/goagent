@@ -106,7 +106,7 @@ func wrapHandler(
 				}
 				filterResult := filter.EvaluateBody(span, processingBody, md)
 				if filterResult.Block {
-					return nil, status.Error(codes.Code(filterResult.ResponseStatusCode), "Permission Denied")
+					return nil, status.Error(codes.Code(filterResult.ResponseStatusCode), StatusText(int(filterResult.ResponseStatusCode)))
 				}
 			}
 		}
@@ -118,7 +118,7 @@ func wrapHandler(
 				// TODO: decide what should be passed as URL in GRPC
 				filterResult := filter.EvaluateURLAndHeaders(span, "", md)
 				if filterResult.Block {
-					return nil, status.Error(codes.Code(filterResult.ResponseStatusCode), "Permission Denied")
+					return nil, status.Error(codes.Code(filterResult.ResponseStatusCode), StatusText(int(filterResult.ResponseStatusCode)))
 				}
 			}
 		}

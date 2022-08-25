@@ -44,3 +44,10 @@ func TestSetTruncatedEncodedBodyAttribute(t *testing.T) {
 	assert.True(t, (s.ReadAttribute("http.request.body.truncated")).(bool))
 	assert.Zero(t, s.RemainingAttributes())
 }
+
+func TestSetTruncatedEncodedBodyAttributeEmptyBody(t *testing.T) {
+	s := mock.NewSpan()
+	SetTruncatedEncodedBodyAttribute("http.request.body", []byte{}, 2, s)
+	assert.Nil(t, s.ReadAttribute("http.request.body.base64"))
+	assert.Zero(t, s.RemainingAttributes())
+}

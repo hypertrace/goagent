@@ -8,7 +8,10 @@ import (
 
 func TestNoopFilter(t *testing.T) {
 	f := NoopFilter{}
-	assert.False(t, f.EvaluateURLAndHeaders(nil, "", nil))
-	assert.False(t, f.EvaluateBody(nil, nil, nil))
-	assert.False(t, f.Evaluate(nil, "", nil, nil))
+	res := f.EvaluateURLAndHeaders(nil, "", nil)
+	assert.False(t, res.Block)
+	res = f.EvaluateBody(nil, nil, nil)
+	assert.False(t, res.Block)
+	res = f.Evaluate(nil, "", nil, nil)
+	assert.False(t, res.Block)
 }

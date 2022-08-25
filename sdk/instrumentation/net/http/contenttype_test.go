@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRecordingDecissionReturnsFalseOnNoContentType(t *testing.T) {
+func TestRecordingDecisionReturnsFalseOnNoContentType(t *testing.T) {
 	assert.Equal(t, false, ShouldRecordBodyOfContentType(headerMapAccessor{http.Header{"A": []string{"B"}}}))
 }
 
-func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
+func TestRecordingDecisionSuccessOnHeaderSet(t *testing.T) {
 	internalconfig.ResetConfig()
 	tCases := []struct {
 		contentType  string
@@ -36,7 +36,7 @@ func TestRecordingDecissionSuccessOnHeaderSet(t *testing.T) {
 	}
 }
 
-func TestRecordingDecissionSuccessOnHeaderAdd(t *testing.T) {
+func TestRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
 	internalconfig.ResetConfig()
 	tCases := []struct {
 		contentTypes []string
@@ -83,4 +83,22 @@ func TestXMLRecordingDecisionSuccessOnHeaderAdd(t *testing.T) {
 		assert.Equal(t, tCase.shouldRecord, ShouldRecordBodyOfContentType(headerMapAccessor{h}))
 	}
 	internalconfig.ResetConfig()
+}
+
+func TestHasMultiPartFormDataContentTypeHeader(t *testing.T) {
+	tCases := []struct {
+		contentType         string
+		isMultiPartFormData bool
+	}{
+		{"text/plain", false},
+		{"application/json", false},
+		{"multipart/form-data", true},
+		{"multipart/mixed", false},
+	}
+
+	for _, tCase := range tCases {
+		h := http.Header{}
+		h.Set("Content-Type", tCase.contentType)
+		assert.Equal(t, tCase.isMultiPartFormData, HasMultiPartFormDataContentTypeHeader(headerMapAccessor{h}))
+	}
 }

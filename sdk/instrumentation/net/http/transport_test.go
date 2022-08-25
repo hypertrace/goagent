@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,7 @@ import (
 	"testing"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
+	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -184,9 +186,11 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 		requestBody                    interface{}
 		requestContentType             string
 		shouldHaveRecordedRequestBody  bool
+		shouldBase64EncodeRequestBody  bool
 		responseBody                   string
 		responseContentType            string
 		shouldHaveRecordedResponseBody bool
+		shouldBase64EncodeResponseBody bool
 	}{
 		"no content type headers and empty body": {
 			captureHTTPBodyConfig: true,
@@ -235,6 +239,53 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
+		"request multipart/form-data content type and body config enabled": {
+			captureHTTPBodyConfig:          true,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "multipart/form-data",
+			responseContentType:            "application/json",
+			shouldHaveRecordedRequestBody:  true,
+			shouldHaveRecordedResponseBody: true,
+			shouldBase64EncodeRequestBody:  true,
+			shouldBase64EncodeResponseBody: false,
+		},
+		"response multipart/form-data content type and body config enabled": {
+			captureHTTPBodyConfig:          true,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "application/json",
+			responseContentType:            "multipart/form-data",
+			shouldHaveRecordedRequestBody:  true,
+			shouldHaveRecordedResponseBody: true,
+			shouldBase64EncodeRequestBody:  false,
+			shouldBase64EncodeResponseBody: true,
+		},
+		"request and response multipart/form-data content type and body config enabled": {
+			captureHTTPBodyConfig:          true,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "multipart/form-data",
+			responseContentType:            "multipart/form-data",
+			shouldHaveRecordedRequestBody:  true,
+			shouldHaveRecordedResponseBody: true,
+			shouldBase64EncodeRequestBody:  true,
+			shouldBase64EncodeResponseBody: true,
+		},
+		"request and response multipart/form-data content type and body config disabled": {
+			captureHTTPBodyConfig: false,
+			requestBody:           "test_request_body",
+			responseBody:          "test_response_body",
+			requestContentType:    "multipart/form-data",
+			responseContentType:   "multipart/form-data",
+		},
+		"request and response multipart/form-data content type not allowed and body config enabled ": {
+			captureHTTPBodyConfig: true,
+			requestBody:           "test_request_body",
+			responseBody:          "test_response_body",
+			requestContentType:    "multipart/form-data",
+			responseContentType:   "multipart/form-data",
+		},
 	}
 
 	for name, tCase := range tCases {
@@ -258,6 +309,12 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 					Response: config.Bool(false),
 				},
 				BodyMaxSizeBytes: config.Int32(1000),
+			}
+			defaultAllowedContentTypes := internalconfig.GetConfig().DataCapture.AllowedContentTypes
+			// add multipart/form-data to allowed content-types
+			if tCase.shouldBase64EncodeRequestBody || tCase.shouldBase64EncodeResponseBody {
+				internalconfig.GetConfig().DataCapture.AllowedContentTypes = append(internalconfig.GetConfig().DataCapture.AllowedContentTypes,
+					config.String("multipart/form-data"))
 			}
 
 			tr := &mockTransport{
@@ -289,18 +346,35 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			span := tr.spans[0]
 			if tCase.shouldHaveRecordedRequestBody {
-				if tCase.requestBody != nil {
+				if tCase.shouldBase64EncodeRequestBody {
+					assert.Nil(t, span.ReadAttribute("http.request.body"))
+					assert.Equal(t, base64.RawStdEncoding.EncodeToString([]byte(tCase.requestBody.(string))),
+						span.ReadAttribute("http.request.body.base64").(string))
+				} else {
 					assert.Equal(t, tCase.requestBody.(string), span.ReadAttribute("http.request.body").(string))
+					assert.Nil(t, span.ReadAttribute("http.request.body.base64"))
 				}
 			} else {
 				assert.Nil(t, span.ReadAttribute("http.request.body"))
+				assert.Nil(t, span.ReadAttribute("http.request.body.base64"))
 			}
 
 			if tCase.shouldHaveRecordedResponseBody {
-				assert.Equal(t, tCase.responseBody, span.ReadAttribute("http.response.body").(string))
+				if tCase.shouldBase64EncodeResponseBody {
+					assert.Nil(t, span.ReadAttribute("http.response.body"))
+					assert.Equal(t, base64.RawStdEncoding.EncodeToString([]byte(tCase.responseBody)),
+						span.ReadAttribute("http.response.body.base64").(string))
+				} else {
+					assert.Equal(t, tCase.responseBody, span.ReadAttribute("http.response.body").(string))
+					assert.Nil(t, span.ReadAttribute("http.response.body.base64"))
+				}
 			} else {
 				assert.Nil(t, span.ReadAttribute("http.response.body"))
+				assert.Nil(t, span.ReadAttribute("http.response.body.base64"))
 			}
+
+			// reset allowed content types config
+			internalconfig.GetConfig().DataCapture.AllowedContentTypes = defaultAllowedContentTypes
 		})
 	}
 }

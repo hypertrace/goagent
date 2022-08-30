@@ -53,7 +53,7 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 
 			reqBody, err := marshalMessageableJSON(req)
 			if dataCaptureConfig.RpcBody.Request.Value && len(reqBody) > 0 && err == nil {
-				span.SetAttribute("rpc.request.body", string(reqBody))
+				setTruncatedBodyAttribute("request", reqBody, int(dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 			}
 
 			if dataCaptureConfig.RpcMetadata.Request.Value {
@@ -72,7 +72,7 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 
 			resBody, err := marshalMessageableJSON(reply)
 			if dataCaptureConfig.RpcBody.Response.Value && len(resBody) > 0 && err == nil {
-				span.SetAttribute("rpc.response.body", string(resBody))
+				setTruncatedBodyAttribute("response", resBody, int(dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 			}
 
 			return err

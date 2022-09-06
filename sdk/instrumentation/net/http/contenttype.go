@@ -5,11 +5,13 @@ import (
 	"strings"
 )
 
+const contentTypeHeaderKey string = "Content-Type"
+
 // ShouldRecordBodyOfContentType checks if the body is meant
 // to be recorded based on the content-type and the fact that body is
 // not streamed.
 func ShouldRecordBodyOfContentType(h HeaderAccessor) bool {
-	var contentTypeValues = h.Lookup("Content-Type") // "Content-Type" is the canonical key
+	var contentTypeValues = h.Lookup(contentTypeHeaderKey) // "Content-Type" is the canonical key
 	cfg := internalconfig.GetConfig().GetDataCapture()
 	if cfg == nil || cfg.GetAllowedContentTypes() == nil {
 		return false
@@ -39,6 +41,18 @@ func ShouldRecordBodyOfContentType(h HeaderAccessor) bool {
 			if strings.Contains(strings.ToLower(contentTypeValue), strings.ToLower(contentTypeAllowed.Value)) {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+// HasMultiPartFormDataContentTypeHeader returns true if the Content-Type header is
+// multipart/form-data. false otherwise.
+func HasMultiPartFormDataContentTypeHeader(h HeaderAccessor) bool {
+	var contentTypeValues = h.Lookup(contentTypeHeaderKey)
+	for _, contentTypeValue := range contentTypeValues {
+		if strings.Contains(strings.ToLower(contentTypeValue), "multipart/form-data") {
+			return true
 		}
 	}
 	return false

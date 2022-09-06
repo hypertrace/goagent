@@ -2,6 +2,7 @@ package http // import "github.com/hypertrace/goagent/sdk/instrumentation/net/ht
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -87,15 +88,24 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		defer r.Body.Close()
 
+		isMultipartFormDataBody := HasMultiPartFormDataContentTypeHeader(headerMapAccessor{r.Header})
+
 		// Only records the body if it is not empty and the content type
 		// header is not streamable
 		if len(body) > 0 {
-			setTruncatedBodyAttribute("request", body, int(h.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
+			setTruncatedBodyAttribute("request", body, int(h.dataCaptureConfig.BodyMaxSizeBytes.Value), span,
+				isMultipartFormDataBody)
 		}
 
 		processingBody := body
 		if int(h.dataCaptureConfig.BodyMaxProcessingSizeBytes.Value) < len(body) {
 			processingBody = body[:h.dataCaptureConfig.BodyMaxProcessingSizeBytes.Value]
+		}
+		// if body is multipart/form-data, base64 encode it before passing it on to the filter
+		if isMultipartFormDataBody {
+			origProcessingBody := processingBody
+			processingBody = make([]byte, base64.RawStdEncoding.EncodedLen(len(origProcessingBody)))
+			base64.RawStdEncoding.Encode(processingBody, origProcessingBody)
 		}
 
 		// run body filters
@@ -116,7 +126,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if h.dataCaptureConfig.HttpBody.Response.Value &&
 			len(wi.body) > 0 &&
 			ShouldRecordBodyOfContentType(headerMapAccessor{wi.Header()}) {
-			setTruncatedBodyAttribute("response", wi.body, int(h.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
+			setTruncatedBodyAttribute("response", wi.body, int(h.dataCaptureConfig.BodyMaxSizeBytes.Value), span,
+				HasMultiPartFormDataContentTypeHeader(headerMapAccessor{wi.Header()}))
 		}
 
 		if h.dataCaptureConfig.HttpHeaders.Response.Value {

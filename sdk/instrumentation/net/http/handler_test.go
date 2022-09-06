@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -179,6 +180,8 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 		responseBody                   string
 		responseContentType            string
 		shouldHaveRecordedResponseBody bool
+		shouldBase64EncodeRequestBody  bool
+		shouldBase64EncodeResponseBody bool
 	}{
 		"no content type headers and empty body": {
 			captureHTTPBodyConfig:          true,
@@ -217,6 +220,61 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			shouldHaveRecordedRequestBody:  false,
 			shouldHaveRecordedResponseBody: false,
 		},
+		"request has multipart/form-data content type and body with config enabled": {
+			captureHTTPBodyConfig:          true,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "multipart/form-data",
+			responseContentType:            "application/json; charset=utf-8",
+			shouldHaveRecordedRequestBody:  true,
+			shouldHaveRecordedResponseBody: true,
+			shouldBase64EncodeRequestBody:  true,
+			shouldBase64EncodeResponseBody: false,
+		},
+		"response has multipart/form-data content type and body with config enabled": {
+			captureHTTPBodyConfig:          true,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "application/json; charset=utf-8",
+			responseContentType:            "multipart/form-data",
+			shouldHaveRecordedRequestBody:  true,
+			shouldHaveRecordedResponseBody: true,
+			shouldBase64EncodeRequestBody:  false,
+			shouldBase64EncodeResponseBody: true,
+		},
+		"both request and response has multipart/form-data content type and body with config enabled": {
+			captureHTTPBodyConfig:          true,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "multipart/form-data",
+			responseContentType:            "multipart/form-data",
+			shouldHaveRecordedRequestBody:  true,
+			shouldHaveRecordedResponseBody: true,
+			shouldBase64EncodeRequestBody:  true,
+			shouldBase64EncodeResponseBody: true,
+		},
+		"both request and response has multipart/form-data content type and body capture disabled": {
+			captureHTTPBodyConfig:          false,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "multipart/form-data",
+			responseContentType:            "multipart/form-data",
+			shouldHaveRecordedRequestBody:  false,
+			shouldHaveRecordedResponseBody: false,
+			shouldBase64EncodeRequestBody:  true,
+			shouldBase64EncodeResponseBody: true,
+		},
+		"both request and response has multipart/form-data content type and multipart form-data body capture disabled": {
+			captureHTTPBodyConfig:          true,
+			requestBody:                    "test_request_body",
+			responseBody:                   "test_response_body",
+			requestContentType:             "multipart/form-data",
+			responseContentType:            "multipart/form-data",
+			shouldHaveRecordedRequestBody:  false,
+			shouldHaveRecordedResponseBody: false,
+			shouldBase64EncodeRequestBody:  false,
+			shouldBase64EncodeResponseBody: false,
+		},
 	}
 
 	for name, tCase := range tCases {
@@ -233,6 +291,12 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				Request:  config.Bool(tCase.captureHTTPBodyConfig),
 				Response: config.Bool(tCase.captureHTTPBodyConfig),
 			}
+			defaultAllowedContentTypes := internalconfig.GetConfig().DataCapture.AllowedContentTypes
+			// add multipart/form-data to the allowed content types.
+			if tCase.shouldBase64EncodeRequestBody || tCase.shouldBase64EncodeResponseBody {
+				internalconfig.GetConfig().DataCapture.AllowedContentTypes = append(internalconfig.GetConfig().DataCapture.AllowedContentTypes,
+					config.String("multipart/form-data"))
+			}
 			ih := &mockHandler{baseHandler: wh}
 
 			r, _ := http.NewRequest("GET", "http://traceable.ai/foo", strings.NewReader(tCase.requestBody))
@@ -245,28 +309,47 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 			span := ih.spans[0]
 
 			if tCase.shouldHaveRecordedRequestBody {
-				assert.Equal(t, tCase.requestBody, span.ReadAttribute("http.request.body").(string))
+				if tCase.shouldBase64EncodeRequestBody {
+					assert.Equal(t, base64.RawStdEncoding.EncodeToString([]byte(tCase.requestBody)),
+						span.ReadAttribute("http.request.body.base64").(string))
+					assert.Nil(t, span.ReadAttribute("http.request.body"))
+				} else {
+					assert.Equal(t, tCase.requestBody, span.ReadAttribute("http.request.body").(string))
+					assert.Nil(t, span.ReadAttribute("http.request.body.base64"))
+				}
 			} else {
 				assert.Nil(t, span.ReadAttribute("http.request.body"))
+				assert.Nil(t, span.ReadAttribute("http.request.body.base64"))
 			}
 
 			if tCase.shouldHaveRecordedResponseBody {
-				assert.Equal(t, tCase.responseBody, span.ReadAttribute("http.response.body").(string))
+				if tCase.shouldBase64EncodeResponseBody {
+					assert.Equal(t, base64.RawStdEncoding.EncodeToString([]byte(tCase.responseBody)),
+						span.ReadAttribute("http.response.body.base64").(string))
+					assert.Nil(t, span.ReadAttribute("http.response.body"))
+				} else {
+					assert.Equal(t, tCase.responseBody, span.ReadAttribute("http.response.body").(string))
+					assert.Nil(t, span.ReadAttribute("http.response.body.base64"))
+				}
 			} else {
 				assert.Nil(t, span.ReadAttribute("http.response.body"))
+				assert.Nil(t, span.ReadAttribute("http.response.body.base64"))
 			}
+			// reset allowed content types config
+			internalconfig.GetConfig().DataCapture.AllowedContentTypes = defaultAllowedContentTypes
 		})
 	}
 }
 
 func TestServerRequestFilter(t *testing.T) {
 	tCases := map[string]struct {
-		url          string
-		headerKeys   []string
-		headerValues []string
-		body         string
-		options      *Options
-		blocked      bool
+		url                    string
+		headerKeys             []string
+		headerValues           []string
+		body                   string
+		options                *Options
+		blocked                bool
+		allowMultipartFormData bool
 	}{
 		"no filters": {
 			options: &Options{},
@@ -291,6 +374,44 @@ func TestServerRequestFilter(t *testing.T) {
 					},
 				},
 			},
+		},
+		"all filters no match, verify filter arguments for multipart/form-data": {
+			url:          "http://localhost/foo",
+			headerKeys:   []string{"content-type"},
+			headerValues: []string{"multipart/form-data"},
+			body:         "haha",
+			options: &Options{
+				Filter: mock.Filter{
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+						assert.Equal(t, "http://localhost/foo", url)
+						assert.Equal(t, 1, len(headers))
+						assert.Equal(t, []string{"multipart/form-data"}, headers["Content-Type"])
+						return result.FilterResult{}
+					},
+					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
+						assert.Equal(t, []byte(base64.RawStdEncoding.EncodeToString([]byte("haha"))), body)
+						return result.FilterResult{}
+					},
+				},
+			},
+			allowMultipartFormData: true,
+		},
+		"all filters no match, multipart body not captured, verify filter arguments for multipart/form-data": {
+			url:          "http://localhost/foo",
+			headerKeys:   []string{"content-type"},
+			headerValues: []string{"multipart/form-data"},
+			body:         "haha",
+			options: &Options{
+				Filter: mock.Filter{
+					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+						assert.Equal(t, "http://localhost/foo", url)
+						assert.Equal(t, 1, len(headers))
+						assert.Equal(t, []string{"multipart/form-data"}, headers["Content-Type"])
+						return result.FilterResult{}
+					},
+				},
+			},
+			allowMultipartFormData: false,
 		},
 		"url filter match": {
 			url: "http://localhost/foo",
@@ -332,6 +453,12 @@ func TestServerRequestFilter(t *testing.T) {
 
 	for name, tCase := range tCases {
 		t.Run(name, func(t *testing.T) {
+			defaultAllowedContentTypes := internalconfig.GetConfig().DataCapture.AllowedContentTypes
+			// add multipart/form-data to the allowed content types.
+			if tCase.allowMultipartFormData {
+				internalconfig.GetConfig().DataCapture.AllowedContentTypes = append(internalconfig.GetConfig().DataCapture.AllowedContentTypes,
+					config.String("multipart/form-data"))
+			}
 			h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.WriteHeader(http.StatusOK)
 			})
@@ -351,6 +478,8 @@ func TestServerRequestFilter(t *testing.T) {
 			} else {
 				assert.Equal(t, http.StatusForbidden, w.Result().StatusCode)
 			}
+			// reset allowed content types config
+			internalconfig.GetConfig().DataCapture.AllowedContentTypes = defaultAllowedContentTypes
 		})
 	}
 }

@@ -50,7 +50,8 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		defer req.Body.Close()
 
 		if len(body) > 0 {
-			setTruncatedBodyAttribute("request", body, int(rt.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
+			setTruncatedBodyAttribute("request", body, int(rt.dataCaptureConfig.BodyMaxSizeBytes.Value), span,
+				HasMultiPartFormDataContentTypeHeader(headerMapAccessor{req.Header}))
 		}
 
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -70,7 +71,8 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		defer res.Body.Close()
 
 		if len(body) > 0 {
-			setTruncatedBodyAttribute("response", body, int(rt.dataCaptureConfig.BodyMaxSizeBytes.Value), span)
+			setTruncatedBodyAttribute("response", body, int(rt.dataCaptureConfig.BodyMaxSizeBytes.Value), span,
+				HasMultiPartFormDataContentTypeHeader(headerMapAccessor{res.Header}))
 		}
 
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))

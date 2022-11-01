@@ -112,7 +112,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			}
 		}
 
-		opts = append(opts, otlpgrpc.WithDialOption(grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`)))
+		opts = append(opts, otlpgrpc.WithDialOption(grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`)))
 
 		return func() (sdktrace.SpanExporter, error) {
 			return otlptrace.New(

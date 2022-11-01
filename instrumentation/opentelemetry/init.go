@@ -95,8 +95,11 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			return stdouttrace.New(stdouttrace.WithPrettyPrint())
 		}
 	default:
+		//opts := []otlpgrpc.Option{
+		//	otlpgrpc.WithEndpoint(removeProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),
+		//}
 		opts := []otlpgrpc.Option{
-			otlpgrpc.WithEndpoint(removeProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),
+			otlpgrpc.WithEndpoint(cfg.GetReporting().GetEndpoint().GetValue()),
 		}
 
 		if !cfg.GetReporting().GetSecure().GetValue() {

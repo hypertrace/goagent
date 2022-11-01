@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"google.golang.org/grpc"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -115,7 +114,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			}
 		}
 
-		opts = append(opts, otlpgrpc.WithDialOption(grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`)))
+		opts = append(opts, otlpgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
 
 		return func() (sdktrace.SpanExporter, error) {
 			return otlptrace.New(

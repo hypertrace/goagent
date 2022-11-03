@@ -95,7 +95,6 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			return stdouttrace.New(stdouttrace.WithPrettyPrint())
 		}
 	default:
-		resolver.SetDefaultScheme("dns")
 		opts := []otlpgrpc.Option{
 			otlpgrpc.WithEndpoint(removeProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),
 		}
@@ -113,7 +112,10 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			}
 		}
 
-		opts = append(opts, otlpgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
+		if cfg.Reporting.GetEnableGrpcLoadbalancing().GetValue() {
+			resolver.SetDefaultScheme("dns")
+			opts = append(opts, otlpgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
+		}
 
 		return func() (sdktrace.SpanExporter, error) {
 			return otlptrace.New(

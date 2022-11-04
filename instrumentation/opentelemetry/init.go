@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"google.golang.org/grpc/resolver"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -109,6 +110,11 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			} else {
 				log.Printf("error while creating tls credentials from cert path %s: %v", certFile, err)
 			}
+		}
+
+		if cfg.Reporting.GetEnableGrpcLoadbalancing().GetValue() {
+			resolver.SetDefaultScheme("dns")
+			opts = append(opts, otlpgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
 		}
 
 		return func() (sdktrace.SpanExporter, error) {

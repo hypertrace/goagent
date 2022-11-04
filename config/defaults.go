@@ -36,6 +36,6 @@ var defaultConfig = agentconfig.AgentConfig{
 		Secure:                  agentconfig.Bool(false),
 		TraceReporterType:       agentconfig.TraceReporterType_ZIPKIN,
 		CertFile:                agentconfig.String(""),
-		EnableGrpcLoadbalancing: agentconfig.Bool(false),
+		EnableGrpcLoadbalancing: agentconfig.Bool(true),
 	},
 }

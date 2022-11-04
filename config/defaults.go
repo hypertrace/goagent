@@ -32,9 +32,10 @@ var defaultConfig = agentconfig.AgentConfig{
 			wrapperspb.String("x-www-form-urlencoded")},
 	},
 	Reporting: &agentconfig.Reporting{
-		Endpoint:          agentconfig.String("http://localhost:9411/api/v2/spans"),
-		Secure:            agentconfig.Bool(false),
-		TraceReporterType: agentconfig.TraceReporterType_ZIPKIN,
-		CertFile:          agentconfig.String(""),
+		Endpoint:                agentconfig.String("http://localhost:9411/api/v2/spans"),
+		Secure:                  agentconfig.Bool(false),
+		TraceReporterType:       agentconfig.TraceReporterType_ZIPKIN,
+		CertFile:                agentconfig.String(""),
+		EnableGrpcLoadbalancing: agentconfig.Bool(true),
 	},
 }

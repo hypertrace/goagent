@@ -2,6 +2,7 @@ package opentelemetry
 
 import (
 	"context"
+	"google.golang.org/grpc/resolver"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -80,6 +81,25 @@ func TestOtlpService(t *testing.T) {
 	shutdown := Init(cfg)
 	defer shutdown()
 
+	_, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	if err != nil {
+		log.Fatalf("Error while initializing service: %v", err)
+	}
+}
+
+func TestGrpcLoadBalancingConfig(t *testing.T) {
+	cfg := config.Load()
+	cfg.ServiceName = config.String("my_example_svc")
+	cfg.Reporting.Endpoint = config.String("http://api.traceable.ai:4317")
+	cfg.Reporting.EnableGrpcLoadbalancing = config.Bool(true)
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
+	cfg.Enabled = config.Bool(true)
+
+	shutdown := Init(cfg)
+	defer shutdown()
+
+	assert.Equal(t, resolver.GetDefaultScheme(), "dns")
 	_, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
 	if err != nil {

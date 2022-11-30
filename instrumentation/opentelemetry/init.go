@@ -6,9 +6,9 @@ import (
 	"crypto/x509"
 	"fmt"
 	"google.golang.org/grpc/resolver"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -141,7 +141,7 @@ func createTLSConfig(reportingCfg *config.Reporting) *tls.Config {
 // a raw CA certificate to verify a server certificate. The file path is the
 // reporting.cert_file config value.
 func createCaCertPoolFromFile(certFile string) *x509.CertPool {
-	certBytes, err := ioutil.ReadFile(certFile)
+	certBytes, err := os.ReadFile(certFile)
 	if err != nil {
 		log.Printf("error while reading cert path: %v", err)
 		return nil
@@ -219,6 +219,15 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler
 	initialized = true
+
+	startSpanFn := startSpan(func() trace.TracerProvider {
+		return tp
+	})
+
+	// Startup span
+	_, span, ender := startSpanFn(context.Background(), "startup", &sdk.SpanOptions{})
+	span.SetAttribute("hypertrace.goagent.startup", true)
+	ender()
 
 	return func() {
 		mu.Lock()

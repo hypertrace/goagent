@@ -226,7 +226,7 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 
 	// Startup span
 	_, span, ender := startSpanFn(context.Background(), "startup", &sdk.SpanOptions{})
-	span.SetAttribute("hypertrace.goagent.startup", true)
+	span.SetAttribute("hypertrace.agent.startup", true)
 	ender()
 
 	return func() {

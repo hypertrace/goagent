@@ -154,7 +154,6 @@ func (in *interceptor) TxRollback(ctx context.Context, tx driver.Tx) error {
 // is acceptable. More so when the other alternative is to do typecast
 // across different drivers which will also create a runtime dependency or
 // rely on the name assigned to driverName which might not be standard.
-//
 func getDriverName(d driver.Driver) string {
 	elem := reflect.TypeOf(d).Elem()
 	pkg, name := elem.PkgPath(), elem.Name()

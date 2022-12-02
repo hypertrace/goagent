@@ -37,10 +37,10 @@ jobs:
           make deps
 
       - name: Lint files
-        uses: golangci/golangci-lint-action@v3.3.0
+        uses: golangci/golangci-lint-action@v3.3.1
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.47.3
+          version: v1.50.1
           args: -v
           skip-pkg-cache: true
           only-new-issues: true

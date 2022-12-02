@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -127,7 +128,9 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 }
 
 func createTLSConfig(reportingCfg *config.Reporting) *tls.Config {
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
 	tlsConfig.InsecureSkipVerify = !reportingCfg.GetSecure().GetValue()
 	certFile := reportingCfg.GetCertFile().GetValue()
 	if len(certFile) > 0 {
@@ -141,7 +144,7 @@ func createTLSConfig(reportingCfg *config.Reporting) *tls.Config {
 // a raw CA certificate to verify a server certificate. The file path is the
 // reporting.cert_file config value.
 func createCaCertPoolFromFile(certFile string) *x509.CertPool {
-	certBytes, err := os.ReadFile(certFile)
+	certBytes, err := os.ReadFile(filepath.Clean(certFile))
 	if err != nil {
 		log.Printf("error while reading cert path: %v", err)
 		return nil
@@ -233,11 +236,17 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 		mu.Lock()
 		defer mu.Unlock()
 		for serviceName, tracerProvider := range traceProviders {
-			tracerProvider.Shutdown(context.Background())
+			err := tracerProvider.Shutdown(context.Background())
+			if err != nil {
+				log.Printf("error while shutting down tracer provider: %v\n", err)
+			}
 			delete(traceProviders, serviceName)
 		}
 		traceProviders = map[string]*sdktrace.TracerProvider{}
-		tp.Shutdown(context.Background())
+		err := tp.Shutdown(context.Background())
+		if err != nil {
+			log.Printf("error while shutting down default tracer provider: %v\n", err)
+		}
 		initialized = false
 		enabled = false
 		sdkconfig.ResetConfig()

@@ -367,8 +367,9 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 	_, _, spanEnder := StartSpan(context.Background(), "my_span", nil)
 	spanEnder()
 
-	assert.Equal(t, 1, wrapper.onStartCount)
-	assert.Equal(t, 1, wrapper.onEndCount)
+	// my_span and startup spans
+	assert.Equal(t, 2, wrapper.onStartCount)
+	assert.Equal(t, 2, wrapper.onEndCount)
 
 	// test wrapper is called for spans created by service trace provider
 	startSpan, _, err := RegisterServiceWithSpanProcessorWrapper("custom_service", map[string]string{"test1": "val1"}, wrapper)
@@ -378,6 +379,8 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 
 	_, _, spanEnder = startSpan(context.Background(), "service_span", nil)
 	spanEnder()
-	assert.Equal(t, 2, wrapper.onStartCount)
-	assert.Equal(t, 2, wrapper.onEndCount)
+
+	// service_span, my_span and startup spans
+	assert.Equal(t, 3, wrapper.onStartCount)
+	assert.Equal(t, 3, wrapper.onEndCount)
 }

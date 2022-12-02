@@ -43,7 +43,10 @@ func InitAsAdditional(cfg *config.AgentConfig) (trace.SpanProcessor, func()) {
 	}
 
 	return trace.NewBatchSpanProcessor(exporter, trace.WithBatchTimeout(batchTimeout)), func() {
-		exporter.Shutdown(context.Background())
+		err := exporter.Shutdown(context.Background())
+		if err != nil {
+			log.Printf("error while shutting down exporter: %v\n", err)
+		}
 		sdkconfig.ResetConfig()
 	}
 }

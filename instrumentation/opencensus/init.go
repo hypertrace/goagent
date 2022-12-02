@@ -2,6 +2,7 @@ package opencensus // import "github.com/hypertrace/goagent/instrumentation/open
 
 import (
 	"crypto/tls"
+	"log"
 	"net/http"
 
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
@@ -20,7 +21,9 @@ func Init(cfg *config.AgentConfig) func() {
 
 	client := &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue()},
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue(),
+		},
 	}}
 
 	reporter := zipkinHTTP.NewReporter(cfg.GetReporting().GetEndpoint().GetValue(), zipkinHTTP.Client(client))
@@ -31,6 +34,9 @@ func Init(cfg *config.AgentConfig) func() {
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 
 	return func() {
-		reporter.Close()
+		err := reporter.Close()
+		if err != nil {
+			log.Printf("error while closing reporter: %v\n", err)
+		}
 	}
 }

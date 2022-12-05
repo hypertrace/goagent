@@ -38,4 +38,7 @@ var defaultConfig = agentconfig.AgentConfig{
 		CertFile:                agentconfig.String(""),
 		EnableGrpcLoadbalancing: agentconfig.Bool(true),
 	},
+	Telemetry: &agentconfig.Telemetry{
+		StartupSpanEnabled: agentconfig.Bool(true),
+	},
 }

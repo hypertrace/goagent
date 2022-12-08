@@ -228,9 +228,11 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	})
 
 	// Startup span
-	_, span, ender := startSpanFn(context.Background(), "startup", &sdk.SpanOptions{})
-	span.SetAttribute("hypertrace.agent.startup", true)
-	ender()
+	if cfg.GetTelemetry().GetStartupSpanEnabled().GetValue() {
+		_, span, ender := startSpanFn(context.Background(), "startup", &sdk.SpanOptions{})
+		span.SetAttribute("hypertrace.agent.startup", true)
+		ender()
+	}
 
 	return func() {
 		mu.Lock()

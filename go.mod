@@ -14,6 +14,7 @@ require (
 	github.com/ngrok/sqlmw v0.0.0-20200129213757-d5c93a81bec6
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.8.1
+	github.com/satori/go.uuid v1.2.0
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.35.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.35.0
@@ -28,6 +29,7 @@ require (
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1
 )
+
 
 require (
 	cloud.google.com/go v0.81.0 // indirect

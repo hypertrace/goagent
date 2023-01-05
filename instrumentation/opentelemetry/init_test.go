@@ -81,8 +81,11 @@ func TestOtlpService(t *testing.T) {
 	shutdown := Init(cfg)
 	defer shutdown()
 
-	_, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	startSpan, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	_, s, _ := startSpan(context.Background(), "test_span", nil)
+	assert.False(t, s.IsNoop())
 	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	assert.Len(t, s.GetAttributes().GetValue("service.instance.id"), 36)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
@@ -364,8 +367,11 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 	defer shutdown()
 
 	// test wrapper is called for spans created by global trace provider
-	_, _, spanEnder := StartSpan(context.Background(), "my_span", nil)
+	_, span, spanEnder := StartSpan(context.Background(), "my_span", nil)
+	id1 := span.GetAttributes().GetValue("service.instance.id")
 	spanEnder()
+
+	assert.Len(t, id1, 36)
 
 	// my_span and startup spans
 	assert.Equal(t, 2, wrapper.onStartCount)
@@ -377,7 +383,10 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
 
-	_, _, spanEnder = startSpan(context.Background(), "service_span", nil)
+	_, serviceSpan, spanEnder := startSpan(context.Background(), "service_span", nil)
+	id2 := serviceSpan.GetAttributes().GetValue("service.instance.id")
+	assert.Len(t, id2, 36)
+	assert.Equal(t, id1, id2)
 	spanEnder()
 
 	// service_span, my_span and startup spans

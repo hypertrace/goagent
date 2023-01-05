@@ -5,7 +5,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-var ServiceInstanceIDAttr = attribute.StringValue(uuid.NewV4().String())
+var instanceId, _ = uuid.NewV4()
+var ServiceInstanceIDAttr = attribute.StringValue(instanceId.String())
 
 const ServiceInstanceIDKey = "service.instance.id"
 

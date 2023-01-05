@@ -1,12 +1,11 @@
 package identifier
 
 import (
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 )
 
-var instanceId, _ = uuid.NewV4()
-var ServiceInstanceIDAttr = attribute.StringValue(instanceId.String())
+var ServiceInstanceIDAttr = attribute.StringValue(uuid.New().String())
 
 const ServiceInstanceIDKey = "service.instance.id"
 

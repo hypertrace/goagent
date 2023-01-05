@@ -118,12 +118,11 @@ func startSpan(provider getTracerProvider) sdk.StartSpan {
 				startOpts = append(startOpts, trace.WithTimestamp(opts.Timestamp))
 			}
 		}
+		startOpts = append(startOpts, trace.WithAttributes(identifier.ServiceInstanceKeyValue))
 
 		ctx, span := provider().
 			Tracer(TracerDomain, trace.WithInstrumentationVersion(version.Version)).
 			Start(ctx, name, startOpts...)
-
-		span.SetAttributes(identifier.ServiceInstanceKeyValue)
 
 		return ctx, &Span{span}, func() { span.End() }
 	}

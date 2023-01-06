@@ -3,6 +3,7 @@ package opentelemetry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -46,6 +47,16 @@ func TestSetAttributeSuccess(t *testing.T) {
 	s.SetAttribute("test_key_3", float64(1.2))
 	s.SetAttribute("test_key_4", "abc")
 	s.SetAttribute("test_key_4", errors.New("xyz"))
+}
+
+func TestSpanHasSameServiceInstanceId(t *testing.T) {
+	_, original, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	firstId := original.GetAttributes().GetValue("service.instance.id")
+	for i := 0; i < 300; i++ {
+		_, anotherSpan, _ := StartSpan(context.Background(), fmt.Sprintf("%s%d", "test_span", i), &sdk.SpanOptions{})
+		nextId := anotherSpan.GetAttributes().GetValue("service.instance.id")
+		assert.Equal(t, firstId, nextId)
+	}
 }
 
 func TestGenerateAttribute(t *testing.T) {

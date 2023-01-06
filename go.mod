@@ -29,6 +29,8 @@ require (
 	google.golang.org/protobuf v1.28.1
 )
 
+require github.com/google/uuid v1.1.2
+
 require (
 	cloud.google.com/go v0.81.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect

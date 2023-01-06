@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/identifier"
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/otel"
@@ -111,17 +112,18 @@ func startSpan(provider getTracerProvider) sdk.StartSpan {
 
 		if opts != nil {
 			startOpts = append(startOpts, trace.WithSpanKind(mapSpanKind(opts.Kind)))
-
 			if opts.Timestamp.IsZero() {
 				startOpts = append(startOpts, trace.WithTimestamp(time.Now()))
 			} else {
 				startOpts = append(startOpts, trace.WithTimestamp(opts.Timestamp))
 			}
 		}
+		startOpts = append(startOpts, trace.WithAttributes(identifier.ServiceInstanceKeyValue))
 
 		ctx, span := provider().
 			Tracer(TracerDomain, trace.WithInstrumentationVersion(version.Version)).
 			Start(ctx, name, startOpts...)
+
 		return ctx, &Span{span}, func() { span.End() }
 	}
 }

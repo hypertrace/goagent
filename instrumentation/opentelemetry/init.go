@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/trace"
 
@@ -22,10 +23,12 @@ import (
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/go-logr/stdr"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/exporters/zipkin"
@@ -34,6 +37,17 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"google.golang.org/grpc/credentials"
+	//"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	//"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	//"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	// otelmetric "go.opentelemetry.io/otel/metric"
+	otelmetricglobal "go.opentelemetry.io/otel/metric/global"
+	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	// "go.opentelemetry.io/otel/sdk/metric"
+	// "go.opentelemetry.io/otel/sdk/metric/metricdata"
+	// "go.opentelemetry.io/otel/sdk/metric/view"
 )
 
 var batchTimeout = time.Duration(200) * time.Millisecond
@@ -167,6 +181,7 @@ func Init(cfg *config.AgentConfig) func() {
 // InitWithSpanProcessorWrapper initializes opentelemetry tracing with a wrapper over span processor
 // and returns a shutdown function to flush data immediately on a termination signal.
 func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessorWrapper) func() {
+	stdr.SetVerbosity(5)
 	mu.Lock()
 	defer mu.Unlock()
 	if initialized {
@@ -218,6 +233,8 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	otel.SetTracerProvider(tp)
 
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
+
+	initMetrics()
 
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler
@@ -347,4 +364,52 @@ func (sp *spanProcessorWithWrapper) Shutdown(ctx context.Context) error {
 
 func (sp *spanProcessorWithWrapper) ForceFlush(ctx context.Context) error {
 	return sp.processor.ForceFlush(ctx)
+}
+
+func initMetrics() {
+	// stdout exporter
+	// exporter, err := stdoutmetric.New(stdoutmetric.WithPrettyPrint())
+	// if err != nil {
+	// 	log.Printf("error in init metrics: %v", fmt.Errorf("creating stdoutmetric exporter: %w", err))
+	// 	//return nil, fmt.Errorf("creating stdoutmetric exporter: %w", err)
+	// return
+	// }
+
+	// otlp exporter
+	opts := []otlpmetricgrpc.Option{
+		otlpmetricgrpc.WithEndpoint("localhost:4317"),
+		otlpmetricgrpc.WithInsecure(),
+	}
+
+	exporter, err := otlpmetric.New(
+		context.Background(),
+		otlpmetricgrpc.NewClient(opts...),
+	)
+	if err != nil {
+		log.Printf("error in init metrics: %v", fmt.Errorf("creating otlpmetric exporter: %w", err))
+		return
+	}
+
+	pusher := controller.New(
+		processor.NewFactory(
+			simple.NewWithInexpensiveDistribution(),
+			exporter,
+		),
+		controller.WithExporter(exporter),
+	)
+	if err := pusher.Start(context.Background()); err != nil {
+		log.Fatalf("starting push controller: %v", err)
+	}
+
+	otelmetricglobal.SetMeterProvider(pusher)
+
+	// metricsClient :=
+	// defaultView, _ := view.New(view.MatchInstrumentName("*"))
+
+	// meterProvider := metric.NewMeterProvider(metric.WithReader(metric.NewPeriodicReader(metricsClient,
+	// 	metric.WithAggregationSelector(metric.DefaultAggregationSelector),
+	// 	metric.WithTemporalitySelector(deltaTemporalitySelector),
+	// ), defaultView, defaultView))
+
+	// otelmetricglobal.SetMeterProvider(meterProvider)
 }

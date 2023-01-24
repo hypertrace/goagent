@@ -5,7 +5,7 @@ go 1.17
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
 	github.com/gin-gonic/gin v1.7.2
-	github.com/go-logr/stdr v1.2.2
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
@@ -35,6 +35,7 @@ require (
 require (
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.31.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.31.0
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.31.0
 	go.opentelemetry.io/otel/sdk/metric v0.31.0
 )
 

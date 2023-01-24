@@ -83,15 +83,16 @@ func spanNameFormatter(operation string, r *http.Request) (spanName string) {
 func Middleware(options *sdkhttp.Options) gin.HandlerFunc {
 	return wrap(func(delegate http.Handler) http.Handler {
 		wrappedHandler, ok := delegate.(*nextRequestHandler)
-
+		ginOperationName := ""
 		// if we fail to extract the next request handler from delegate the route template won't be reported
 		if ok {
+			ginOperationName := wrappedHandler.c.FullPath()
 			rc := wrappedHandler.c.Request.Context()
-			ctx := context.WithValue(rc, hyperGinKey, ginRoute{route: wrappedHandler.c.FullPath()})
+			ctx := context.WithValue(rc, hyperGinKey, ginRoute{route: ginOperationName})
 			wrappedHandler.c.Request = wrappedHandler.c.Request.WithContext(ctx)
 		}
 		return otelhttp.NewHandler(
-			sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options, map[string]string{}),
+			sdkhttp.WrapHandler(delegate, ginOperationName, opentelemetry.SpanFromContext, options, map[string]string{}),
 			"",
 			otelhttp.WithSpanNameFormatter(spanNameFormatter),
 		)

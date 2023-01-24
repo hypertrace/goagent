@@ -10,5 +10,6 @@ import (
 // WrapHandler returns a new round tripper instrumented that relies on the
 // needs to be used with OTel instrumentation.
 func WrapHandler(delegate http.Handler, options *sdkhttp.Options) http.Handler {
-	return sdkhttp.WrapHandler(delegate, opentelemetry.SpanFromContext, options, map[string]string{})
+	// TODO: Find another way to get the operation name
+	return sdkhttp.WrapHandler(delegate, "", opentelemetry.SpanFromContext, options, map[string]string{})
 }

@@ -23,6 +23,7 @@ import (
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/identifier"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -281,21 +282,25 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 		log.Fatal(err)
 	}
 
+	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)
+	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
+	metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
+	if err != nil {
+		log.Fatal(err)
+	}
 	metricsPusher := controller.New(
 		processor.NewFactory(
 			simple.NewWithInexpensiveDistribution(),
 			metricsExporter,
 		),
 		controller.WithExporter(metricsExporter),
-		controller.WithResource(resources),
+		controller.WithResource(metricResources),
 	)
 	if err := metricsPusher.Start(context.Background()); err != nil {
 		log.Fatalf("starting metrics push controller: %v", err)
 	}
 
 	otelmetricglobal.SetMeterProvider(metricsPusher)
-
-	//initMetrics()
 
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler

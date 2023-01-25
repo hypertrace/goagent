@@ -178,9 +178,10 @@ func TestMultipleTraceProviders(t *testing.T) {
 		assert.Equal(t, 0, count)
 	})
 
-	t.Run("test 2 requests after flush", func(t *testing.T) {
+	// 2 requests for spans and 1 for metrics.
+	t.Run("test 3 requests after flush", func(t *testing.T) {
 		shutdown()
-		assert.Equal(t, 2, count)
+		assert.Equal(t, 3, count)
 		assert.Equal(t, 0, len(traceProviders))
 	})
 }

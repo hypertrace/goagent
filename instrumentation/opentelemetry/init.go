@@ -276,31 +276,7 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
 	// Initialize metrics
-	metricsExporterFactory := makeMetricsExporterFactory(cfg)
-	metricsExporter, err := metricsExporterFactory()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)
-	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
-	metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
-	if err != nil {
-		log.Fatal(err)
-	}
-	metricsPusher := controller.New(
-		processor.NewFactory(
-			simple.NewWithInexpensiveDistribution(),
-			metricsExporter,
-		),
-		controller.WithExporter(metricsExporter),
-		controller.WithResource(metricResources),
-	)
-	if err := metricsPusher.Start(context.Background()); err != nil {
-		log.Fatalf("starting metrics push controller: %v", err)
-	}
-
-	otelmetricglobal.SetMeterProvider(metricsPusher)
+	metricsShutdownFn := initializeMetrics(cfg)
 
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler
@@ -333,7 +309,7 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 			log.Printf("error while shutting down default tracer provider: %v\n", err)
 		}
 
-		metricsPusher.Stop(context.Background())
+		metricsShutdownFn()
 		initialized = false
 		enabled = false
 		sdkconfig.ResetConfig()
@@ -404,6 +380,42 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 	return startSpan(func() trace.TracerProvider {
 		return tp
 	}), tp, nil
+}
+
+func initializeMetrics(cfg *config.AgentConfig) func() {
+	if cfg.GetTelemetry() == nil || !cfg.GetTelemetry().GetMetricsEnabled().GetValue() {
+		return func() {}
+	}
+
+	metricsExporterFactory := makeMetricsExporterFactory(cfg)
+	metricsExporter, err := metricsExporterFactory()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)
+	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
+	metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
+	if err != nil {
+		log.Fatal(err)
+	}
+	metricsPusher := controller.New(
+		processor.NewFactory(
+			simple.NewWithInexpensiveDistribution(),
+			metricsExporter,
+		),
+		controller.WithExporter(metricsExporter),
+		controller.WithResource(metricResources),
+	)
+	if err := metricsPusher.Start(context.Background()); err != nil {
+		log.Fatalf("starting metrics push controller: %v", err)
+	}
+
+	otelmetricglobal.SetMeterProvider(metricsPusher)
+
+	return func() {
+		metricsPusher.Stop(context.Background())
+	}
 }
 
 // SpanProcessorWrapper wraps otel span processor

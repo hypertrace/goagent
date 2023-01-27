@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
+	modbsp "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -42,13 +43,17 @@ func InitAsAdditional(cfg *config.AgentConfig) (trace.SpanProcessor, func()) {
 		exporter = addResourceToSpans(exporter, resource)
 	}
 
-	return trace.NewBatchSpanProcessor(exporter, trace.WithBatchTimeout(batchTimeout)), func() {
-		err := exporter.Shutdown(context.Background())
-		if err != nil {
-			log.Printf("error while shutting down exporter: %v\n", err)
+	return modbsp.CreateBatchSpanProcessor(
+			cfg.GetTelemetry() != nil && cfg.GetTelemetry().GetMetricsEnabled().GetValue(), // metrics enabled
+			exporter,
+			trace.WithBatchTimeout(batchTimeout)),
+		func() {
+			err := exporter.Shutdown(context.Background())
+			if err != nil {
+				log.Printf("error while shutting down exporter: %v\n", err)
+			}
+			sdkconfig.ResetConfig()
 		}
-		sdkconfig.ResetConfig()
-	}
 }
 
 type shieldResourceSpan struct {

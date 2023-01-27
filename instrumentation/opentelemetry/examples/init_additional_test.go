@@ -8,16 +8,16 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hypertrace/goagent/config"
 	hyperotel "github.com/hypertrace/goagent/instrumentation/opentelemetry"
+	modbsp "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/net/hyperhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
-var otherSpanExporter trace.SpanExporter = nil
+var otherSpanExporter sdktrace.SpanExporter = nil
 
 func ExampleInitAsAdditional() {
 	hyperSpanProcessor, shutdown := hyperotel.InitAsAdditional(config.Load())
@@ -31,7 +31,8 @@ func ExampleInitAsAdditional() {
 		),
 	)
 
-	otherSpanProcessor := sdktrace.NewBatchSpanProcessor(
+	otherSpanProcessor := modbsp.CreateBatchSpanProcessor(
+		true, // use modified bsp
 		hyperotel.RemoveGoAgentAttrs(otherSpanExporter),
 	)
 

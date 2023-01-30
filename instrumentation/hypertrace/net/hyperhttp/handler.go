@@ -15,8 +15,10 @@ func NewHandler(base http.Handler, operation string, opts ...Option) http.Handle
 		opt(o)
 	}
 
+	mh := opentelemetry.NewHttpOperationMetricsHandler(func(_ *http.Request) string { return operation })
+
 	return otelhttp.NewHandler(
-		sdkhttp.WrapHandler(base, operation, opentelemetry.SpanFromContext, o.toSDKOptions(), map[string]string{}),
+		sdkhttp.WrapHandler(base, opentelemetry.SpanFromContext, o.toSDKOptions(), map[string]string{}, mh),
 		operation,
 	)
 }

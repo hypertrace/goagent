@@ -40,5 +40,6 @@ var defaultConfig = agentconfig.AgentConfig{
 	},
 	Telemetry: &agentconfig.Telemetry{
 		StartupSpanEnabled: agentconfig.Bool(true),
+		MetricsEnabled:     agentconfig.Bool(true),
 	},
 }

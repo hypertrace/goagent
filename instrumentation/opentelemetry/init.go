@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/trace"
 
@@ -22,14 +23,22 @@ import (
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/identifier"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/exporters/zipkin"
+	otelmetricglobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
+	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	sdkmetricexport "go.opentelemetry.io/otel/sdk/metric/export"
+	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -73,6 +82,53 @@ func removeProtocolPrefixForOTLP(endpoint string) string {
 	}
 
 	return pieces[1]
+}
+
+func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (sdkmetricexport.Exporter, error) {
+	// We are only supporting logging and otlp metric exporters for now. We will add support for prometheus
+	// metrics later
+	switch cfg.Reporting.MetricReporterType {
+	case config.MetricReporterType_METRIC_REPORTER_TYPE_LOGGING:
+		// stdout exporter
+		return func() (sdkmetricexport.Exporter, error) {
+			// TODO: Define if endpoint could be a filepath to write into a file.
+			return stdoutmetric.New(stdoutmetric.WithPrettyPrint())
+		}
+	default:
+		endpoint := cfg.GetReporting().GetMetricEndpoint().GetValue()
+		if len(endpoint) == 0 {
+			endpoint = cfg.GetReporting().GetEndpoint().GetValue()
+		}
+
+		opts := []otlpmetricgrpc.Option{
+			otlpmetricgrpc.WithEndpoint(removeProtocolPrefixForOTLP(endpoint)),
+		}
+
+		if !cfg.GetReporting().GetSecure().GetValue() {
+			opts = append(opts, otlpmetricgrpc.WithInsecure())
+		}
+
+		certFile := cfg.GetReporting().GetCertFile().GetValue()
+		if len(certFile) > 0 {
+			if tlsCredentials, err := credentials.NewClientTLSFromFile(certFile, ""); err == nil {
+				opts = append(opts, otlpmetricgrpc.WithTLSCredentials(tlsCredentials))
+			} else {
+				log.Printf("error while creating tls credentials from cert path %s: %v", certFile, err)
+			}
+		}
+
+		if cfg.Reporting.GetEnableGrpcLoadbalancing().GetValue() {
+			resolver.SetDefaultScheme("dns")
+			opts = append(opts, otlpmetricgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
+		}
+
+		return func() (sdkmetricexport.Exporter, error) {
+			return otlpmetric.New(
+				context.Background(),
+				otlpmetricgrpc.NewClient(opts...),
+			)
+		}
+	}
 }
 
 func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter, error) {
@@ -219,6 +275,9 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
+	// Initialize metrics
+	metricsShutdownFn := initializeMetrics(cfg)
+
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler
 	initialized = true
@@ -249,6 +308,8 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 		if err != nil {
 			log.Printf("error while shutting down default tracer provider: %v\n", err)
 		}
+
+		metricsShutdownFn()
 		initialized = false
 		enabled = false
 		sdkconfig.ResetConfig()
@@ -319,6 +380,42 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 	return startSpan(func() trace.TracerProvider {
 		return tp
 	}), tp, nil
+}
+
+func initializeMetrics(cfg *config.AgentConfig) func() {
+	if cfg.GetTelemetry() == nil || !cfg.GetTelemetry().GetMetricsEnabled().GetValue() {
+		return func() {}
+	}
+
+	metricsExporterFactory := makeMetricsExporterFactory(cfg)
+	metricsExporter, err := metricsExporterFactory()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)
+	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
+	metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
+	if err != nil {
+		log.Fatal(err)
+	}
+	metricsPusher := controller.New(
+		processor.NewFactory(
+			simple.NewWithInexpensiveDistribution(),
+			metricsExporter,
+		),
+		controller.WithExporter(metricsExporter),
+		controller.WithResource(metricResources),
+	)
+	if err := metricsPusher.Start(context.Background()); err != nil {
+		log.Fatalf("starting metrics push controller: %v", err)
+	}
+
+	otelmetricglobal.SetMeterProvider(metricsPusher)
+
+	return func() {
+		metricsPusher.Stop(context.Background())
+	}
 }
 
 // SpanProcessorWrapper wraps otel span processor

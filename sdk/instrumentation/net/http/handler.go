@@ -30,7 +30,8 @@ type Options struct {
 
 // WrapHandler wraps an uninstrumented handler (e.g. a handleFunc) and returns a new one
 // that should be used as base to an instrumented handler
-func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, options *Options, spanAttributes map[string]string, mh sdk.HttpOperationMetricsHandler) http.Handler {
+func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, options *Options, spanAttributes map[string]string,
+	mh sdk.HttpOperationMetricsHandler) http.Handler {
 	defaultAttributes := make(map[string]string)
 	for k, v := range spanAttributes {
 		defaultAttributes[k] = v

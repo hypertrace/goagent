@@ -9,23 +9,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-func spanNameFormatter(operation string, r *http.Request) (spanName string) {
-	route := mux.CurrentRoute(r)
-	if route != nil {
-		var err error
-		spanName, err = route.GetPathTemplate()
-		if err != nil {
-			spanName, _ = route.GetPathRegexp()
-		}
-	}
-
-	if spanName == "" {
-		// if somehow retrieving the path template or path regexp fails, we still
-		// want to use the method as fallback.
-		spanName = r.Method
-	}
-
-	return
+func spanNameFormatter(operation string, r *http.Request) string {
+	return getOperationNameFromRoute(r)
 }
 
 func getOperationNameFromRoute(r *http.Request) string {

@@ -6,6 +6,7 @@ import (
 	"github.com/hypertrace/goagent/sdk"
 )
 
+// Will not support metrics for OC instrumentation
 type httpOperationMetricsHandler struct {
 }
 

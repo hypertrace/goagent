@@ -7,3 +7,5 @@ We have kept track of the original files modified so it's easier to figure out t
 The paths of the files modified:
 - [sdk/trace/batch_span_processor.go](https://github.com/open-telemetry/opentelemetry-go/blob/main/sdk/trace/batch_span_processor.go)
 - [sdk/internal/env/env.go](https://github.com/open-telemetry/opentelemetry-go/blob/main/sdk/internal/env/env.go)
+
+Since we cannot use [the internal logger]((https://github.com/open-telemetry/opentelemetry-go/blob/main/internal/global/internal_logging.go)), we have adapted it at [logger.go](instrumentation/opentelemetry/batchspanprocessor/logger.go).

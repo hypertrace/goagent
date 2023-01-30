@@ -15,7 +15,6 @@
 package batchspanprocessor // import "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
 
 import (
-	"log"
 	"os"
 	"strconv"
 )
@@ -76,7 +75,7 @@ func firstInt(defaultValue int, keys ...string) int {
 
 		intValue, err := strconv.Atoi(value)
 		if err != nil {
-			log.Printf("Got invalid value, number value expected. key: %s, value: %s", key, value)
+			Info("Got invalid value, number value expected.", key, value)
 			return defaultValue
 		}
 
@@ -96,7 +95,7 @@ func IntEnvOr(key string, defaultValue int) int {
 
 	intValue, err := strconv.Atoi(value)
 	if err != nil {
-		log.Printf("Got invalid value, number value expected. key: %s, value: %s", key, value)
+		Info("Got invalid value, number value expected.", key, value)
 		return defaultValue
 	}
 

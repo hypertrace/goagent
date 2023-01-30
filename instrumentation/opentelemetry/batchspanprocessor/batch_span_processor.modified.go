@@ -36,8 +36,9 @@ const (
 	DefaultScheduleDelay      = 5000
 	DefaultExportTimeout      = 30000
 	DefaultMaxExportBatchSize = 512
-	SpansReceivedCounter      = "hypertrace.bsp.spans_received"
-	SpansDroppedCounter       = "hypertrace.bsp.spans_dropped"
+	SpansReceivedCounter      = "hypertrace.agent.bsp.spans_received"
+	SpansDroppedCounter       = "hypertrace.agent.bsp.spans_dropped"
+	SpansUnSampledCounter     = "hypertrace.agent.bsp.spans_unsampled"
 )
 
 // batchSpanProcessor is a SpanProcessor that batches asynchronously-received
@@ -98,7 +99,6 @@ func NewBatchSpanProcessor(exporter sdktrace.SpanExporter, options ...sdktrace.B
 	if err != nil {
 		otel.Handle(err)
 	}
-
 	counters[SpansReceivedCounter] = spansReceivedCounter
 
 	// Spans Dropped by processor once the buffer is full.
@@ -106,8 +106,14 @@ func NewBatchSpanProcessor(exporter sdktrace.SpanExporter, options ...sdktrace.B
 	if err != nil {
 		otel.Handle(err)
 	}
-
 	counters[SpansDroppedCounter] = spansDroppedCounter
+
+	// Spans that are not sampled.(Useful to know when sampling is enabled)
+	spansUnSampledCounter, err := meter.SyncInt64().Counter(SpansUnSampledCounter)
+	if err != nil {
+		otel.Handle(err)
+	}
+	counters[SpansUnSampledCounter] = spansUnSampledCounter
 
 	bsp := &batchSpanProcessor{
 		e:        exporter,
@@ -262,6 +268,7 @@ func (bsp *batchSpanProcessor) exportSpans(ctx context.Context) error {
 	}
 
 	if l := len(bsp.batch); l > 0 {
+		// TODO: replace this with an alternative?
 		//global.Debug("exporting spans", "count", len(bsp.batch), "total_dropped", atomic.LoadUint32(&bsp.dropped))
 		err := bsp.e.ExportSpans(ctx, bsp.batch)
 
@@ -393,7 +400,8 @@ func (bsp *batchSpanProcessor) enqueueBlockOnQueueFull(ctx context.Context, sd s
 
 func (bsp *batchSpanProcessor) enqueueDrop(ctx context.Context, sd sdktrace.ReadOnlySpan) bool {
 	if !sd.SpanContext().IsSampled() {
-		// TODO: A metric for the non sampled ones?
+		// Count the span as unsampled
+		bsp.counters[SpansUnSampledCounter].Add(ctx, 1)
 		return false
 	}
 
@@ -415,6 +423,7 @@ func (bsp *batchSpanProcessor) enqueueDrop(ctx context.Context, sd sdktrace.Read
 		return true
 	default:
 		atomic.AddUint32(&bsp.dropped, 1)
+		// Count the span as dropped.
 		bsp.counters[SpansDroppedCounter].Add(ctx, 1)
 	}
 	return false

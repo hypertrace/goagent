@@ -23,6 +23,7 @@ import (
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"go.opentelemetry.io/otel/attribute"
 
+	modbsp "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/identifier"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
@@ -255,7 +256,10 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 		log.Fatal(err)
 	}
 
-	sp := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
+	sp := modbsp.CreateBatchSpanProcessor(
+		cfg.GetTelemetry() != nil && cfg.GetTelemetry().GetMetricsEnabled().GetValue(), // metrics enabled
+		exporter,
+		sdktrace.WithBatchTimeout(batchTimeout))
 	if wrapper != nil {
 		sp = &spanProcessorWithWrapper{wrapper, sp}
 	}
@@ -358,7 +362,10 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 		log.Fatal(err)
 	}
 
-	sp := sdktrace.NewBatchSpanProcessor(exporter, sdktrace.WithBatchTimeout(batchTimeout))
+	sp := modbsp.CreateBatchSpanProcessor(
+		true, // ideally there should be no issue with using the modified bsp
+		exporter,
+		sdktrace.WithBatchTimeout(batchTimeout))
 	if wrapper != nil {
 		sp = &spanProcessorWithWrapper{wrapper, sp}
 	}

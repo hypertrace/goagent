@@ -421,7 +421,10 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 	otelmetricglobal.SetMeterProvider(metricsPusher)
 
 	return func() {
-		metricsPusher.Stop(context.Background())
+		err := metricsPusher.Stop(context.Background())
+		if err != nil {
+			log.Printf("an error while calling metrics pusher stop: %v", err)
+		}
 	}
 }
 

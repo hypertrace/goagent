@@ -431,6 +431,7 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 func shouldDisableMetrics(cfg *config.AgentConfig) bool {
 	// Disable metrics if the tracing exporter is not OTLP(grpc) and the metrics endpoint is not explicitly set.
 	// This is because we use the traces OTLP endpoint for metrics if the metrics endpoint is not set.
+	// By default the traces endpoint is zipkin which does not have support for metrics.
 	if cfg.GetReporting() != nil && cfg.GetReporting().GetTraceReporterType() != config.TraceReporterType_OTLP &&
 		len(cfg.GetReporting().GetMetricEndpoint().GetValue()) == 0 {
 		return true

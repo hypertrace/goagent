@@ -152,6 +152,8 @@ func TestMultipleTraceProviders(t *testing.T) {
 	cfg.Reporting.Endpoint = config.String(srv.URL)
 	cfg.Reporting.TraceReporterType = config.TraceReporterType_ZIPKIN
 	cfg.Enabled = config.Bool(true)
+	// Disable metrics to only test trace provider.
+	cfg.Telemetry.MetricsEnabled = config.Bool(false)
 
 	// By doing this we make sure a batching isn't happening
 	batchTimeout = time.Duration(10) * time.Second
@@ -178,10 +180,9 @@ func TestMultipleTraceProviders(t *testing.T) {
 		assert.Equal(t, 0, count)
 	})
 
-	// 2 requests for spans and 1 for metrics.
-	t.Run("test 3 requests after flush", func(t *testing.T) {
+	t.Run("test 2 requests after flush", func(t *testing.T) {
 		shutdown()
-		assert.Equal(t, 3, count)
+		assert.Equal(t, 2, count)
 		assert.Equal(t, 0, len(traceProviders))
 	})
 }

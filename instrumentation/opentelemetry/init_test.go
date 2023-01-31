@@ -395,3 +395,22 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 	assert.Equal(t, 3, wrapper.onStartCount)
 	assert.Equal(t, 3, wrapper.onEndCount)
 }
+
+func TestShouldDisableMetrics(t *testing.T) {
+	// Using default values: since zipkin is the default traces exporter turn off metrics
+	cfg := config.Load()
+	assert.True(t, shouldDisableMetrics(cfg))
+
+	// For OTLP reporting endpoint, turn it on
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
+	assert.False(t, shouldDisableMetrics(cfg))
+
+	cfg = config.Load()
+	cfg.Telemetry.MetricsEnabled = config.Bool(false)
+	assert.True(t, shouldDisableMetrics(cfg))
+
+	// Set a metrics endpoint
+	cfg = config.Load()
+	cfg.Reporting.MetricEndpoint = config.String("localhost:4317")
+	assert.False(t, shouldDisableMetrics(cfg))
+}

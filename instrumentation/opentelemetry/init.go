@@ -390,7 +390,7 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 }
 
 func initializeMetrics(cfg *config.AgentConfig) func() {
-	if cfg.GetTelemetry() == nil || !cfg.GetTelemetry().GetMetricsEnabled().GetValue() {
+	if shouldDisableMetrics(cfg) {
 		return func() {}
 	}
 
@@ -426,6 +426,17 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 			log.Printf("an error while calling metrics pusher stop: %v", err)
 		}
 	}
+}
+
+func shouldDisableMetrics(cfg *config.AgentConfig) bool {
+	// Disable metrics if the tracing exporter is not OTLP(grpc) and the metrics endpoint is not explicitly set.
+	// This is because we use the traces OTLP endpoint for metrics if the metrics endpoint is not set.
+	if cfg.GetReporting() != nil && cfg.GetReporting().GetTraceReporterType() != config.TraceReporterType_OTLP &&
+		len(cfg.GetReporting().GetMetricEndpoint().GetValue()) == 0 {
+		return true
+	}
+
+	return cfg.GetTelemetry() == nil || !cfg.GetTelemetry().GetMetricsEnabled().GetValue()
 }
 
 // SpanProcessorWrapper wraps otel span processor

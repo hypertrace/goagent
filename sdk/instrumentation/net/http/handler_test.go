@@ -16,7 +16,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const fooOpName string = "/foo"
+// A no-op metrics handler
+type metricsHandler struct {
+}
+
+func (mh *metricsHandler) CreateRequestCount() {
+
+}
+func (mh *metricsHandler) AddToRequestCount(int64, *http.Request) {
+
+}
 
 var emptyTestConfig = &config.DataCapture{
 	HttpHeaders: &config.Message{
@@ -52,7 +61,7 @@ func TestServerRequestWithNilBodyIsntChanged(t *testing.T) {
 		assert.Nil(t, r.Body)
 	})
 
-	wh, _ := WrapHandler(h, fooOpName, mock.SpanFromContext, &Options{}, map[string]string{}).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}, &metricsHandler{}).(*handler)
 	wh.dataCaptureConfig = emptyTestConfig
 
 	ih := &mockHandler{baseHandler: wh}
@@ -76,7 +85,7 @@ func TestServerRequestIsSuccessfullyTraced(t *testing.T) {
 		rw.Write([]byte("ponse_body"))
 	})
 
-	wh, _ := WrapHandler(h, fooOpName, mock.SpanFromContext, &Options{}, map[string]string{"foo": "bar"}).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{"foo": "bar"}, &metricsHandler{}).(*handler)
 	wh.dataCaptureConfig = emptyTestConfig
 	ih := &mockHandler{baseHandler: wh}
 
@@ -105,7 +114,7 @@ func TestHostIsSuccessfullyRecorded(t *testing.T) {
 		assert.Nil(t, r.Body)
 	})
 
-	wh, _ := WrapHandler(h, fooOpName, mock.SpanFromContext, &Options{}, map[string]string{}).(*handler)
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}, &metricsHandler{}).(*handler)
 	wh.dataCaptureConfig = emptyTestConfig
 
 	ih := &mockHandler{baseHandler: wh}
@@ -141,7 +150,7 @@ func TestServerRequestHeadersAreSuccessfullyRecorded(t *testing.T) {
 			rw.WriteHeader(202)
 		})
 
-		wh, _ := WrapHandler(h, fooOpName, mock.SpanFromContext, &Options{}, map[string]string{}).(*handler)
+		wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}, &metricsHandler{}).(*handler)
 		ih := &mockHandler{baseHandler: wh}
 		wh.dataCaptureConfig = emptyTestConfig
 		wh.dataCaptureConfig.HttpHeaders = &config.Message{
@@ -287,7 +296,7 @@ func TestServerRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 				rw.Write([]byte(tCase.responseBody))
 			})
 
-			wh, _ := WrapHandler(h, fooOpName, mock.SpanFromContext, &Options{}, map[string]string{}).(*handler)
+			wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}, &metricsHandler{}).(*handler)
 			wh.dataCaptureConfig = emptyTestConfig
 			wh.dataCaptureConfig.HttpBody = &config.Message{
 				Request:  config.Bool(tCase.captureHTTPBodyConfig),
@@ -465,7 +474,7 @@ func TestServerRequestFilter(t *testing.T) {
 				rw.WriteHeader(http.StatusOK)
 			})
 
-			wh, _ := WrapHandler(h, fooOpName, mock.SpanFromContext, tCase.options, map[string]string{}).(*handler)
+			wh, _ := WrapHandler(h, mock.SpanFromContext, tCase.options, map[string]string{}, &metricsHandler{}).(*handler)
 			ih := &mockHandler{baseHandler: wh}
 			r, _ := http.NewRequest("POST", tCase.url, strings.NewReader(tCase.body))
 			for i := 0; i < len(tCase.headerKeys); i++ {
@@ -493,14 +502,14 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 
 	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {})
 
-	wh, _ := WrapHandler(h, fooOpName, mock.SpanFromContext, &Options{
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{
 		Filter: mock.Filter{
 			BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
 				assert.Equal(t, "{", string(body)) // body is truncated
 				return result.FilterResult{Block: true, ResponseStatusCode: 403}
 			},
 		},
-	}, map[string]string{}).(*handler)
+	}, map[string]string{}, &metricsHandler{}).(*handler)
 	wh.dataCaptureConfig = emptyTestConfig
 	wh.dataCaptureConfig.HttpBody.Request = config.Bool(true)
 	wh.dataCaptureConfig.BodyMaxProcessingSizeBytes = config.Int32(int32(bodyMaxProcessingSizeBytes))

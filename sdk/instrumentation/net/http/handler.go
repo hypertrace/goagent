@@ -12,31 +12,15 @@ import (
 	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
-)
-
-// Server HTTP metrics.
-const (
-	// Pseudo of go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp#RequestCount since a metric is not
-	// created for that one for some reason.(annotated with hypertrace to avoid a duplicate if otel go ever implement
-	// their own)
-	RequestCount = "hypertrace.http.server.request_count" // Incoming request count total
 )
 
 type handler struct {
 	delegate                 http.Handler
-	operation                string
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
 	dataCaptureConfig        *config.DataCapture
 	filter                   filter.Filter
-	// Some metrics in here.
-	counters map[string]syncint64.Counter
+	mh                       sdk.HttpOperationMetricsHandler
 }
 
 // Options for HTTP handler instrumentation
@@ -46,7 +30,8 @@ type Options struct {
 
 // WrapHandler wraps an uninstrumented handler (e.g. a handleFunc) and returns a new one
 // that should be used as base to an instrumented handler
-func WrapHandler(delegate http.Handler, operation string, spanFromContext sdk.SpanFromContext, options *Options, spanAttributes map[string]string) http.Handler {
+func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, options *Options, spanAttributes map[string]string,
+	mh sdk.HttpOperationMetricsHandler) http.Handler {
 	defaultAttributes := make(map[string]string)
 	for k, v := range spanAttributes {
 		defaultAttributes[k] = v
@@ -59,29 +44,17 @@ func WrapHandler(delegate http.Handler, operation string, spanFromContext sdk.Sp
 		f = options.Filter
 	}
 
-	mp := global.MeterProvider()
-	meter := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
-		metric.WithInstrumentationVersion(otelhttp.SemVersion()))
-	counters := make(map[string]syncint64.Counter)
+	// Create request count metric
+	mh.CreateRequestCount()
 
-	requestCountCounter, err := meter.SyncInt64().Counter(RequestCount)
-	if err != nil {
-		otel.Handle(err)
-	}
-
-	counters[RequestCount] = requestCountCounter
-
-	return &handler{delegate, operation, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), f, counters}
+	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), f, mh}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Add metrics using the same logic in go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp#handler.go
 	ctx := r.Context()
-	labeler, _ := otelhttp.LabelerFromContext(ctx)
-	attributes := append(labeler.Get(), semconv.HTTPServerMetricAttributesFromHTTPRequest(h.operation, r)...)
-	h.counters[RequestCount].Add(ctx, 1, attributes...)
+	span := h.spanFromContextRetriever(ctx)
 
-	span := h.spanFromContextRetriever(r.Context())
+	h.mh.AddToRequestCount(1, r)
 
 	if span.IsNoop() {
 		// isNoop means either the span is not sampled or there was no span

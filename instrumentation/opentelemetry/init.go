@@ -246,6 +246,9 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 		}
 	}
 
+	// Initialize metrics
+	metricsShutdownFn := initializeMetrics(cfg)
+
 	exporterFactory = makeExporterFactory(cfg)
 
 	exporter, err := exporterFactory()
@@ -278,9 +281,6 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	otel.SetTracerProvider(tp)
 
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
-
-	// Initialize metrics
-	metricsShutdownFn := initializeMetrics(cfg)
 
 	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler
@@ -421,7 +421,10 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 	otelmetricglobal.SetMeterProvider(metricsPusher)
 
 	return func() {
-		metricsPusher.Stop(context.Background())
+		err := metricsPusher.Stop(context.Background())
+		if err != nil {
+			log.Printf("an error while calling metrics pusher stop: %v", err)
+		}
 	}
 }
 

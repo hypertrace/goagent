@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"google.golang.org/grpc/resolver"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
+	"google.golang.org/grpc/resolver"
+
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/trace"
 
@@ -36,10 +36,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	otelmetricglobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	sdkmetricexport "go.opentelemetry.io/otel/sdk/metric/export"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -85,15 +82,15 @@ func removeProtocolPrefixForOTLP(endpoint string) string {
 	return pieces[1]
 }
 
-func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (sdkmetricexport.Exporter, error) {
+func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (metric.Exporter, error) {
 	// We are only supporting logging and otlp metric exporters for now. We will add support for prometheus
 	// metrics later
 	switch cfg.Reporting.MetricReporterType {
 	case config.MetricReporterType_METRIC_REPORTER_TYPE_LOGGING:
 		// stdout exporter
-		return func() (sdkmetricexport.Exporter, error) {
+		return func() (metric.Exporter, error) {
 			// TODO: Define if endpoint could be a filepath to write into a file.
-			return stdoutmetric.New(stdoutmetric.WithPrettyPrint())
+			return stdoutmetric.New()
 		}
 	default:
 		endpoint := cfg.GetReporting().GetMetricEndpoint().GetValue()
@@ -123,11 +120,8 @@ func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (sdkmetricexport
 			opts = append(opts, otlpmetricgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
 		}
 
-		return func() (sdkmetricexport.Exporter, error) {
-			return otlpmetric.New(
-				context.Background(),
-				otlpmetricgrpc.NewClient(opts...),
-			)
+		return func() (metric.Exporter, error) {
+			return otlpmetricgrpc.New(context.Background(), opts...)
 		}
 	}
 }
@@ -399,6 +393,7 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	periodicReader := metric.NewPeriodicReader(metricsExporter)
 
 	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)
 	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
@@ -406,24 +401,17 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	metricsPusher := controller.New(
-		processor.NewFactory(
-			simple.NewWithInexpensiveDistribution(),
-			metricsExporter,
-		),
-		controller.WithExporter(metricsExporter),
-		controller.WithResource(metricResources),
-	)
-	if err := metricsPusher.Start(context.Background()); err != nil {
-		log.Fatalf("starting metrics push controller: %v", err)
-	}
-
-	otelmetricglobal.SetMeterProvider(metricsPusher)
+	meterProvider := metric.NewMeterProvider(metric.WithReader(periodicReader), metric.WithResource(metricResources))
+	otelmetricglobal.SetMeterProvider(meterProvider)
 
 	return func() {
-		err := metricsPusher.Stop(context.Background())
+		err := periodicReader.Shutdown(context.Background())
 		if err != nil {
-			log.Printf("an error while calling metrics pusher stop: %v", err)
+			log.Printf("an error while calling metrics reader shutdown: %v", err)
+		}
+		err = meterProvider.Shutdown(context.Background())
+		if err != nil {
+			log.Printf("an error while calling metrics provider shutdown: %v", err)
 		}
 	}
 }

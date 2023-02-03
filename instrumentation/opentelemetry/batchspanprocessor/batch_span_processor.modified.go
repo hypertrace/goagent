@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	metricglobal "go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
+	"go.opentelemetry.io/otel/metric/instrument"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -57,7 +57,7 @@ type batchSpanProcessor struct {
 	stopOnce   sync.Once
 	stopCh     chan struct{}
 	// Some metrics in here.
-	counters map[string]syncint64.Counter
+	counters map[string]instrument.Int64Counter
 }
 
 var _ sdktrace.SpanProcessor = (*batchSpanProcessor)(nil)
@@ -92,24 +92,24 @@ func NewBatchSpanProcessor(exporter sdktrace.SpanExporter, options ...sdktrace.B
 	mp := metricglobal.MeterProvider()
 	meter := mp.Meter("go.opentelemetry.io/otel/sdk/trace",
 		metric.WithInstrumentationVersion(otel.Version()))
-	counters := make(map[string]syncint64.Counter)
+	counters := make(map[string]instrument.Int64Counter)
 
 	// Spans received by processor
-	spansReceivedCounter, err := meter.SyncInt64().Counter(SpansReceivedCounter)
+	spansReceivedCounter, err := meter.Int64Counter(SpansReceivedCounter)
 	if err != nil {
 		otel.Handle(err)
 	}
 	counters[SpansReceivedCounter] = spansReceivedCounter
 
 	// Spans Dropped by processor once the buffer is full.
-	spansDroppedCounter, err := meter.SyncInt64().Counter(SpansDroppedCounter)
+	spansDroppedCounter, err := meter.Int64Counter(SpansDroppedCounter)
 	if err != nil {
 		otel.Handle(err)
 	}
 	counters[SpansDroppedCounter] = spansDroppedCounter
 
 	// Spans that are not sampled.(Useful to know when sampling is enabled)
-	spansUnSampledCounter, err := meter.SyncInt64().Counter(SpansUnSampledCounter)
+	spansUnSampledCounter, err := meter.Int64Counter(SpansUnSampledCounter)
 	if err != nil {
 		otel.Handle(err)
 	}

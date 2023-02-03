@@ -8,7 +8,7 @@ import (
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
-	"github.com/openzipkin/zipkin-go"
+	zipkin "github.com/openzipkin/zipkin-go"
 	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
 	"go.opencensus.io/trace"
 )

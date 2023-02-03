@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"google.golang.org/grpc/resolver"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
+	"google.golang.org/grpc/resolver"
+
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/trace"
 
@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	modbsp "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/identifier"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -36,10 +35,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	otelmetricglobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	sdkmetricexport "go.opentelemetry.io/otel/sdk/metric/export"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -85,15 +81,15 @@ func removeProtocolPrefixForOTLP(endpoint string) string {
 	return pieces[1]
 }
 
-func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (sdkmetricexport.Exporter, error) {
+func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (metric.Exporter, error) {
 	// We are only supporting logging and otlp metric exporters for now. We will add support for prometheus
 	// metrics later
 	switch cfg.Reporting.MetricReporterType {
 	case config.MetricReporterType_METRIC_REPORTER_TYPE_LOGGING:
 		// stdout exporter
-		return func() (sdkmetricexport.Exporter, error) {
+		return func() (metric.Exporter, error) {
 			// TODO: Define if endpoint could be a filepath to write into a file.
-			return stdoutmetric.New(stdoutmetric.WithPrettyPrint())
+			return stdoutmetric.New()
 		}
 	default:
 		endpoint := cfg.GetReporting().GetMetricEndpoint().GetValue()
@@ -123,11 +119,8 @@ func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (sdkmetricexport
 			opts = append(opts, otlpmetricgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
 		}
 
-		return func() (sdkmetricexport.Exporter, error) {
-			return otlpmetric.New(
-				context.Background(),
-				otlpmetricgrpc.NewClient(opts...),
-			)
+		return func() (metric.Exporter, error) {
+			return otlpmetricgrpc.New(context.Background(), opts...)
 		}
 	}
 }
@@ -400,31 +393,39 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 		log.Fatal(err)
 	}
 
-	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)
-	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
-	metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
-	if err != nil {
-		log.Fatal(err)
-	}
-	metricsPusher := controller.New(
-		processor.NewFactory(
-			simple.NewWithInexpensiveDistribution(),
-			metricsExporter,
-		),
-		controller.WithExporter(metricsExporter),
-		controller.WithResource(metricResources),
-	)
-	if err := metricsPusher.Start(context.Background()); err != nil {
-		log.Fatalf("starting metrics push controller: %v", err)
-	}
+	periodicReader := metric.NewPeriodicReader(metricsExporter)
+	meterProvider := metric.NewMeterProvider(metric.WithReader(periodicReader))
+	/*
+		resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)
+		resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
+		metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
+		if err != nil {
+			log.Fatal(err)
+		}
+		metricsPusher := controller.New(
+			processor.NewFactory(
+				simple.NewWithInexpensiveDistribution(),
+				metricsExporter,
+			),
+			controller.WithExporter(metricsExporter),
+			controller.WithResource(metricResources),
+		)
+		if err := metricsPusher.Start(context.Background()); err != nil {
+			log.Fatalf("starting metrics push controller: %v", err)
+		}
+	*/
 
-	otelmetricglobal.SetMeterProvider(metricsPusher)
+	otelmetricglobal.SetMeterProvider(meterProvider)
 
 	return func() {
-		err := metricsPusher.Stop(context.Background())
-		if err != nil {
-			log.Printf("an error while calling metrics pusher stop: %v", err)
-		}
+		periodicReader.Shutdown(context.Background())
+		meterProvider.Shutdown(context.Background())
+		/*
+			err := metricsPusher.Stop(context.Background())
+			if err != nil {
+				log.Printf("an error while calling metrics pusher stop: %v", err)
+			}
+		*/
 	}
 }
 

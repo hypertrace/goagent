@@ -13,23 +13,17 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc/resolver"
-
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/hypertrace/goagent/sdk"
-
 	config "github.com/hypertrace/agent-config/gen/go/v1"
-	"go.opentelemetry.io/otel/attribute"
-
 	modbsp "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/identifier"
+	"github.com/hypertrace/goagent/sdk"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -40,7 +34,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/resolver"
 )
 
 var batchTimeout = time.Duration(200) * time.Millisecond

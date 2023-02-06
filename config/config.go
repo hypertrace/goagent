@@ -31,12 +31,14 @@ func PropagationFormats(formats ...agentconfig.PropagationFormat) []agentconfig.
 }
 
 var (
-	Bool                           = agentconfig.Bool
-	String                         = agentconfig.String
-	Int32                          = agentconfig.Int32
-	TraceReporterType_OTLP         = agentconfig.TraceReporterType_OTLP
-	TraceReporterType_ZIPKIN       = agentconfig.TraceReporterType_ZIPKIN
-	TraceReporterType_LOGGING      = agentconfig.TraceReporterType_LOGGING
-	PropagationFormat_B3           = agentconfig.PropagationFormat_B3
-	PropagationFormat_TRACECONTEXT = agentconfig.PropagationFormat_TRACECONTEXT
+	Bool                                            = agentconfig.Bool
+	String                                          = agentconfig.String
+	Int32                                           = agentconfig.Int32
+	TraceReporterType_OTLP                          = agentconfig.TraceReporterType_OTLP
+	TraceReporterType_ZIPKIN                        = agentconfig.TraceReporterType_ZIPKIN
+	TraceReporterType_LOGGING                       = agentconfig.TraceReporterType_LOGGING
+	PropagationFormat_B3                            = agentconfig.PropagationFormat_B3
+	PropagationFormat_TRACECONTEXT                  = agentconfig.PropagationFormat_TRACECONTEXT
+	MetricReporterType_METRIC_REPORTER_TYPE_LOGGING = agentconfig.MetricReporterType_METRIC_REPORTER_TYPE_LOGGING
+	MetricReporterType_METRIC_REPORTER_TYPE_OTLP    = agentconfig.MetricReporterType_METRIC_REPORTER_TYPE_OTLP
 )

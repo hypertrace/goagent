@@ -401,13 +401,13 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 	otelmetricglobal.SetMeterProvider(meterProvider)
 
 	return func() {
-		err := periodicReader.Shutdown(context.Background())
-		if err != nil {
-			log.Printf("an error while calling metrics reader shutdown: %v", err)
-		}
 		err = meterProvider.Shutdown(context.Background())
 		if err != nil {
 			log.Printf("an error while calling metrics provider shutdown: %v", err)
+		}
+		err := periodicReader.Shutdown(context.Background())
+		if err != nil {
+			log.Printf("an error while calling metrics reader shutdown: %v", err)
 		}
 	}
 }

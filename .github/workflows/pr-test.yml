@@ -52,7 +52,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           name: go-agent test reports
-          fail_ci_if_error: false
+          fail_ci_if_error: true
           files: ./coverage.txt
 
       - name: check examples

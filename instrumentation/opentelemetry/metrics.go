@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
+	"go.opentelemetry.io/otel/metric/instrument"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
 
@@ -22,7 +22,7 @@ const (
 
 type HttpOperationMetricsHandler struct {
 	operationNameGetter func(*http.Request) string
-	counters            map[string]syncint64.Counter
+	counters            map[string]instrument.Int64Counter
 }
 
 var _ sdk.HttpOperationMetricsHandler = (*HttpOperationMetricsHandler)(nil)
@@ -30,7 +30,7 @@ var _ sdk.HttpOperationMetricsHandler = (*HttpOperationMetricsHandler)(nil)
 func NewHttpOperationMetricsHandler(nameGetter func(*http.Request) string) sdk.HttpOperationMetricsHandler {
 	return &HttpOperationMetricsHandler{
 		operationNameGetter: nameGetter,
-		counters:            make(map[string]syncint64.Counter, 1),
+		counters:            make(map[string]instrument.Int64Counter, 1),
 	}
 }
 
@@ -39,7 +39,7 @@ func (mh *HttpOperationMetricsHandler) CreateRequestCount() {
 	meter := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
 		metric.WithInstrumentationVersion(otelhttp.SemVersion()))
 
-	requestCountCounter, err := meter.SyncInt64().Counter(RequestCount)
+	requestCountCounter, err := meter.Int64Counter(RequestCount)
 	if err != nil {
 		otel.Handle(err)
 	}

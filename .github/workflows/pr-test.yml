@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        go: ["1.17", "1.18", "1.19"]
+        go: ["1.18", "1.19", "1.20"]
     steps:
       # Set fetch-depth: 0 to fetch commit history and tags for use in version calculation
       - name: Check out code
@@ -40,7 +40,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3.4.0
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.50.1
+          version: v1.51.1
           args: -v
           skip-pkg-cache: true
           only-new-issues: true

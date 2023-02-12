@@ -11,7 +11,6 @@ import (
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/stats"
@@ -106,7 +105,7 @@ func wrapHandler(
 				}
 				filterResult := filter.EvaluateBody(span, processingBody, md)
 				if filterResult.Block {
-					return nil, status.Error(codes.Code(filterResult.ResponseStatusCode), StatusText(int(filterResult.ResponseStatusCode)))
+					return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
 				}
 			}
 		}
@@ -118,7 +117,7 @@ func wrapHandler(
 				// TODO: decide what should be passed as URL in GRPC
 				filterResult := filter.EvaluateURLAndHeaders(span, "", md)
 				if filterResult.Block {
-					return nil, status.Error(codes.Code(filterResult.ResponseStatusCode), StatusText(int(filterResult.ResponseStatusCode)))
+					return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
 				}
 			}
 		}

@@ -1,5 +1,9 @@
 package grpc
 
+import (
+	"google.golang.org/grpc/codes"
+)
+
 func StatusText(code int) string {
 	switch code {
 	case 400:
@@ -62,5 +66,33 @@ func StatusText(code int) string {
 		return "Unavailable For Legal Reasons"
 	default:
 		return "Request Error"
+	}
+}
+
+// StatusCode does a best effort mapping from HTTP Request Status code to GRPC Code.
+func StatusCode(code int) codes.Code {
+	switch code {
+	case 401:
+		return codes.Unauthenticated
+	case 403:
+		return codes.PermissionDenied
+	case 404:
+		return codes.NotFound
+	case 407:
+		// "Proxy Authentication Required"
+		return codes.Unauthenticated
+	case 408:
+		// Request Timeout
+		return codes.DeadlineExceeded
+	case 412:
+		// "Precondition Failed"
+		return codes.FailedPrecondition
+	case 413, // "Request Entity Too Large"
+		414, // "Request URI Too Long"
+		429, // "Too Many Requests"
+		431: // "Request Header Fields Too Large"
+		return codes.ResourceExhausted
+	default:
+		return codes.Unknown
 	}
 }

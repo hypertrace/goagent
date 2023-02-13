@@ -104,14 +104,17 @@ func TestServerInterceptorFilter(t *testing.T) {
 
 	tCases := map[string]struct {
 		expectedFilterResult bool
+		expectedStatusCode   codes.Code
 		multiFilter          *filter.MultiFilter
 	}{
 		"no filter": {
 			expectedFilterResult: false,
+			expectedStatusCode:   codes.OK,
 			multiFilter:          filter.NewMultiFilter(),
 		},
 		"headers filter": {
 			expectedFilterResult: true,
+			expectedStatusCode:   codes.PermissionDenied,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
 				URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
 					assert.Equal(t, []string{"test_value"}, headers["test_key"])
@@ -121,10 +124,21 @@ func TestServerInterceptorFilter(t *testing.T) {
 		},
 		"body filter": {
 			expectedFilterResult: true,
+			expectedStatusCode:   codes.PermissionDenied,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
 				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
 					assert.Equal(t, "{\"name\":\"Pupo\"}", string(body))
 					return result.FilterResult{Block: true, ResponseStatusCode: 403}
+				},
+			}),
+		},
+		"body filter return 412 Precondition failed": {
+			expectedFilterResult: true,
+			expectedStatusCode:   codes.FailedPrecondition,
+			multiFilter: filter.NewMultiFilter(mock.Filter{
+				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
+					assert.Equal(t, "{\"name\":\"Pupo\"}", string(body))
+					return result.FilterResult{Block: true, ResponseStatusCode: 412}
 				},
 			}),
 		},
@@ -167,7 +181,7 @@ func TestServerInterceptorFilter(t *testing.T) {
 				Name: "Pupo",
 			})
 			if tCase.expectedFilterResult {
-				assert.Equal(t, codes.Code(403), status.Code(err))
+				assert.Equal(t, tCase.expectedStatusCode, status.Code(err))
 			} else {
 				assert.Nil(t, err)
 			}

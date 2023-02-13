@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2
-	github.com/gin-gonic/gin v1.7.2
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-logr/stdr v1.2.2
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0

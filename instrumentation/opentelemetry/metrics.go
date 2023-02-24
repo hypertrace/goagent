@@ -2,6 +2,7 @@ package opentelemetry // import "github.com/hypertrace/goagent/instrumentation/o
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/hypertrace/goagent/sdk"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -23,6 +24,7 @@ const (
 type HttpOperationMetricsHandler struct {
 	operationNameGetter func(*http.Request) string
 	counters            map[string]instrument.Int64Counter
+	countersMutex       sync.RWMutex
 }
 
 var _ sdk.HttpOperationMetricsHandler = (*HttpOperationMetricsHandler)(nil)
@@ -44,6 +46,8 @@ func (mh *HttpOperationMetricsHandler) CreateRequestCount() {
 		otel.Handle(err)
 	}
 
+	mh.countersMutex.Lock()
+	defer mh.countersMutex.Unlock()
 	mh.counters[RequestCount] = requestCountCounter
 }
 
@@ -53,5 +57,8 @@ func (mh *HttpOperationMetricsHandler) AddToRequestCount(n int64, r *http.Reques
 	labeler, _ := otelhttp.LabelerFromContext(ctx)
 	operationName := mh.operationNameGetter(r)
 	attributes := append(labeler.Get(), semconv.HTTPServerMetricAttributesFromHTTPRequest(operationName, r)...)
+
+	mh.countersMutex.RLock()
+	defer mh.countersMutex.RUnlock()
 	mh.counters[RequestCount].Add(ctx, n, attributes...)
 }

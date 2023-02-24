@@ -20,9 +20,6 @@ import (
 type metricsHandler struct {
 }
 
-func (mh *metricsHandler) CreateRequestCount() {
-
-}
 func (mh *metricsHandler) AddToRequestCount(int64, *http.Request) {
 
 }

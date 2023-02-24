@@ -5,6 +5,5 @@ import (
 )
 
 type HttpOperationMetricsHandler interface {
-	CreateRequestCount()
 	AddToRequestCount(int64, *http.Request)
 }

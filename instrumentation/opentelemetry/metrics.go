@@ -2,7 +2,6 @@ package opentelemetry // import "github.com/hypertrace/goagent/instrumentation/o
 
 import (
 	"net/http"
-	"sync"
 
 	"github.com/hypertrace/goagent/sdk"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -15,40 +14,35 @@ import (
 
 // Server HTTP metrics.
 const (
+	meterName = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	// Pseudo of go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp#RequestCount since a metric is not
 	// created for that one for some reason.(annotated with hypertrace to avoid a duplicate if otel go ever implement
 	// their own)
-	RequestCount = "hypertrace.http.server.request_count" // Incoming request count total
+	requestCountCounterName = "hypertrace.http.server.request_count" // Incoming request count total
 )
 
 type HttpOperationMetricsHandler struct {
 	operationNameGetter func(*http.Request) string
-	counters            map[string]instrument.Int64Counter
-	countersMutex       sync.RWMutex
+	requestCountCounter instrument.Int64Counter
 }
 
 var _ sdk.HttpOperationMetricsHandler = (*HttpOperationMetricsHandler)(nil)
 
 func NewHttpOperationMetricsHandler(nameGetter func(*http.Request) string) sdk.HttpOperationMetricsHandler {
-	return &HttpOperationMetricsHandler{
-		operationNameGetter: nameGetter,
-		counters:            make(map[string]instrument.Int64Counter, 1),
-	}
-}
-
-func (mh *HttpOperationMetricsHandler) CreateRequestCount() {
 	mp := global.MeterProvider()
-	meter := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
-		metric.WithInstrumentationVersion(otelhttp.SemVersion()))
+	meter := mp.Meter(meterName, metric.WithInstrumentationVersion(otelhttp.SemVersion()))
 
-	requestCountCounter, err := meter.Int64Counter(RequestCount)
+	// Set up net http metrics
+	// RequestCount Counter
+	requestCountCounter, err := meter.Int64Counter(requestCountCounterName)
 	if err != nil {
 		otel.Handle(err)
 	}
 
-	mh.countersMutex.Lock()
-	defer mh.countersMutex.Unlock()
-	mh.counters[RequestCount] = requestCountCounter
+	return &HttpOperationMetricsHandler{
+		operationNameGetter: nameGetter,
+		requestCountCounter: requestCountCounter,
+	}
 }
 
 func (mh *HttpOperationMetricsHandler) AddToRequestCount(n int64, r *http.Request) {
@@ -57,8 +51,5 @@ func (mh *HttpOperationMetricsHandler) AddToRequestCount(n int64, r *http.Reques
 	labeler, _ := otelhttp.LabelerFromContext(ctx)
 	operationName := mh.operationNameGetter(r)
 	attributes := append(labeler.Get(), semconv.HTTPServerMetricAttributesFromHTTPRequest(operationName, r)...)
-
-	mh.countersMutex.RLock()
-	defer mh.countersMutex.RUnlock()
-	mh.counters[RequestCount].Add(ctx, n, attributes...)
+	mh.requestCountCounter.Add(ctx, n, attributes...)
 }

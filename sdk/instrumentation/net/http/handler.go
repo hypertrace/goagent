@@ -44,9 +44,6 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, opt
 		f = options.Filter
 	}
 
-	// Create request count metric
-	mh.CreateRequestCount()
-
 	return &handler{delegate, defaultAttributes, spanFromContext, internalconfig.GetConfig().GetDataCapture(), f, mh}
 }
 

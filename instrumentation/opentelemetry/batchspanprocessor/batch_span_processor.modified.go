@@ -36,9 +36,10 @@ const (
 	DefaultScheduleDelay      = 5000
 	DefaultExportTimeout      = 30000
 	DefaultMaxExportBatchSize = 512
-	SpansReceivedCounter      = "hypertrace.agent.bsp.spans_received"
-	SpansDroppedCounter       = "hypertrace.agent.bsp.spans_dropped"
-	SpansUnSampledCounter     = "hypertrace.agent.bsp.spans_unsampled"
+	spansReceivedCounterName  = "hypertrace.agent.bsp.spans_received"
+	spansDroppedCounterName   = "hypertrace.agent.bsp.spans_dropped"
+	spansUnsampledCounterName = "hypertrace.agent.bsp.spans_unsampled"
+	meterName                 = "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // batchSpanProcessor is a SpanProcessor that batches asynchronously-received
@@ -57,7 +58,9 @@ type batchSpanProcessor struct {
 	stopOnce   sync.Once
 	stopCh     chan struct{}
 	// Some metrics in here.
-	counters map[string]instrument.Int64Counter
+	spansReceivedCounter  instrument.Int64Counter
+	spansDroppedCounter   instrument.Int64Counter
+	spansUnsampledCounter instrument.Int64Counter
 }
 
 var _ sdktrace.SpanProcessor = (*batchSpanProcessor)(nil)
@@ -90,39 +93,36 @@ func NewBatchSpanProcessor(exporter sdktrace.SpanExporter, options ...sdktrace.B
 
 	// Setup metrics
 	mp := metricglobal.MeterProvider()
-	meter := mp.Meter("go.opentelemetry.io/otel/sdk/trace",
-		metric.WithInstrumentationVersion(otel.Version()))
-	counters := make(map[string]instrument.Int64Counter)
+	meter := mp.Meter(meterName, metric.WithInstrumentationVersion(otel.Version()))
 
 	// Spans received by processor
-	spansReceivedCounter, err := meter.Int64Counter(SpansReceivedCounter)
+	spansReceivedCounter, err := meter.Int64Counter(spansReceivedCounterName)
 	if err != nil {
 		otel.Handle(err)
 	}
-	counters[SpansReceivedCounter] = spansReceivedCounter
 
 	// Spans Dropped by processor once the buffer is full.
-	spansDroppedCounter, err := meter.Int64Counter(SpansDroppedCounter)
+	spansDroppedCounter, err := meter.Int64Counter(spansDroppedCounterName)
 	if err != nil {
 		otel.Handle(err)
 	}
-	counters[SpansDroppedCounter] = spansDroppedCounter
 
 	// Spans that are not sampled.(Useful to know when sampling is enabled)
-	spansUnSampledCounter, err := meter.Int64Counter(SpansUnSampledCounter)
+	spansUnsampledCounter, err := meter.Int64Counter(spansUnsampledCounterName)
 	if err != nil {
 		otel.Handle(err)
 	}
-	counters[SpansUnSampledCounter] = spansUnSampledCounter
 
 	bsp := &batchSpanProcessor{
-		e:        exporter,
-		o:        o,
-		batch:    make([]sdktrace.ReadOnlySpan, 0, o.MaxExportBatchSize),
-		timer:    time.NewTimer(o.BatchTimeout),
-		queue:    make(chan sdktrace.ReadOnlySpan, o.MaxQueueSize),
-		stopCh:   make(chan struct{}),
-		counters: counters,
+		e:                     exporter,
+		o:                     o,
+		batch:                 make([]sdktrace.ReadOnlySpan, 0, o.MaxExportBatchSize),
+		timer:                 time.NewTimer(o.BatchTimeout),
+		queue:                 make(chan sdktrace.ReadOnlySpan, o.MaxQueueSize),
+		stopCh:                make(chan struct{}),
+		spansReceivedCounter:  spansReceivedCounter,
+		spansDroppedCounter:   spansDroppedCounter,
+		spansUnsampledCounter: spansUnsampledCounter,
 	}
 
 	bsp.stopWait.Add(1)
@@ -400,12 +400,12 @@ func (bsp *batchSpanProcessor) enqueueBlockOnQueueFull(ctx context.Context, sd s
 func (bsp *batchSpanProcessor) enqueueDrop(ctx context.Context, sd sdktrace.ReadOnlySpan) bool {
 	if !sd.SpanContext().IsSampled() {
 		// Count the span as unsampled
-		bsp.counters[SpansUnSampledCounter].Add(ctx, 1)
+		bsp.spansUnsampledCounter.Add(ctx, 1)
 		return false
 	}
 
 	// Count the span as received.
-	bsp.counters[SpansReceivedCounter].Add(ctx, 1)
+	bsp.spansReceivedCounter.Add(ctx, 1)
 
 	// This ensures the bsp.queue<- below does not panic as the
 	// processor shuts down.
@@ -423,7 +423,7 @@ func (bsp *batchSpanProcessor) enqueueDrop(ctx context.Context, sd sdktrace.Read
 	default:
 		atomic.AddUint32(&bsp.dropped, 1)
 		// Count the span as dropped.
-		bsp.counters[SpansDroppedCounter].Add(ctx, 1)
+		bsp.spansDroppedCounter.Add(ctx, 1)
 	}
 	return false
 }

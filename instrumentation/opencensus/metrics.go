@@ -14,8 +14,5 @@ func NewHttpOperationMetricsHandler() sdk.HttpOperationMetricsHandler {
 	return &httpOperationMetricsHandler{}
 }
 
-func (mh *httpOperationMetricsHandler) CreateRequestCount() {
-}
-
 func (mh *httpOperationMetricsHandler) AddToRequestCount(n int64, r *http.Request) {
 }

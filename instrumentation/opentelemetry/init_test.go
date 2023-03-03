@@ -365,7 +365,7 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 	cfg.Reporting.Endpoint = config.String(srv.URL)
 
 	wrapper := &mockSpanProcessorWrapper{}
-	shutdown := InitWithSpanProcessorWrapper(cfg, wrapper)
+	shutdown := InitWithSpanProcessorWrapper(cfg, wrapper, versionInfoResourceAttributes)
 	defer shutdown()
 
 	// test wrapper is called for spans created by global trace provider
@@ -380,7 +380,8 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 	assert.Equal(t, 2, wrapper.onEndCount)
 
 	// test wrapper is called for spans created by service trace provider
-	startSpan, _, err := RegisterServiceWithSpanProcessorWrapper("custom_service", map[string]string{"test1": "val1"}, wrapper)
+	startSpan, _, err := RegisterServiceWithSpanProcessorWrapper("custom_service", map[string]string{"test1": "val1"}, wrapper,
+		versionInfoResourceAttributes)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}

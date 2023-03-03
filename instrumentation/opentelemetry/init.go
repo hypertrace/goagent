@@ -208,12 +208,13 @@ func createCaCertPoolFromFile(certFile string) *x509.CertPool {
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately
 // on a termination signal.
 func Init(cfg *config.AgentConfig) func() {
-	return InitWithSpanProcessorWrapper(cfg, nil)
+	return InitWithSpanProcessorWrapper(cfg, nil, versionInfoResourceAttributes)
 }
 
 // InitWithSpanProcessorWrapper initializes opentelemetry tracing with a wrapper over span processor
 // and returns a shutdown function to flush data immediately on a termination signal.
-func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessorWrapper) func() {
+func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessorWrapper,
+	versionInfoGetter func() []attribute.KeyValue) func() {
 	mu.Lock()
 	defer mu.Unlock()
 	if initialized {
@@ -237,7 +238,7 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	}
 
 	// Initialize metrics
-	metricsShutdownFn := initializeMetrics(cfg)
+	metricsShutdownFn := initializeMetrics(cfg, versionInfoGetter)
 
 	exporterFactory = makeExporterFactory(cfg)
 
@@ -256,7 +257,8 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 
 	resources, err := resource.New(
 		context.Background(),
-		resource.WithAttributes(createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)...),
+		resource.WithAttributes(createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes,
+			versionInfoGetter)...),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -310,13 +312,14 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	}
 }
 
-func createResources(serviceName string, resources map[string]string) []attribute.KeyValue {
+func createResources(serviceName string, resources map[string]string,
+	versionInfoGetter func() []attribute.KeyValue) []attribute.KeyValue {
 	retValues := []attribute.KeyValue{
 		semconv.ServiceNameKey.String(serviceName),
-		semconv.TelemetrySDKNameKey.String("hypertrace"),
-		semconv.TelemetrySDKVersionKey.String(version.Version),
 		semconv.TelemetrySDKLanguageGo,
 	}
+
+	retValues = append(retValues, versionInfoGetter()...)
 
 	for k, v := range resources {
 		retValues = append(retValues, attribute.String(k, v))
@@ -324,15 +327,22 @@ func createResources(serviceName string, resources map[string]string) []attribut
 	return retValues
 }
 
+func versionInfoResourceAttributes() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		semconv.TelemetrySDKNameKey.String("hypertrace"),
+		semconv.TelemetrySDKVersionKey.String(version.Version),
+	}
+}
+
 // RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans and the TracerProvider
 func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
-	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil)
+	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil, versionInfoResourceAttributes)
 }
 
 // RegisterServiceWithSpanProcessorWrapper creates a tracerprovider for a new service with a wrapper over opentelemetry span processor
 // and returns a func which can be used to create spans and the TracerProvider
 func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string,
-	wrapper SpanProcessorWrapper) (sdk.StartSpan, trace.TracerProvider, error) {
+	wrapper SpanProcessorWrapper, versionInfoGetter func() []attribute.KeyValue) (sdk.StartSpan, trace.TracerProvider, error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if !initialized {
@@ -362,7 +372,7 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 
 	resources, err := resource.New(
 		context.Background(),
-		resource.WithAttributes(createResources(serviceName, resourceAttributes)...),
+		resource.WithAttributes(createResources(serviceName, resourceAttributes, versionInfoGetter)...),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -379,7 +389,7 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 	}), tp, nil
 }
 
-func initializeMetrics(cfg *config.AgentConfig) func() {
+func initializeMetrics(cfg *config.AgentConfig, versionInfoGetter func() []attribute.KeyValue) func() {
 	if shouldDisableMetrics(cfg) {
 		return func() {}
 	}
@@ -391,7 +401,7 @@ func initializeMetrics(cfg *config.AgentConfig) func() {
 	}
 	periodicReader := metric.NewPeriodicReader(metricsExporter)
 
-	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes)
+	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes, versionInfoGetter)
 	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
 	metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/identifier"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/identifier"
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/version"
 	"go.opentelemetry.io/otel"

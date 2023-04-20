@@ -15,7 +15,7 @@ import (
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	modbsp "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/identifier"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/identifier"
 	"github.com/hypertrace/goagent/sdk"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
 	"github.com/hypertrace/goagent/version"

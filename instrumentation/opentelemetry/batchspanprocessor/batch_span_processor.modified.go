@@ -23,9 +23,6 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
-	metricglobal "go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
-
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -58,9 +55,9 @@ type batchSpanProcessor struct {
 	stopOnce   sync.Once
 	stopCh     chan struct{}
 	// Some metrics in here.
-	spansReceivedCounter  instrument.Int64Counter
-	spansDroppedCounter   instrument.Int64Counter
-	spansUnsampledCounter instrument.Int64Counter
+	spansReceivedCounter  metric.Int64Counter
+	spansDroppedCounter   metric.Int64Counter
+	spansUnsampledCounter metric.Int64Counter
 }
 
 var _ sdktrace.SpanProcessor = (*batchSpanProcessor)(nil)
@@ -92,7 +89,7 @@ func NewBatchSpanProcessor(exporter sdktrace.SpanExporter, options ...sdktrace.B
 	}
 
 	// Setup metrics
-	mp := metricglobal.MeterProvider()
+	mp := otel.GetMeterProvider()
 	meter := mp.Meter(meterName, metric.WithInstrumentationVersion(otel.Version()))
 
 	// Spans received by processor

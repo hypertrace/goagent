@@ -7,6 +7,7 @@ import (
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/sdk"
+	codes "github.com/hypertrace/goagent/sdk"
 	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
@@ -124,6 +125,9 @@ func wrapHandler(
 
 		res, err := delegateHandler(ctx, req)
 		if err != nil {
+			s, _ := status.FromError(err)
+			span.SetStatus(codes.StatusCodeError, s.Message())
+			span.SetAttribute("rpc.grpc.status_code", s.Code())
 			return res, err
 		}
 

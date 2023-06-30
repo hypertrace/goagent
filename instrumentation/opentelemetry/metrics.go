@@ -7,8 +7,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
 
@@ -23,13 +21,13 @@ const (
 
 type HttpOperationMetricsHandler struct {
 	operationNameGetter func(*http.Request) string
-	requestCountCounter instrument.Int64Counter
+	requestCountCounter metric.Int64Counter
 }
 
 var _ sdk.HttpOperationMetricsHandler = (*HttpOperationMetricsHandler)(nil)
 
 func NewHttpOperationMetricsHandler(nameGetter func(*http.Request) string) sdk.HttpOperationMetricsHandler {
-	mp := global.MeterProvider()
+	mp := otel.GetMeterProvider()
 	meter := mp.Meter(meterName, metric.WithInstrumentationVersion(otelhttp.SemVersion()))
 
 	// Set up net http metrics
@@ -51,5 +49,5 @@ func (mh *HttpOperationMetricsHandler) AddToRequestCount(n int64, r *http.Reques
 	labeler, _ := otelhttp.LabelerFromContext(ctx)
 	operationName := mh.operationNameGetter(r)
 	attributes := append(labeler.Get(), semconv.HTTPServerMetricAttributesFromHTTPRequest(operationName, r)...)
-	mh.requestCountCounter.Add(ctx, n, attributes...)
+	mh.requestCountCounter.Add(ctx, n, metric.WithAttributes(attributes...))
 }

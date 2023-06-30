@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/exporters/zipkin"
-	otelmetricglobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -404,7 +403,7 @@ func initializeMetrics(cfg *config.AgentConfig, versionInfoAttrs []attribute.Key
 		log.Fatal(err)
 	}
 	meterProvider := metric.NewMeterProvider(metric.WithReader(periodicReader), metric.WithResource(metricResources))
-	otelmetricglobal.SetMeterProvider(meterProvider)
+	otel.SetMeterProvider(meterProvider)
 
 	return func() {
 		err = meterProvider.Shutdown(context.Background())

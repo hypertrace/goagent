@@ -22,7 +22,7 @@ func Init(cfg *config.AgentConfig) func() {
 	client := &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
 			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue(),
+			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue(), // #nosec
 		},
 	}}
 

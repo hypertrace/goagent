@@ -21,8 +21,10 @@ func Init(cfg *config.AgentConfig) func() {
 
 	client := &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
-			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue(), // #nosec
+			MinVersion: tls.VersionTLS12,
+			// Ignore gosec: G402 (CWE-295): TLS InsecureSkipVerify may be true.
+			// #nosec G402
+			InsecureSkipVerify: !cfg.GetReporting().GetSecure().GetValue(),
 		},
 	}}
 

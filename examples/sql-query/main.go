@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
+	// gosec complains about github.com/go-sql-driver/mysql not following golang repo standards
+	// "could not import github.com/go-sql-driver/mysql (invalid package name: "")"
+	"github.com/go-sql-driver/mysql" // #nosec
 	"github.com/gorilla/mux"
 	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"

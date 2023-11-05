@@ -29,6 +29,14 @@ func (l *AttributeList) GetValue(key string) interface{} {
 	return l.attrs[key]
 }
 
+func (l *AttributeList) GetAll() []sdk.Attribute {
+	attributes := make([]sdk.Attribute, len(l.attrs))
+	for key, value := range l.attrs {
+		attributes = append(attributes, sdk.Attribute{Key: key, Value: value})
+	}
+	return attributes
+}
+
 var _ sdk.Span = &Span{}
 
 type Span struct {

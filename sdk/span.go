@@ -5,8 +5,14 @@ import (
 	"time"
 )
 
+type Attribute struct {
+	Key   string
+	Value interface{}
+}
+
 type AttributeList interface {
 	GetValue(key string) interface{}
+	GetAll() []Attribute
 }
 
 // Span is an interface that accepts attributes and can be

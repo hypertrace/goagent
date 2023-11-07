@@ -32,9 +32,10 @@ func (l *AttributeList) GetValue(key string) interface{} {
 }
 
 func (l *AttributeList) GetAll() []sdk.Attribute {
-	attributes := make([]sdk.Attribute, len(l.attrs))
-	for _, attr := range l.attrs {
-		attributes = append(attributes, sdk.Attribute{Key: string(attr.Key), Value: attr.Value.AsInterface()})
+	size := len(l.attrs)
+	attributes := make([]sdk.Attribute, size)
+	for i := 0; i < size; i++ {
+		attributes[i] = sdk.Attribute{Key: string(l.attrs[i].Key), Value: l.attrs[i].Value.AsInterface()}
 	}
 	return attributes
 }

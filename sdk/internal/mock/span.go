@@ -35,6 +35,7 @@ func (l *AttributeList) GetAll() []sdk.Attribute {
 	i := 0
 	for key, value := range l.attrs {
 		attributes[i] = sdk.Attribute{Key: key, Value: value}
+		i++
 	}
 	return attributes
 }

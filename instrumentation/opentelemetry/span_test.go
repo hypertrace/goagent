@@ -121,6 +121,7 @@ func TestGetAllAttributes(t *testing.T) {
 	s.SetAttribute("k2", 200)
 	attrs := s.GetAttributes().GetAll()
 
+	// service.instance.id is added implicitly in StartSpan so 3 attributes will be present.
 	assert.Equal(t, 3, len(attrs))
 	for _, attr := range attrs {
 		if attr.Key == "k1" {

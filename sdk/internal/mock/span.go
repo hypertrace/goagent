@@ -30,9 +30,11 @@ func (l *AttributeList) GetValue(key string) interface{} {
 }
 
 func (l *AttributeList) GetAll() []sdk.Attribute {
+
 	attributes := make([]sdk.Attribute, len(l.attrs))
+	i := 0
 	for key, value := range l.attrs {
-		attributes = append(attributes, sdk.Attribute{Key: key, Value: value})
+		attributes[i] = sdk.Attribute{Key: key, Value: value}
 	}
 	return attributes
 }

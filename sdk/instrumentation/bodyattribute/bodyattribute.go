@@ -17,13 +17,11 @@ func SetTruncatedBodyAttribute(attrName string, body []byte, bodyMaxSize int, sp
 	}
 
 	if bodyLen <= bodyMaxSize {
-		span.SetAttribute(attrName, string(body))
+		SetBodyAttribute(attrName, body, false, span)
 		return
 	}
 
-	truncatedBody := body[:bodyMaxSize]
-	span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
-	span.SetAttribute(attrName, string(truncatedBody))
+	SetBodyAttribute(attrName, body[:bodyMaxSize], true, span)
 }
 
 // SetTruncatedEncodedBodyAttribute is like SetTruncatedBodyAttribute above but also base64 encodes the
@@ -31,61 +29,43 @@ func SetTruncatedBodyAttribute(attrName string, body []byte, bodyMaxSize int, sp
 // The body attribute name has a ".base64" suffix.
 func SetTruncatedEncodedBodyAttribute(attrName string, body []byte, bodyMaxSize int, span sdk.Span) {
 	bodyLen := len(body)
-	if bodyLen == 0 {
+	if len(body) == 0 {
 		return
 	}
 
 	if bodyLen <= bodyMaxSize {
-		span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString(body))
+		SetEncodedBodyAttribute(attrName, body, false, span)
 		return
 	}
 
-	truncatedBody := body[:bodyMaxSize]
-	span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
-	span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString(truncatedBody))
+	SetEncodedBodyAttribute(attrName, body[:bodyMaxSize], true, span)
 }
 
-// SetPossiblyTruncatedBodyAttribute sets the body as a span attribute.
-// When body is being truncated, or already truncated we also add a second attribute suffixed by `.truncated` to
-// make it clear to the user, body has been modified.
-func SetPossiblyTruncatedBodyAttribute(attrName string, body []byte, bodyMaxSize int, truncated bool, span sdk.Span) {
-	bodyLen := len(body)
-	if bodyLen == 0 {
+// SetBodyAttribute sets the body as a span attribute.
+// also sets truncated attribute if truncated is true
+func SetBodyAttribute(attrName string, body []byte, truncated bool, span sdk.Span) {
+	if len(body) == 0 {
 		return
 	}
 
-	if bodyLen <= bodyMaxSize {
-		span.SetAttribute(attrName, string(body))
-		// if already truncated then set attribute
-		if truncated {
-			span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
-		}
-		return
+	span.SetAttribute(attrName, string(body))
+	// if already truncated then set attribute
+	if truncated {
+		span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
 	}
-
-	truncatedBody := body[:bodyMaxSize]
-	span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
-	span.SetAttribute(attrName, string(truncatedBody))
 }
 
-// SetPossiblyTruncatedEncodedBodyAttribute is like SetPossiblyTruncatedBodyAttribute above but also base64 encodes the
+// SetEncodedBodyAttribute is like SetBodyAttribute above but also base64 encodes the
 // body. This is usually due to non utf8 bytes in the body eg. for multipart/form-data content type.
 // The body attribute name has a ".base64" suffix.
-func SetPossiblyTruncatedEncodedBodyAttribute(attrName string, body []byte, bodyMaxSize int, truncated bool, span sdk.Span) {
-	bodyLen := len(body)
-	if bodyLen == 0 {
+func SetEncodedBodyAttribute(attrName string, body []byte, truncated bool, span sdk.Span) {
+	if len(body) == 0 {
 		return
 	}
 
-	if bodyLen <= bodyMaxSize {
-		span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString(body))
-		if truncated {
-			span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
-		}
-		return
+	span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString(body))
+	// if already truncated then set attribute
+	if truncated {
+		span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
 	}
-
-	truncatedBody := body[:bodyMaxSize]
-	span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
-	span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString(truncatedBody))
 }

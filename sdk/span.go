@@ -10,9 +10,14 @@ type Attribute struct {
 	Value interface{}
 }
 
+type Iterator interface {
+	HasNext() bool
+	Next() Attribute
+}
+
 type AttributeList interface {
 	GetValue(key string) interface{}
-	GetAll() []Attribute
+	GetIterator() Iterator
 }
 
 // Span is an interface that accepts attributes and can be

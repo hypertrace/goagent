@@ -51,3 +51,151 @@ func TestSetTruncatedEncodedBodyAttributeEmptyBody(t *testing.T) {
 	assert.Nil(t, s.ReadAttribute("http.request.body.base64"))
 	assert.Zero(t, s.RemainingAttributes())
 }
+
+func TestSetBodyAttribute(t *testing.T) {
+	testBody := "test1test2"
+	type args struct {
+		attrName  string
+		body      []byte
+		truncated bool
+		span      *mock.Span
+	}
+	tests := []struct {
+		name               string
+		args               args
+		expectedAssertions func(t *testing.T, gotSpan *mock.Span)
+	}{
+		{
+			name: "empty body, truncated",
+			args: args{
+				attrName:  "http.request.body",
+				body:      []byte(""),
+				truncated: true,
+				span:      mock.NewSpan(),
+			},
+			expectedAssertions: func(t *testing.T, gotSpan *mock.Span) {
+				assert.Nil(t, gotSpan.ReadAttribute("http.request.body"))
+				assert.Zero(t, gotSpan.RemainingAttributes())
+			},
+		},
+		{
+			name: "empty body, not truncated",
+			args: args{
+				attrName:  "http.request.body",
+				body:      []byte(""),
+				truncated: false,
+				span:      mock.NewSpan(),
+			},
+			expectedAssertions: func(t *testing.T, gotSpan *mock.Span) {
+				assert.Nil(t, gotSpan.ReadAttribute("http.request.body"))
+				assert.Zero(t, gotSpan.RemainingAttributes())
+			},
+		},
+		{
+			name: "non empty body, not truncated",
+			args: args{
+				attrName:  "http.request.body",
+				body:      []byte(testBody),
+				truncated: false,
+				span:      mock.NewSpan(),
+			},
+			expectedAssertions: func(t *testing.T, gotSpan *mock.Span) {
+				assert.Equal(t, testBody, gotSpan.ReadAttribute("http.request.body"))
+				assert.Zero(t, gotSpan.RemainingAttributes())
+			},
+		},
+		{
+			name: "non empty body, truncated",
+			args: args{
+				attrName:  "http.request.body",
+				body:      []byte(testBody),
+				truncated: true,
+				span:      mock.NewSpan(),
+			},
+			expectedAssertions: func(t *testing.T, gotSpan *mock.Span) {
+				assert.Equal(t, testBody, gotSpan.ReadAttribute("http.request.body"))
+				assert.True(t, (gotSpan.ReadAttribute("http.request.body.truncated")).(bool))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SetBodyAttribute(tt.args.attrName, tt.args.body, tt.args.truncated, tt.args.span)
+			tt.expectedAssertions(t, tt.args.span)
+		})
+	}
+}
+
+func TestSetEncodedBodyAttribute(t *testing.T) {
+	testBody := "test1test2"
+	type args struct {
+		attrName  string
+		body      []byte
+		truncated bool
+		span      *mock.Span
+	}
+	tests := []struct {
+		name               string
+		args               args
+		expectedAssertions func(t *testing.T, gotSpan *mock.Span)
+	}{
+		{
+			name: "empty body, truncated",
+			args: args{
+				attrName:  "http.request.body",
+				body:      []byte(""),
+				truncated: true,
+				span:      mock.NewSpan(),
+			},
+			expectedAssertions: func(t *testing.T, gotSpan *mock.Span) {
+				assert.Nil(t, gotSpan.ReadAttribute("http.request.body.base64"))
+				assert.Zero(t, gotSpan.RemainingAttributes())
+			},
+		},
+		{
+			name: "empty body, not truncated",
+			args: args{
+				attrName:  "http.request.body",
+				body:      []byte(""),
+				truncated: false,
+				span:      mock.NewSpan(),
+			},
+			expectedAssertions: func(t *testing.T, gotSpan *mock.Span) {
+				assert.Nil(t, gotSpan.ReadAttribute("http.request.body.base64"))
+				assert.Zero(t, gotSpan.RemainingAttributes())
+			},
+		},
+		{
+			name: "non empty body, not truncated",
+			args: args{
+				attrName:  "http.request.body",
+				body:      []byte(testBody),
+				truncated: false,
+				span:      mock.NewSpan(),
+			},
+			expectedAssertions: func(t *testing.T, gotSpan *mock.Span) {
+				assert.Equal(t, base64.RawStdEncoding.EncodeToString([]byte(testBody)), gotSpan.ReadAttribute("http.request.body.base64"))
+				assert.Zero(t, gotSpan.RemainingAttributes())
+			},
+		},
+		{
+			name: "non empty body, truncated",
+			args: args{
+				attrName:  "http.request.body",
+				body:      []byte(testBody),
+				truncated: true,
+				span:      mock.NewSpan(),
+			},
+			expectedAssertions: func(t *testing.T, gotSpan *mock.Span) {
+				assert.Equal(t, base64.RawStdEncoding.EncodeToString([]byte(testBody)), gotSpan.ReadAttribute("http.request.body.base64"))
+				assert.True(t, (gotSpan.ReadAttribute("http.request.body.truncated")).(bool))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SetEncodedBodyAttribute(tt.args.attrName, tt.args.body, tt.args.truncated, tt.args.span)
+			tt.expectedAssertions(t, tt.args.span)
+		})
+	}
+}

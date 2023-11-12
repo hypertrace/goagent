@@ -60,6 +60,14 @@ func (l *AttributeList) GetIterator() sdk.Iterator {
 	}
 }
 
+func (l *AttributeList) IterateItems(yield func(attr sdk.Attribute) bool) {
+	for _, attr := range l.attrs {
+		if !yield(sdk.Attribute{Key: string(attr.Key), Value: attr.Value.AsInterface()}) {
+			return
+		}
+	}
+}
+
 var _ sdk.Span = (*Span)(nil)
 
 type Span struct {

@@ -18,6 +18,7 @@ type Iterator interface {
 type AttributeList interface {
 	GetValue(key string) interface{}
 	GetIterator() Iterator
+	IterateItems(yield func(attr Attribute) bool)
 }
 
 // Span is an interface that accepts attributes and can be

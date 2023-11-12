@@ -134,3 +134,27 @@ func TestGetIterator(t *testing.T) {
 	// service.instance.id is added implicitly in StartSpan so 3 attributes will be present.
 	assert.Equal(t, 3, numAttrs)
 }
+
+func TestIterateItems(t *testing.T) {
+	sampler := sdktrace.AlwaysSample()
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sampler),
+	)
+	otel.SetTracerProvider(tp)
+	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	s.SetAttribute("k1", "v1")
+	s.SetAttribute("k2", 200)
+
+	numAttrs := 0
+	s.GetAttributes().IterateItems(func(attr sdk.Attribute) bool {
+		if attr.Key == "k1" {
+			assert.Equal(t, "v1", fmt.Sprintf("%v", attr.Value))
+		} else if attr.Key == "k2" {
+			assert.Equal(t, "200", fmt.Sprintf("%v", attr.Value))
+		}
+		numAttrs++
+		return true
+	})
+	// service.instance.id is added implicitly in StartSpan so 3 attributes will be present.
+	assert.Equal(t, 3, numAttrs)
+}

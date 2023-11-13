@@ -5,14 +5,12 @@ import (
 	"time"
 )
 
-type Attribute struct {
-	Key   string
-	Value interface{}
-}
-
 type AttributeList interface {
 	GetValue(key string) interface{}
-	GetAll() []Attribute
+
+	// Iterate loops through the attributes list and applies the yield function on each attribute.
+	// If the yield function returns false, we exit the loop.
+	Iterate(yield func(key string, value interface{}) bool)
 }
 
 // Span is an interface that accepts attributes and can be

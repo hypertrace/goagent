@@ -31,13 +31,12 @@ func (l *AttributeList) GetValue(key string) interface{} {
 	return nil
 }
 
-func (l *AttributeList) GetAll() []sdk.Attribute {
-	size := len(l.attrs)
-	attributes := make([]sdk.Attribute, size)
-	for i := 0; i < size; i++ {
-		attributes[i] = sdk.Attribute{Key: string(l.attrs[i].Key), Value: l.attrs[i].Value.AsInterface()}
+func (l *AttributeList) Iterate(yield func(key string, value interface{}) bool) {
+	for _, attr := range l.attrs {
+		if !yield(string(attr.Key), attr.Value.AsInterface()) {
+			return
+		}
 	}
-	return attributes
 }
 
 var _ sdk.Span = (*Span)(nil)

@@ -29,15 +29,12 @@ func (l *AttributeList) GetValue(key string) interface{} {
 	return l.attrs[key]
 }
 
-func (l *AttributeList) GetAll() []sdk.Attribute {
-
-	attributes := make([]sdk.Attribute, len(l.attrs))
-	i := 0
+func (l *AttributeList) Iterate(yield func(key string, value interface{}) bool) {
 	for key, value := range l.attrs {
-		attributes[i] = sdk.Attribute{Key: key, Value: value}
-		i++
+		if !yield(key, value) {
+			return
+		}
 	}
-	return attributes
 }
 
 var _ sdk.Span = &Span{}

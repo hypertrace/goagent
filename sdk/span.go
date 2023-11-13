@@ -7,6 +7,9 @@ import (
 
 type AttributeList interface {
 	GetValue(key string) interface{}
+
+	// Iterate loops through the attributes list and applies the yield function on each attribute.
+	// If the yield function returns false, we exit the loop.
 	Iterate(yield func(key string, value interface{}) bool)
 }
 

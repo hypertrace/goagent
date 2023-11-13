@@ -15,27 +15,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var _ sdk.Iterator = (*Iterator)(nil)
-
-type Iterator struct {
-	size  int
-	curr  int
-	attrs []attribute.KeyValue
-}
-
-func (i *Iterator) HasNext() bool {
-	return i.curr < i.size
-}
-
-func (i *Iterator) Next() sdk.Attribute {
-	attr := sdk.Attribute{
-		Key:   string(i.attrs[i.curr].Key),
-		Value: i.attrs[i.curr].Value.AsInterface(),
-	}
-	i.curr++
-	return attr
-}
-
 var _ sdk.AttributeList = (*AttributeList)(nil)
 
 type AttributeList struct {
@@ -52,17 +31,9 @@ func (l *AttributeList) GetValue(key string) interface{} {
 	return nil
 }
 
-func (l *AttributeList) GetIterator() sdk.Iterator {
-	return &Iterator{
-		size:  len(l.attrs),
-		curr:  0,
-		attrs: l.attrs,
-	}
-}
-
-func (l *AttributeList) IterateItems(yield func(attr sdk.Attribute) bool) {
+func (l *AttributeList) Iterate(yield func(key string, value interface{}) bool) {
 	for _, attr := range l.attrs {
-		if !yield(sdk.Attribute{Key: string(attr.Key), Value: attr.Value.AsInterface()}) {
+		if !yield(string(attr.Key), attr.Value.AsInterface()) {
 			return
 		}
 	}

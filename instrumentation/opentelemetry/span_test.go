@@ -110,32 +110,7 @@ func TestGetAttributes(t *testing.T) {
 	assert.Equal(t, nil, attrs.GetValue("non_existent"))
 }
 
-func TestGetIterator(t *testing.T) {
-	sampler := sdktrace.AlwaysSample()
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sampler),
-	)
-	otel.SetTracerProvider(tp)
-	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
-	s.SetAttribute("k1", "v1")
-	s.SetAttribute("k2", 200)
-	itr := s.GetAttributes().GetIterator()
-
-	numAttrs := 0
-	for itr.HasNext() {
-		numAttrs++
-		attr := itr.Next()
-		if attr.Key == "k1" {
-			assert.Equal(t, "v1", fmt.Sprintf("%v", attr.Value))
-		} else if attr.Key == "k2" {
-			assert.Equal(t, "200", fmt.Sprintf("%v", attr.Value))
-		}
-	}
-	// service.instance.id is added implicitly in StartSpan so 3 attributes will be present.
-	assert.Equal(t, 3, numAttrs)
-}
-
-func TestIterateItems(t *testing.T) {
+func TestIterate(t *testing.T) {
 	sampler := sdktrace.AlwaysSample()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sampler),
@@ -146,11 +121,11 @@ func TestIterateItems(t *testing.T) {
 	s.SetAttribute("k2", 200)
 
 	numAttrs := 0
-	s.GetAttributes().IterateItems(func(attr sdk.Attribute) bool {
-		if attr.Key == "k1" {
-			assert.Equal(t, "v1", fmt.Sprintf("%v", attr.Value))
-		} else if attr.Key == "k2" {
-			assert.Equal(t, "200", fmt.Sprintf("%v", attr.Value))
+	s.GetAttributes().Iterate(func(key string, value interface{}) bool {
+		if key == "k1" {
+			assert.Equal(t, "v1", fmt.Sprintf("%v", value))
+		} else if key == "k2" {
+			assert.Equal(t, "200", fmt.Sprintf("%v", value))
 		}
 		numAttrs++
 		return true

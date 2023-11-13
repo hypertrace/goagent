@@ -19,29 +19,6 @@ type Status struct {
 	Message string
 }
 
-var _ sdk.Iterator = (*Iterator)(nil)
-
-type Iterator struct {
-	size   int
-	curr   int
-	keySet []string
-	attrs  map[string]interface{}
-}
-
-func (i *Iterator) HasNext() bool {
-	return i.curr < i.size
-}
-
-func (i *Iterator) Next() sdk.Attribute {
-	key := i.keySet[i.curr]
-	attr := sdk.Attribute{
-		Key:   key,
-		Value: i.attrs[key],
-	}
-	i.curr++
-	return attr
-}
-
 var _ sdk.AttributeList = (*AttributeList)(nil)
 
 type AttributeList struct {
@@ -52,20 +29,11 @@ func (l *AttributeList) GetValue(key string) interface{} {
 	return l.attrs[key]
 }
 
-func (l *AttributeList) GetIterator() sdk.Iterator {
-
-	keySet := make([]string, len(l.attrs))
-	i := 0
-	for k := range l.attrs {
-		keySet[i] = k
-		i++
-	}
-
-	return &Iterator{
-		size:   len(l.attrs),
-		curr:   0,
-		keySet: keySet,
-		attrs:  l.attrs,
+func (l *AttributeList) Iterate(yield func(key string, value interface{}) bool) {
+	for key, value := range l.attrs {
+		if !yield(key, value) {
+			return
+		}
 	}
 }
 

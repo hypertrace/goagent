@@ -5,20 +5,9 @@ import (
 	"time"
 )
 
-type Attribute struct {
-	Key   string
-	Value interface{}
-}
-
-type Iterator interface {
-	HasNext() bool
-	Next() Attribute
-}
-
 type AttributeList interface {
 	GetValue(key string) interface{}
-	GetIterator() Iterator
-	IterateItems(yield func(attr Attribute) bool)
+	Iterate(yield func(key string, value interface{}) bool)
 }
 
 // Span is an interface that accepts attributes and can be

@@ -12,6 +12,6 @@ func TestNoopFilter(t *testing.T) {
 	assert.False(t, res.Block)
 	res = f.EvaluateBody(nil, nil, nil)
 	assert.False(t, res.Block)
-	res = f.Evaluate(nil, "", nil, nil)
+	res = f.Evaluate(nil)
 	assert.False(t, res.Block)
 }

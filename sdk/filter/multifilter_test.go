@@ -15,7 +15,7 @@ func TestMultiFilterEmpty(t *testing.T) {
 	assert.False(t, res.Block)
 	res = f.EvaluateBody(nil, nil, nil)
 	assert.False(t, res.Block)
-	res = f.Evaluate(nil, "", nil, nil)
+	res = f.Evaluate(nil)
 	assert.False(t, res.Block)
 }
 
@@ -99,7 +99,7 @@ func TestMultiFilterStopsAfterTrue(t *testing.T) {
 			assert.Equal(t, tCase.expectedURLAndHeadersFilterResult, res.Block)
 			res = tCase.multiFilter.EvaluateBody(nil, nil, nil)
 			assert.Equal(t, tCase.expectedBodyFilterResult, res.Block)
-			res = tCase.multiFilter.Evaluate(nil, "", nil, nil)
+			res = tCase.multiFilter.Evaluate(nil)
 			assert.Equal(t, tCase.expectedFilterResult, res.Block)
 		})
 	}

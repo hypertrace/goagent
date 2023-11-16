@@ -2,7 +2,6 @@ package http // import "github.com/hypertrace/goagent/sdk/instrumentation/net/ht
 
 import (
 	"bytes"
-	"encoding/base64"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -72,14 +71,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 	span.SetAttribute("http.request.header.host", host)
 
-	headers := r.Header
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {
 		SetAttributesFromHeaders("request", NewHeaderMapAccessor(r.Header), span)
 	}
 
 	// run filters on headers
-	filterResult := h.filter.EvaluateURLAndHeaders(span, url, headers)
+	filterResult := h.filter.Evaluate(span)
 	if filterResult.Block {
 		w.WriteHeader(int(filterResult.ResponseStatusCode))
 		return
@@ -103,19 +101,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				isMultipartFormDataBody)
 		}
 
-		processingBody := body
-		if int(h.dataCaptureConfig.BodyMaxProcessingSizeBytes.Value) < len(body) {
-			processingBody = body[:h.dataCaptureConfig.BodyMaxProcessingSizeBytes.Value]
-		}
-		// if body is multipart/form-data, base64 encode it before passing it on to the filter
-		if isMultipartFormDataBody {
-			origProcessingBody := processingBody
-			processingBody = make([]byte, base64.RawStdEncoding.EncodedLen(len(origProcessingBody)))
-			base64.RawStdEncoding.Encode(processingBody, origProcessingBody)
-		}
-
 		// run body filters
-		filterResult := h.filter.EvaluateBody(span, processingBody, headers)
+		filterResult := h.filter.Evaluate(span)
 		if filterResult.Block {
 			w.WriteHeader(int(filterResult.ResponseStatusCode))
 			return

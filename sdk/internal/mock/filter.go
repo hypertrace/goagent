@@ -6,12 +6,12 @@ import (
 )
 
 type Filter struct {
-	Evaluator func(span sdk.Span, url string, body []byte, headers map[string][]string) result.FilterResult
+	Evaluator func(span sdk.Span) result.FilterResult
 }
 
 func (f Filter) Evaluate(span sdk.Span) result.FilterResult {
 	if f.Evaluator == nil {
 		return result.FilterResult{}
 	}
-	return f.Evaluator(span, url, body, headers)
+	return f.Evaluator(span)
 }

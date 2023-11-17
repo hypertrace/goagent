@@ -116,7 +116,7 @@ func TestServerInterceptorFilter(t *testing.T) {
 			expectedFilterResult: true,
 			expectedStatusCode:   codes.PermissionDenied,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+				Evaluator: func(span sdk.Span) result.FilterResult {
 					assert.Equal(t, []string{"test_value"}, headers["test_key"])
 					return result.FilterResult{Block: true, ResponseStatusCode: 403}
 				},

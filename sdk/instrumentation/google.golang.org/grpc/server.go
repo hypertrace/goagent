@@ -95,14 +95,6 @@ func wrapHandler(
 
 		if dataCaptureConfig.RpcMetadata.Request.Value {
 			setAttributesFromRequestIncomingMetadata(ctx, span)
-
-			// TODO: decide what should be passed as URL in GRPC
-			if !dataCaptureConfig.RpcBody.Request.Value {
-				filterResult := filter.Evaluate(span)
-				if filterResult.Block {
-					return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
-				}
-			}
 		}
 
 		reqBody, err := marshalMessageableJSON(req)
@@ -110,10 +102,13 @@ func wrapHandler(
 			len(reqBody) > 0 && err == nil {
 			setTruncatedBodyAttribute("request", reqBody, int(dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 
-			filterResult := filter.Evaluate(span)
-			if filterResult.Block {
-				return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
-			}
+		}
+
+		// TODO: decide what should be passed as URL in GRPC
+		// single evaluation call to filter after capturing the configured parameters
+		filterResult := filter.Evaluate(span)
+		if filterResult.Block {
+			return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
 		}
 
 		res, err := delegateHandler(ctx, req)

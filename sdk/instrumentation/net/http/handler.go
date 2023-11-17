@@ -3,7 +3,6 @@ package http // import "github.com/hypertrace/goagent/sdk/instrumentation/net/ht
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
@@ -76,17 +75,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		SetAttributesFromHeaders("request", NewHeaderMapAccessor(r.Header), span)
 	}
 
-	// run filters on headers
-	filterResult := h.filter.Evaluate(span)
-	if filterResult.Block {
-		w.WriteHeader(int(filterResult.ResponseStatusCode))
-		return
-	}
-
 	// nil check for body is important as this block turns the body into another
 	// object that isn't nil and that will leverage the "Observer effect".
 	if r.Body != nil && h.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{r.Header}) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return
 		}
@@ -101,14 +93,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				isMultipartFormDataBody)
 		}
 
-		// run body filters
-		filterResult := h.filter.Evaluate(span)
-		if filterResult.Block {
-			w.WriteHeader(int(filterResult.ResponseStatusCode))
-			return
-		}
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
+	}
 
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	// single evaluation call to filter after capturing the configured parameters
+	filterResult := h.filter.Evaluate(span)
+	if filterResult.Block {
+		w.WriteHeader(int(filterResult.ResponseStatusCode))
+		return
 	}
 
 	// create http.ResponseWriter interceptor for tracking status code

@@ -370,14 +370,10 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
-						assert.Equal(t, "http://localhost/foo", url)
-						assert.Equal(t, 1, len(headers))
-						assert.Equal(t, []string{"application/json"}, headers["Content-Type"])
-						return result.FilterResult{}
-					},
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
-						assert.Equal(t, []byte("haha"), body)
+					Evaluator: func(span sdk.Span) result.FilterResult {
+						assert.Equal(t, "http://localhost/foo", span.GetAttributes().GetValue("http.url"))
+						assert.Equal(t, "application/json", span.GetAttributes().GetValue("http.request.header.content-type"))
+						assert.Equal(t, "haha", span.GetAttributes().GetValue("http.request.body"))
 						return result.FilterResult{}
 					},
 				},
@@ -390,14 +386,12 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
-						assert.Equal(t, "http://localhost/foo", url)
-						assert.Equal(t, 1, len(headers))
-						assert.Equal(t, []string{"multipart/form-data"}, headers["Content-Type"])
-						return result.FilterResult{}
-					},
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
-						assert.Equal(t, []byte(base64.RawStdEncoding.EncodeToString([]byte("haha"))), body)
+					Evaluator: func(span sdk.Span) result.FilterResult {
+						assert.Equal(t, "http://localhost/foo", span.GetAttributes().GetValue("http.url"))
+						assert.Equal(t, "multipart/form-data", span.GetAttributes().GetValue("http.request.header.content-type"))
+						assert.Equal(t, base64.RawStdEncoding.EncodeToString([]byte("haha")),
+							span.GetAttributes().GetValue("http.request.body.base64"))
+
 						return result.FilterResult{}
 					},
 				},
@@ -411,10 +405,11 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
-						assert.Equal(t, "http://localhost/foo", url)
-						assert.Equal(t, 1, len(headers))
-						assert.Equal(t, []string{"multipart/form-data"}, headers["Content-Type"])
+					Evaluator: func(span sdk.Span) result.FilterResult {
+						assert.Equal(t, "http://localhost/foo", span.GetAttributes().GetValue("http.url"))
+						assert.Equal(t, "multipart/form-data", span.GetAttributes().GetValue("http.request.header.content-type"))
+						assert.Nil(t, span.GetAttributes().GetValue("http.request.body"))
+						assert.Nil(t, span.GetAttributes().GetValue("http.request.body.base64"))
 						return result.FilterResult{}
 					},
 				},
@@ -425,7 +420,7 @@ func TestServerRequestFilter(t *testing.T) {
 			url: "http://localhost/foo",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+					Evaluator: func(span sdk.Span) result.FilterResult {
 						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
@@ -436,7 +431,7 @@ func TestServerRequestFilter(t *testing.T) {
 			url: "http://localhost/foo",
 			options: &Options{
 				Filter: mock.Filter{
-					URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
+					Evaluator: func(span sdk.Span) result.FilterResult {
 						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
@@ -450,7 +445,7 @@ func TestServerRequestFilter(t *testing.T) {
 			body:         "haha",
 			options: &Options{
 				Filter: mock.Filter{
-					BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
+					Evaluator: func(span sdk.Span) result.FilterResult {
 						return result.FilterResult{Block: true, ResponseStatusCode: 403}
 					},
 				},
@@ -501,8 +496,8 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 
 	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{
 		Filter: mock.Filter{
-			BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
-				assert.Equal(t, "{", string(body)) // body is truncated
+			Evaluator: func(span sdk.Span) result.FilterResult {
+				assert.Equal(t, "{", span.GetAttributes().GetValue("http.request.body")) // body is truncated
 				return result.FilterResult{Block: true, ResponseStatusCode: 403}
 			},
 		},
@@ -510,6 +505,7 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 	wh.dataCaptureConfig = emptyTestConfig
 	wh.dataCaptureConfig.HttpBody.Request = config.Bool(true)
 	wh.dataCaptureConfig.BodyMaxProcessingSizeBytes = config.Int32(int32(bodyMaxProcessingSizeBytes))
+	wh.dataCaptureConfig.BodyMaxSizeBytes = config.Int32(int32(bodyMaxProcessingSizeBytes))
 
 	ih := &mockHandler{baseHandler: wh}
 

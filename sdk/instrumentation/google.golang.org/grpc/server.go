@@ -12,7 +12,6 @@ import (
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
@@ -94,33 +93,22 @@ func wrapHandler(
 
 		setSchemeAttributes(ctx, span)
 
+		if dataCaptureConfig.RpcMetadata.Request.Value {
+			setAttributesFromRequestIncomingMetadata(ctx, span)
+		}
+
 		reqBody, err := marshalMessageableJSON(req)
 		if dataCaptureConfig.RpcBody.Request.Value &&
 			len(reqBody) > 0 && err == nil {
 			setTruncatedBodyAttribute("request", reqBody, int(dataCaptureConfig.BodyMaxSizeBytes.Value), span)
 
-			if md, ok := metadata.FromIncomingContext(ctx); ok {
-				processingBody := reqBody
-				if int(dataCaptureConfig.BodyMaxProcessingSizeBytes.Value) < len(reqBody) {
-					processingBody = reqBody[:dataCaptureConfig.BodyMaxProcessingSizeBytes.Value]
-				}
-				filterResult := filter.EvaluateBody(span, processingBody, md)
-				if filterResult.Block {
-					return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
-				}
-			}
 		}
 
-		if dataCaptureConfig.RpcMetadata.Request.Value {
-			setAttributesFromRequestIncomingMetadata(ctx, span)
-
-			if md, ok := metadata.FromIncomingContext(ctx); ok {
-				// TODO: decide what should be passed as URL in GRPC
-				filterResult := filter.EvaluateURLAndHeaders(span, "", md)
-				if filterResult.Block {
-					return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
-				}
-			}
+		// TODO: decide what should be passed as URL in GRPC
+		// single evaluation call to filter after capturing the configured parameters
+		filterResult := filter.Evaluate(span)
+		if filterResult.Block {
+			return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
 		}
 
 		res, err := delegateHandler(ctx, req)

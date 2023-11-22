@@ -2,9 +2,7 @@ package http // import "github.com/hypertrace/goagent/sdk/instrumentation/net/ht
 
 import (
 	"bytes"
-	"encoding/base64"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
@@ -72,23 +70,15 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 	span.SetAttribute("http.request.header.host", host)
 
-	headers := r.Header
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {
 		SetAttributesFromHeaders("request", NewHeaderMapAccessor(r.Header), span)
 	}
 
-	// run filters on headers
-	filterResult := h.filter.EvaluateURLAndHeaders(span, url, headers)
-	if filterResult.Block {
-		w.WriteHeader(int(filterResult.ResponseStatusCode))
-		return
-	}
-
 	// nil check for body is important as this block turns the body into another
 	// object that isn't nil and that will leverage the "Observer effect".
 	if r.Body != nil && h.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{r.Header}) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return
 		}
@@ -103,25 +93,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				isMultipartFormDataBody)
 		}
 
-		processingBody := body
-		if int(h.dataCaptureConfig.BodyMaxProcessingSizeBytes.Value) < len(body) {
-			processingBody = body[:h.dataCaptureConfig.BodyMaxProcessingSizeBytes.Value]
-		}
-		// if body is multipart/form-data, base64 encode it before passing it on to the filter
-		if isMultipartFormDataBody {
-			origProcessingBody := processingBody
-			processingBody = make([]byte, base64.RawStdEncoding.EncodedLen(len(origProcessingBody)))
-			base64.RawStdEncoding.Encode(processingBody, origProcessingBody)
-		}
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
+	}
 
-		// run body filters
-		filterResult := h.filter.EvaluateBody(span, processingBody, headers)
-		if filterResult.Block {
-			w.WriteHeader(int(filterResult.ResponseStatusCode))
-			return
-		}
-
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	// single evaluation call to filter after capturing the configured parameters
+	filterResult := h.filter.Evaluate(span)
+	if filterResult.Block {
+		w.WriteHeader(int(filterResult.ResponseStatusCode))
+		return
 	}
 
 	// create http.ResponseWriter interceptor for tracking status code

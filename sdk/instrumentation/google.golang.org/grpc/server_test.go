@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
@@ -116,8 +117,8 @@ func TestServerInterceptorFilter(t *testing.T) {
 			expectedFilterResult: true,
 			expectedStatusCode:   codes.PermissionDenied,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				URLAndHeadersEvaluator: func(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
-					assert.Equal(t, []string{"test_value"}, headers["test_key"])
+				Evaluator: func(span sdk.Span) result.FilterResult {
+					assert.Equal(t, "test_value", fmt.Sprintf("%s", span.GetAttributes().GetValue("rpc.request.metadata.test_key")))
 					return result.FilterResult{Block: true, ResponseStatusCode: 403}
 				},
 			}),
@@ -126,8 +127,8 @@ func TestServerInterceptorFilter(t *testing.T) {
 			expectedFilterResult: true,
 			expectedStatusCode:   codes.PermissionDenied,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
-					assert.Equal(t, "{\"name\":\"Pupo\"}", string(body))
+				Evaluator: func(span sdk.Span) result.FilterResult {
+					assert.Equal(t, "{\"name\":\"Pupo\"}", span.GetAttributes().GetValue("rpc.request.body"))
 					return result.FilterResult{Block: true, ResponseStatusCode: 403}
 				},
 			}),
@@ -136,8 +137,8 @@ func TestServerInterceptorFilter(t *testing.T) {
 			expectedFilterResult: true,
 			expectedStatusCode:   codes.FailedPrecondition,
 			multiFilter: filter.NewMultiFilter(mock.Filter{
-				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
-					assert.Equal(t, "{\"name\":\"Pupo\"}", string(body))
+				Evaluator: func(span sdk.Span) result.FilterResult {
+					assert.Equal(t, "{\"name\":\"Pupo\"}", span.GetAttributes().GetValue("rpc.request.body"))
 					return result.FilterResult{Block: true, ResponseStatusCode: 412}
 				},
 			}),
@@ -198,7 +199,7 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 			RpcBody: &config.Message{
 				Request: config.Bool(true),
 			},
-			BodyMaxProcessingSizeBytes: config.Int32(1),
+			BodyMaxSizeBytes: config.Int32(1),
 		},
 	}
 	cfg.LoadFromEnv()
@@ -210,8 +211,9 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
 			WrapUnaryServerInterceptor(mockUnaryInterceptor, mock.SpanFromContext, &Options{Filter: mock.Filter{
-				BodyEvaluator: func(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
-					assert.Equal(t, "{", string(body)) // body is truncated
+				Evaluator: func(span sdk.Span) result.FilterResult {
+					assert.Equal(t, true, span.GetAttributes().GetValue("rpc.request.body.truncated"))
+					assert.Equal(t, "{", span.GetAttributes().GetValue("rpc.request.body")) // body is truncated
 					return result.FilterResult{}
 				},
 			}}, nil),

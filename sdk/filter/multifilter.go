@@ -17,32 +17,10 @@ func NewMultiFilter(filter ...Filter) *MultiFilter {
 	return &MultiFilter{filters: filter}
 }
 
-// EvaluateURLAndHeaders runs URL and headers evaluation for each filter until one returns true
-func (m *MultiFilter) EvaluateURLAndHeaders(span sdk.Span, url string, headers map[string][]string) result.FilterResult {
-	for _, f := range (*m).filters {
-		filterResult := f.EvaluateURLAndHeaders(span, url, headers)
-		if filterResult.Block {
-			return filterResult
-		}
-	}
-	return result.FilterResult{}
-}
-
-// EvaluateBody runs body evaluators for each filter until one returns true
-func (m *MultiFilter) EvaluateBody(span sdk.Span, body []byte, headers map[string][]string) result.FilterResult {
-	for _, f := range (*m).filters {
-		filterResult := f.EvaluateBody(span, body, headers)
-		if filterResult.Block {
-			return filterResult
-		}
-	}
-	return result.FilterResult{}
-}
-
 // Evaluate runs body evaluators for each filter until one returns true
-func (m *MultiFilter) Evaluate(span sdk.Span, url string, body []byte, headers map[string][]string) result.FilterResult {
+func (m *MultiFilter) Evaluate(span sdk.Span) result.FilterResult {
 	for _, f := range (*m).filters {
-		filterResult := f.Evaluate(span, url, body, headers)
+		filterResult := f.Evaluate(span)
 		if filterResult.Block {
 			return filterResult
 		}

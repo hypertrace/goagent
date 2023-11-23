@@ -11,6 +11,8 @@ type AttributeList interface {
 	// Iterate loops through the attributes list and applies the yield function on each attribute.
 	// If the yield function returns false, we exit the loop.
 	Iterate(yield func(key string, value interface{}) bool)
+
+	Len() int
 }
 
 // Span is an interface that accepts attributes and can be

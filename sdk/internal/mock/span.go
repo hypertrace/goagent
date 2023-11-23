@@ -37,6 +37,10 @@ func (l *AttributeList) Iterate(yield func(key string, value interface{}) bool) 
 	}
 }
 
+func (l *AttributeList) Len() int {
+	return len(l.attrs)
+}
+
 var _ sdk.Span = &Span{}
 
 type Span struct {

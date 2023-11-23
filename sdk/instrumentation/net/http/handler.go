@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"strings"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/sdk"
@@ -65,7 +66,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url := r.URL.String()
-	span.SetAttribute("http.url", url)
+	if strings.Contains(url, "://") {
+		span.SetAttribute("http.url", url)
+	} else {
+		span.SetAttribute("http.target", url)
+	}
 
 	host := r.Host
 	span.SetAttribute("http.request.header.host", host)

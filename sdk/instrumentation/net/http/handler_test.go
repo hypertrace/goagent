@@ -516,3 +516,36 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 
 	ih.ServeHTTP(w, r)
 }
+
+func TestUrlAttribute(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
+	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Add("request_id", "abc123xyz")
+		rw.WriteHeader(202)
+		rw.Write([]byte("test_res"))
+		rw.Write([]byte("ponse_body"))
+	})
+
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{}, map[string]string{}, &metricsHandler{}).(*handler)
+	wh.dataCaptureConfig = emptyTestConfig
+	ih := &mockHandler{baseHandler: wh}
+
+	// http.url
+	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", strings.NewReader("test_request_body"))
+	w := httptest.NewRecorder()
+	ih.ServeHTTP(w, r)
+	span := ih.spans[0]
+
+	assert.Equal(t, "http://traceable.ai/foo?user_id=1", span.ReadAttribute("http.url").(string))
+	assert.Nil(t, span.ReadAttribute("http.target"))
+
+	// http.target
+	r, _ = http.NewRequest("GET", "/foo?user_id=1", strings.NewReader("test_request_body"))
+	w = httptest.NewRecorder()
+	ih.ServeHTTP(w, r)
+	span = ih.spans[1]
+	assert.Equal(t, "/foo?user_id=1", span.ReadAttribute("http.target").(string))
+	assert.Nil(t, span.ReadAttribute("http.url"))
+
+}

@@ -133,3 +133,17 @@ func TestIterate(t *testing.T) {
 	// service.instance.id is added implicitly in StartSpan so 3 attributes will be present.
 	assert.Equal(t, 3, numAttrs)
 }
+
+func TestLen(t *testing.T) {
+	sampler := sdktrace.AlwaysSample()
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sampler),
+	)
+	otel.SetTracerProvider(tp)
+	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	s.SetAttribute("k1", "v1")
+	s.SetAttribute("k2", 200)
+
+	// service.instance.id is added implicitly in StartSpan so 3 attributes will be present.
+	assert.Equal(t, 3, s.GetAttributes().Len())
+}

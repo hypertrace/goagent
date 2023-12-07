@@ -29,7 +29,7 @@ func SetTruncatedBodyAttribute(attrName string, body []byte, bodyMaxSize int, sp
 // The body attribute name has a ".base64" suffix.
 func SetTruncatedEncodedBodyAttribute(attrName string, body []byte, bodyMaxSize int, span sdk.Span) {
 	bodyLen := len(body)
-	if len(body) == 0 {
+	if bodyLen == 0 {
 		return
 	}
 

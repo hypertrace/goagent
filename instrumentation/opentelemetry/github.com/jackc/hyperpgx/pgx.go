@@ -8,7 +8,7 @@ import (
 	"github.com/hypertrace/goagent/sdk"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype/pgxtype"
-	"github.com/jackc/pgx/v4"
+	pgx "github.com/jackc/pgx/v4"
 )
 
 var _ PGXConn = (*pgx.Conn)(nil)

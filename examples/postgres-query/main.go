@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/jackc/hyperpgx"
+	// gosec complains about this pkg not following golang repo standards
+	// "could not import github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/jackc/hyperpgx (invalid package name: "")"
+	// It is caused the pkg having its own go.mod
+	"github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/jackc/hyperpgx" // #nosec
 )
 
 func main() {

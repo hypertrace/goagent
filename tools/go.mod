@@ -1,6 +1,6 @@
 module tools
 
-go 1.20
+go 1.21
 
 require github.com/jcchavezs/porto v0.5.1
 

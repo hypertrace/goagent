@@ -3,9 +3,10 @@ package bodyattribute // import "github.com/hypertrace/goagent/sdk/instrumentati
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/hypertrace/goagent/sdk"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/hypertrace/goagent/sdk"
 )
 
 const utf8Replacement = "�"

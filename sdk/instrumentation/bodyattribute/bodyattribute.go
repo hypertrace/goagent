@@ -3,9 +3,12 @@ package bodyattribute // import "github.com/hypertrace/goagent/sdk/instrumentati
 import (
 	"encoding/base64"
 	"fmt"
-
 	"github.com/hypertrace/goagent/sdk"
+	"strings"
+	"unicode/utf8"
 )
+
+const utf8Replacement = "�"
 
 // SetTruncatedBodyAttribute truncates the body and sets the body as a span attribute.
 // When body is being truncated, we also add a second attribute suffixed by `.truncated` to
@@ -48,7 +51,12 @@ func SetBodyAttribute(attrName string, body []byte, truncated bool, span sdk.Spa
 		return
 	}
 
-	span.SetAttribute(attrName, string(body))
+	bodyStr := string(body)
+	if !utf8.ValidString(bodyStr) {
+		bodyStr = strings.ToValidUTF8(bodyStr, utf8Replacement)
+	}
+
+	span.SetAttribute(attrName, bodyStr)
 	// if already truncated then set attribute
 	if truncated {
 		span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
@@ -63,7 +71,12 @@ func SetEncodedBodyAttribute(attrName string, body []byte, truncated bool, span 
 		return
 	}
 
-	span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString(body))
+	bodyStr := string(body)
+	if !utf8.ValidString(bodyStr) {
+		bodyStr = strings.ToValidUTF8(bodyStr, utf8Replacement)
+	}
+
+	span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString([]byte(bodyStr)))
 	// if already truncated then set attribute
 	if truncated {
 		span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)

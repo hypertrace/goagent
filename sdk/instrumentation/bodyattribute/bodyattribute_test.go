@@ -201,19 +201,23 @@ func TestSetEncodedBodyAttribute(t *testing.T) {
 }
 
 func TestSetBodyWithoutUtf8(t *testing.T) {
-	invalidUTF8 := []byte{'h', 'e', 'l', 'l', 'o', ' ', 0xff, 0xfe, 0xfd}
+	multiByteCharString := []byte("こんにちは世界こんにちは世界こんにちは世界こんにちは世界こんにちは世界")
 	span := mock.NewSpan()
-	SetBodyAttribute("http.request.body", invalidUTF8, false, span)
+	SetTruncatedBodyAttribute("http.request.body", multiByteCharString, 23, span)
 	value := span.ReadAttribute("http.request.body")
-	assert.Equal(t, value.(string), "hello �")
+	assert.Equal(t, value.(string), "こんにちは世界")
+	v := len(value.(string))
+	assert.Equal(t, v, 21)
 }
 
 func TestSetB64BodyWithoutUtf8(t *testing.T) {
-	invalidUTF8 := []byte{'h', 'e', 'l', 'l', 'o', ' ', 0xff, 0xfe, 0xfd}
+	multiByteCharString := []byte("こんにちは世界こんにちは世界こんにちは世界こんにちは世界こんにちは世界")
 	span := mock.NewSpan()
-	SetEncodedBodyAttribute("http.request.body", invalidUTF8, false, span)
+	SetTruncatedEncodedBodyAttribute("http.request.body", multiByteCharString, 23, span)
 	value := span.ReadAttribute("http.request.body.base64")
 	decodedBytes, err := base64.StdEncoding.DecodeString(value.(string))
 	assert.NoError(t, err)
-	assert.Equal(t, string(decodedBytes), "hello �")
+	assert.Equal(t, string(decodedBytes), "こんにちは世界")
+	v := len(decodedBytes)
+	assert.Equal(t, v, 21)
 }

@@ -3,13 +3,12 @@ package bodyattribute // import "github.com/hypertrace/goagent/sdk/instrumentati
 import (
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/hypertrace/goagent/sdk"
 )
 
-const utf8Replacement = "�"
+const utf8Replacement = ""
 
 // SetTruncatedBodyAttribute truncates the body and sets the body as a span attribute.
 // When body is being truncated, we also add a second attribute suffixed by `.truncated` to
@@ -25,7 +24,9 @@ func SetTruncatedBodyAttribute(attrName string, body []byte, bodyMaxSize int, sp
 		return
 	}
 
-	SetBodyAttribute(attrName, body[:bodyMaxSize], true, span)
+	truncatedBody := truncateUTF8Bytes(body, bodyMaxSize)
+
+	SetBodyAttribute(attrName, truncatedBody, true, span)
 }
 
 // SetTruncatedEncodedBodyAttribute is like SetTruncatedBodyAttribute above but also base64 encodes the
@@ -42,7 +43,8 @@ func SetTruncatedEncodedBodyAttribute(attrName string, body []byte, bodyMaxSize 
 		return
 	}
 
-	SetEncodedBodyAttribute(attrName, body[:bodyMaxSize], true, span)
+	truncatedBody := truncateUTF8Bytes(body, bodyMaxSize)
+	SetEncodedBodyAttribute(attrName, truncatedBody, true, span)
 }
 
 // SetBodyAttribute sets the body as a span attribute.
@@ -52,12 +54,7 @@ func SetBodyAttribute(attrName string, body []byte, truncated bool, span sdk.Spa
 		return
 	}
 
-	bodyStr := string(body)
-	if !utf8.ValidString(bodyStr) {
-		bodyStr = strings.ToValidUTF8(bodyStr, utf8Replacement)
-	}
-
-	span.SetAttribute(attrName, bodyStr)
+	span.SetAttribute(attrName, string(body))
 	// if already truncated then set attribute
 	if truncated {
 		span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
@@ -72,14 +69,28 @@ func SetEncodedBodyAttribute(attrName string, body []byte, truncated bool, span 
 		return
 	}
 
-	bodyStr := string(body)
-	if !utf8.ValidString(bodyStr) {
-		bodyStr = strings.ToValidUTF8(bodyStr, utf8Replacement)
-	}
-
-	span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString([]byte(bodyStr)))
+	span.SetAttribute(attrName+".base64", base64.RawStdEncoding.EncodeToString(body))
 	// if already truncated then set attribute
 	if truncated {
 		span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
 	}
+}
+
+func truncateUTF8Bytes(b []byte, maxBytes int) []byte {
+	// We subtract 4 as that is the largest possible byte size for single rune
+	startIndex := maxBytes - 4
+	if startIndex < 0 {
+		startIndex = 0
+	}
+
+	for idx := startIndex; idx < maxBytes; {
+		_, size := utf8.DecodeRune(b[idx:])
+		if idx+size > maxBytes {
+			// We're past maxBytes with this rune, we will not include this in truncated value
+			return b[:idx]
+		}
+		idx += size
+	}
+
+	return b[:maxBytes]
 }

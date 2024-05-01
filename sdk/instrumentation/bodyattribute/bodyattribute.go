@@ -8,8 +8,6 @@ import (
 	"github.com/hypertrace/goagent/sdk"
 )
 
-const utf8Replacement = ""
-
 // SetTruncatedBodyAttribute truncates the body and sets the body as a span attribute.
 // When body is being truncated, we also add a second attribute suffixed by `.truncated` to
 // make it clear to the user, body has been modified.
@@ -76,6 +74,8 @@ func SetEncodedBodyAttribute(attrName string, body []byte, truncated bool, span 
 	}
 }
 
+// Largely based on:
+// https://github.com/jmacd/opentelemetry-go/blob/e8973b75b230246545cdae072a548c83877cba09/sdk/trace/span.go#L358-L375
 func truncateUTF8Bytes(b []byte, maxBytes int) []byte {
 	// We subtract 4 as that is the largest possible byte size for single rune
 	startIndex := maxBytes - 4

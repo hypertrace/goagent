@@ -76,6 +76,10 @@ func SetEncodedBodyAttribute(attrName string, body []byte, truncated bool, span 
 
 // Largely based on:
 // https://github.com/jmacd/opentelemetry-go/blob/e8973b75b230246545cdae072a548c83877cba09/sdk/trace/span.go#L358-L375
+// Intention here is to ensure that we capture the final parsed rune to prevent splitting multibyte rune in the middle
+// If maxBytes - 4 is in middle of rune, that is okay, we still append since max rune size <= 4 so that means there is still
+// a partial or full rune between maxBytes - 4 and the end.
+// If we encounter a rune that extends beyond the end of our truncation length it will be dropped entirely
 func truncateUTF8Bytes(b []byte, maxBytes int) []byte {
 	// We subtract 4 as that is the largest possible byte size for single rune
 	startIndex := maxBytes - 4

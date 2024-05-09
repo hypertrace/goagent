@@ -54,6 +54,7 @@ jobs:
           name: go-agent test reports
           fail_ci_if_error: true
           files: ./coverage.txt
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: check examples
         run: make check-examples

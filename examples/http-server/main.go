@@ -1,5 +1,4 @@
-//go:build ignore
-
+// go:build ignore
 package main
 
 import (
@@ -62,7 +61,8 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", p.Name)))
+	invalidUtf8 := string([]byte{0xff, 0xfe, 0xfd})
+	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s %s\"}", p.Name, invalidUtf8)))
 }
 
 func outgoingCallHandler(w http.ResponseWriter, r *http.Request) {

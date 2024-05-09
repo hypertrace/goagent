@@ -199,3 +199,25 @@ func TestSetEncodedBodyAttribute(t *testing.T) {
 		})
 	}
 }
+
+func TestSetBodyWithoutUtf8(t *testing.T) {
+	multiByteCharString := []byte("こんにちは世界こんにちは世界こんにちは世界こんにちは世界こんにちは世界")
+	span := mock.NewSpan()
+	SetTruncatedBodyAttribute("http.request.body", multiByteCharString, 23, span)
+	value := span.ReadAttribute("http.request.body")
+	assert.Equal(t, value.(string), "こんにちは世界")
+	v := len(value.(string))
+	assert.Equal(t, v, 21)
+}
+
+func TestSetB64BodyWithoutUtf8(t *testing.T) {
+	multiByteCharString := []byte("こんにちは世界こんにちは世界こんにちは世界こんにちは世界こんにちは世界")
+	span := mock.NewSpan()
+	SetTruncatedEncodedBodyAttribute("http.request.body", multiByteCharString, 23, span)
+	value := span.ReadAttribute("http.request.body.base64")
+	decodedBytes, err := base64.StdEncoding.DecodeString(value.(string))
+	assert.NoError(t, err)
+	assert.Equal(t, string(decodedBytes), "こんにちは世界")
+	v := len(decodedBytes)
+	assert.Equal(t, v, 21)
+}

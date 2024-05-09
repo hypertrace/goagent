@@ -30,7 +30,7 @@ func main() {
 		Transport: hyperhttp.NewTransport(http.DefaultTransport),
 	}
 
-	req, err := http.NewRequest("GET", "http://localhost:8081/foo", bytes.NewBufferString(`{"name":"Dave"}`))
+	req, err := http.NewRequest("GET", "http://localhost:8081/foo", bytes.NewBufferString(`{"name":"こんにちは"}`))
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		log.Fatalf("failed to create the request: %v", err)

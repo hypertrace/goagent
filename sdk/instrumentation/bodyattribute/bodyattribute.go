@@ -3,6 +3,7 @@ package bodyattribute // import "github.com/hypertrace/goagent/sdk/instrumentati
 import (
 	"encoding/base64"
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/hypertrace/goagent/sdk"
 )
@@ -21,7 +22,9 @@ func SetTruncatedBodyAttribute(attrName string, body []byte, bodyMaxSize int, sp
 		return
 	}
 
-	SetBodyAttribute(attrName, body[:bodyMaxSize], true, span)
+	truncatedBody := truncateUTF8Bytes(body, bodyMaxSize)
+
+	SetBodyAttribute(attrName, truncatedBody, true, span)
 }
 
 // SetTruncatedEncodedBodyAttribute is like SetTruncatedBodyAttribute above but also base64 encodes the
@@ -38,7 +41,8 @@ func SetTruncatedEncodedBodyAttribute(attrName string, body []byte, bodyMaxSize 
 		return
 	}
 
-	SetEncodedBodyAttribute(attrName, body[:bodyMaxSize], true, span)
+	truncatedBody := truncateUTF8Bytes(body, bodyMaxSize)
+	SetEncodedBodyAttribute(attrName, truncatedBody, true, span)
 }
 
 // SetBodyAttribute sets the body as a span attribute.
@@ -68,4 +72,29 @@ func SetEncodedBodyAttribute(attrName string, body []byte, truncated bool, span 
 	if truncated {
 		span.SetAttribute(fmt.Sprintf("%s.truncated", attrName), true)
 	}
+}
+
+// Largely based on:
+// https://github.com/jmacd/opentelemetry-go/blob/e8973b75b230246545cdae072a548c83877cba09/sdk/trace/span.go#L358-L375
+// Intention here is to ensure that we capture the final parsed rune to prevent splitting multibyte rune in the middle
+// If maxBytes - 4 is in middle of rune, that is okay, we still append since max rune size <= 4 so that means there is still
+// a partial or full rune between maxBytes - 4 and the end.
+// If we encounter a rune that extends beyond the end of our truncation length it will be dropped entirely
+func truncateUTF8Bytes(b []byte, maxBytes int) []byte {
+	// We subtract 4 as that is the largest possible byte size for single rune
+	startIndex := maxBytes - 4
+	if startIndex < 0 {
+		startIndex = 0
+	}
+
+	for idx := startIndex; idx < maxBytes; {
+		_, size := utf8.DecodeRune(b[idx:])
+		if idx+size > maxBytes {
+			// We're past maxBytes with this rune, we will not include this in truncated value
+			return b[:idx]
+		}
+		idx += size
+	}
+
+	return b[:maxBytes]
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -412,4 +413,31 @@ func TestShouldDisableMetrics(t *testing.T) {
 	cfg = config.Load()
 	cfg.Reporting.MetricEndpoint = config.String("localhost:4317")
 	assert.False(t, shouldDisableMetrics(cfg))
+}
+
+func TestShouldUseCustomBatchSpanProcessor(t *testing.T) {
+	// Using default values. Should be true
+	cfg := config.Load()
+	assert.True(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Goagent = nil
+	assert.False(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Goagent = &v1.GoAgent{UseCustomBsp: config.Bool(false)}
+	assert.False(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Goagent = &v1.GoAgent{}
+	assert.False(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Goagent = &v1.GoAgent{UseCustomBsp: config.Bool(true)}
+	assert.True(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Telemetry.MetricsEnabled = config.Bool(false)
+	assert.False(t, shouldUseCustomBatchSpanProcessor(cfg))
+}
+
+func TestConfigFactory(t *testing.T) {
+	cfg := config.Load()
+	factory := makeConfigFactory(cfg)
+	assert.Same(t, cfg, factory())
 }

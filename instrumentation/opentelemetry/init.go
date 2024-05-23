@@ -47,6 +47,7 @@ var (
 	enabled               = false
 	mu                    sync.Mutex
 	exporterFactory       func() (sdktrace.SpanExporter, error)
+	configFactory         func() *config.AgentConfig
 	versionInfoAttributes = []attribute.KeyValue{
 		semconv.TelemetrySDKNameKey.String("hypertrace"),
 		semconv.TelemetrySDKVersionKey.String(version.Version),
@@ -177,6 +178,12 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 	}
 }
 
+func makeConfigFactory(cfg *config.AgentConfig) func() *config.AgentConfig {
+	return func() *config.AgentConfig {
+		return cfg
+	}
+}
+
 func createTLSConfig(reportingCfg *config.Reporting) *tls.Config {
 	tlsConfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -244,16 +251,15 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	metricsShutdownFn := initializeMetrics(cfg, versionInfoAttrs)
 
 	exporterFactory = makeExporterFactory(cfg)
+	configFactory = makeConfigFactory(cfg)
 
 	exporter, err := exporterFactory()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	useModifiedBsp := (cfg.GetGoagent() != nil && cfg.GetGoagent().GetUseCustomBsp().GetValue()) || // bsp enabled OR
-		(cfg.GetTelemetry() != nil && cfg.GetTelemetry().GetMetricsEnabled().GetValue()) // metrics enabled
 	sp := modbsp.CreateBatchSpanProcessor(
-		useModifiedBsp,
+		shouldUseCustomBatchSpanProcessor(cfg),
 		exporter,
 		sdktrace.WithBatchTimeout(batchTimeout))
 	if wrapper != nil {
@@ -361,7 +367,7 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 	}
 
 	sp := modbsp.CreateBatchSpanProcessor(
-		true, // ideally there should be no issue with using the modified bsp
+		shouldUseCustomBatchSpanProcessor(configFactory()),
 		exporter,
 		sdktrace.WithBatchTimeout(batchTimeout))
 	if wrapper != nil {
@@ -430,6 +436,11 @@ func shouldDisableMetrics(cfg *config.AgentConfig) bool {
 	}
 
 	return cfg.GetTelemetry() == nil || !cfg.GetTelemetry().GetMetricsEnabled().GetValue()
+}
+
+func shouldUseCustomBatchSpanProcessor(cfg *config.AgentConfig) bool {
+	return (cfg.GetGoagent() != nil && cfg.GetGoagent().GetUseCustomBsp().GetValue()) && // bsp enabled AND
+		(cfg.GetTelemetry() != nil && cfg.GetTelemetry().GetMetricsEnabled().GetValue()) // metrics enabled
 }
 
 // SpanProcessorWrapper wraps otel span processor

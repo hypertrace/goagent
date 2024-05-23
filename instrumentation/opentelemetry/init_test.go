@@ -2,7 +2,6 @@ package opentelemetry
 
 import (
 	"context"
-	"google.golang.org/grpc/resolver"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -10,14 +9,13 @@ import (
 	"time"
 
 	"github.com/hypertrace/goagent/config"
-
-	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace/noop"
+	"google.golang.org/grpc/resolver"
 )
 
 func ExampleInit() {
@@ -53,7 +51,7 @@ func TestInitDisabledAgent(t *testing.T) {
 
 	startSpan, tp, err := RegisterService("test_service", nil)
 	require.NoError(t, err)
-	assert.Equal(t, trace.NewNoopTracerProvider(), tp)
+	assert.Equal(t, noop.NewTracerProvider(), tp)
 	_, s, _ := startSpan(context.Background(), "test_span", nil)
 	require.NoError(t, err)
 	assert.True(t, s.IsNoop())
@@ -84,7 +82,7 @@ func TestOtlpService(t *testing.T) {
 	startSpan, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	_, s, _ := startSpan(context.Background(), "test_span", nil)
 	assert.False(t, s.IsNoop())
-	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	assert.NotEqual(t, noop.NewTracerProvider(), tp)
 	assert.Len(t, s.GetAttributes().GetValue("service.instance.id"), 36)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
@@ -104,7 +102,7 @@ func TestGrpcLoadBalancingConfig(t *testing.T) {
 
 	assert.Equal(t, resolver.GetDefaultScheme(), "dns")
 	_, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
-	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	assert.NotEqual(t, noop.NewTracerProvider(), tp)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
@@ -171,7 +169,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
 	assert.Equal(t, 1, len(traceProviders))
-	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	assert.NotEqual(t, noop.NewTracerProvider(), tp)
 
 	_, _, serviceSpanEnder := startServiceSpan(context.Background(), "my_span", nil)
 	serviceSpanEnder()

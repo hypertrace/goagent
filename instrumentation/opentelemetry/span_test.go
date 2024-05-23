@@ -14,10 +14,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 func newNoopSpan() trace.Span {
-	_, noopSpan := trace.NewNoopTracerProvider().Tracer("noop").Start(context.Background(), "test_name")
+	_, noopSpan := noop.NewTracerProvider().Tracer("noop").Start(context.Background(), "test_name")
 	return noopSpan
 }
 

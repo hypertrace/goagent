@@ -19,7 +19,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0 // indirect
-	github.com/hypertrace/agent-config/gen/go v0.0.0-20240523173529-cc303141489a // indirect
+	github.com/hypertrace/agent-config/gen/go v0.0.0-20240523214336-1259231da906 // indirect
 	github.com/hypertrace/goagent v0.0.0-00010101000000-000000000000 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.8.1 // indirect

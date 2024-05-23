@@ -559,8 +559,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0/go.mod h1:qmOFXW2epJhM0qSnUUYp
 github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
-github.com/hypertrace/agent-config/gen/go v0.0.0-20240523173529-cc303141489a h1:Rlr7efDlI8bTecuuLdd2ZycYiM473xaRrP1O0XyAgHk=
-github.com/hypertrace/agent-config/gen/go v0.0.0-20240523173529-cc303141489a/go.mod h1:91dQpeta5N46aAFdPGTr6qGCHxoTtMtvrhUOcPCS3B8=
+github.com/hypertrace/agent-config/gen/go v0.0.0-20240523214336-1259231da906 h1:9Wf9SUd2E+nsj7sfP3hOaM2d+inFlXlIxfyksdc7dvo=
+github.com/hypertrace/agent-config/gen/go v0.0.0-20240523214336-1259231da906/go.mod h1:91dQpeta5N46aAFdPGTr6qGCHxoTtMtvrhUOcPCS3B8=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=

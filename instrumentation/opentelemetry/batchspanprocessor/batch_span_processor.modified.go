@@ -16,6 +16,8 @@ package batchspanprocessor // import "github.com/hypertrace/goagent/instrumentat
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -285,6 +287,15 @@ func (bsp *batchSpanProcessor) exportSpans(ctx context.Context) error {
 
 	if l := len(bsp.batch); l > 0 {
 		Debug("exporting spans", "count", len(bsp.batch), "total_dropped", atomic.LoadUint32(&bsp.dropped))
+		defer func() {
+			if r := recover(); r != nil {
+				Error(fmt.Errorf("panic value: %v.\n\n[stacktrace]:\n%s", r, string(debug.Stack())), "recovering from a panic")
+				// Reset the batch if len is greater than 0
+				if len(bsp.batch) > 0 {
+					bsp.batch = bsp.batch[:0]
+				}
+			}
+		}()
 		err := bsp.e.ExportSpans(ctx, bsp.batch)
 
 		// A new batch is always created after exporting, even if the batch failed to be exported.

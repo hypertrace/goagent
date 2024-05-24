@@ -35,11 +35,11 @@ func TestCustomBspPanicExporterShouldNotPanic(t *testing.T) {
 	startAndEndSpan(tracer, "span1")
 	startAndEndSpan(tracer, "span2")
 	startAndEndSpan(tracer, panicSpanStr)
-	time.Sleep(8 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	verifyFunc(2)
 
 	startAndEndSpan(tracer, "span4")
-	time.Sleep(8 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	verifyFunc(3)
 
 	// Only span5 and span6 will be exported. span8 is discarded since the spans loop does not get to it before
@@ -48,13 +48,13 @@ func TestCustomBspPanicExporterShouldNotPanic(t *testing.T) {
 	startAndEndSpan(tracer, "span6")
 	startAndEndSpan(tracer, panicSpanStr)
 	startAndEndSpan(tracer, "span8")
-	time.Sleep(8 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	verifyFunc(5)
 
 	startAndEndSpan(tracer, "span9")
 	startAndEndSpan(tracer, "span10")
 	startAndEndSpan(tracer, "span11")
-	time.Sleep(8 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	verifyFunc(8)
 }
 

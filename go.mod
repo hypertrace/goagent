@@ -10,7 +10,7 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.0
-	github.com/hypertrace/agent-config/gen/go v0.0.0-20230126205246-bd4d81e696a6
+	github.com/hypertrace/agent-config/gen/go v0.0.0-20240523214336-1259231da906
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.4
 	github.com/ngrok/sqlmw v0.0.0-20200129213757-d5c93a81bec6
@@ -33,7 +33,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0
 	golang.org/x/net v0.23.0 // indirect
 	google.golang.org/grpc v1.62.1
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.34.1
 )
 
 require (

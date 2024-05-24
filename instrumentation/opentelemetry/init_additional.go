@@ -25,6 +25,7 @@ func InitAsAdditional(cfg *config.AgentConfig) (trace.SpanProcessor, func()) {
 	sdkconfig.InitConfig(cfg)
 
 	exporterFactory = makeExporterFactory(cfg)
+	configFactory = makeConfigFactory(cfg)
 
 	exporter, err := exporterFactory()
 	if err != nil {
@@ -44,7 +45,7 @@ func InitAsAdditional(cfg *config.AgentConfig) (trace.SpanProcessor, func()) {
 	}
 
 	return modbsp.CreateBatchSpanProcessor(
-			cfg.GetTelemetry() != nil && cfg.GetTelemetry().GetMetricsEnabled().GetValue(), // metrics enabled
+			shouldUseCustomBatchSpanProcessor(cfg),
 			exporter,
 			trace.WithBatchTimeout(batchTimeout)),
 		func() {

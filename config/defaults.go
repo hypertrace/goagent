@@ -42,4 +42,7 @@ var defaultConfig = agentconfig.AgentConfig{
 		StartupSpanEnabled: agentconfig.Bool(true),
 		MetricsEnabled:     agentconfig.Bool(true),
 	},
+	Goagent: &agentconfig.GoAgent{
+		UseCustomBsp: agentconfig.Bool(true),
+	},
 }

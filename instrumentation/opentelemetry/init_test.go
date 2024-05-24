@@ -2,22 +2,21 @@ package opentelemetry
 
 import (
 	"context"
-	"google.golang.org/grpc/resolver"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	v1 "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/config"
-
-	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace/noop"
+	"google.golang.org/grpc/resolver"
 )
 
 func ExampleInit() {
@@ -53,7 +52,7 @@ func TestInitDisabledAgent(t *testing.T) {
 
 	startSpan, tp, err := RegisterService("test_service", nil)
 	require.NoError(t, err)
-	assert.Equal(t, trace.NewNoopTracerProvider(), tp)
+	assert.Equal(t, noop.NewTracerProvider(), tp)
 	_, s, _ := startSpan(context.Background(), "test_span", nil)
 	require.NoError(t, err)
 	assert.True(t, s.IsNoop())
@@ -84,7 +83,7 @@ func TestOtlpService(t *testing.T) {
 	startSpan, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
 	_, s, _ := startSpan(context.Background(), "test_span", nil)
 	assert.False(t, s.IsNoop())
-	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	assert.NotEqual(t, noop.NewTracerProvider(), tp)
 	assert.Len(t, s.GetAttributes().GetValue("service.instance.id"), 36)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
@@ -104,7 +103,7 @@ func TestGrpcLoadBalancingConfig(t *testing.T) {
 
 	assert.Equal(t, resolver.GetDefaultScheme(), "dns")
 	_, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
-	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	assert.NotEqual(t, noop.NewTracerProvider(), tp)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
@@ -171,7 +170,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
 	assert.Equal(t, 1, len(traceProviders))
-	assert.NotEqual(t, trace.NewNoopTracerProvider(), tp)
+	assert.NotEqual(t, noop.NewTracerProvider(), tp)
 
 	_, _, serviceSpanEnder := startServiceSpan(context.Background(), "my_span", nil)
 	serviceSpanEnder()
@@ -414,4 +413,31 @@ func TestShouldDisableMetrics(t *testing.T) {
 	cfg = config.Load()
 	cfg.Reporting.MetricEndpoint = config.String("localhost:4317")
 	assert.False(t, shouldDisableMetrics(cfg))
+}
+
+func TestShouldUseCustomBatchSpanProcessor(t *testing.T) {
+	// Using default values. Should be true
+	cfg := config.Load()
+	assert.True(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Goagent = nil
+	assert.False(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Goagent = &v1.GoAgent{UseCustomBsp: config.Bool(false)}
+	assert.False(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Goagent = &v1.GoAgent{}
+	assert.False(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Goagent = &v1.GoAgent{UseCustomBsp: config.Bool(true)}
+	assert.True(t, shouldUseCustomBatchSpanProcessor(cfg))
+
+	cfg.Telemetry.MetricsEnabled = config.Bool(false)
+	assert.False(t, shouldUseCustomBatchSpanProcessor(cfg))
+}
+
+func TestConfigFactory(t *testing.T) {
+	cfg := config.Load()
+	factory := makeConfigFactory(cfg)
+	assert.Same(t, cfg, factory())
 }

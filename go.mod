@@ -24,6 +24,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.24.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.24.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.24.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.24.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.24.0
 	go.opentelemetry.io/otel/exporters/zipkin v1.24.0
@@ -35,8 +36,6 @@ require (
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
 )
-
-require go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0
 
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect

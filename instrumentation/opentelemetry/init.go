@@ -159,22 +159,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 
 		certFile := cfg.GetReporting().GetCertFile().GetValue()
 		if len(certFile) > 0 {
-
-			if tlsCertFile, err := os.ReadFile(certFile); err == nil {
-				if tlsCert, err := x509.ParseCertificate(tlsCertFile); err == nil {
-
-					caCertPool := x509.NewCertPool()
-					caCertPool.AddCert(tlsCert)
-					tlsCfg := &tls.Config{
-						RootCAs: caCertPool,
-					}
-					opts = append(opts, otlphttp.WithTLSClientConfig(tlsCfg))
-				} else {
-					log.Printf("error while parsing the cert file %s: %v", certFile, err)
-				}
-			} else {
-				log.Printf("error while reading the cert file %s: %v", certFile, err)
-			}
+			opts = append(opts, otlphttp.WithTLSClientConfig(createTLSConfig(cfg.GetReporting())))
 		}
 
 		return func() (sdktrace.SpanExporter, error) {

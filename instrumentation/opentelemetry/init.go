@@ -169,9 +169,11 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 						RootCAs: caCertPool,
 					}
 					opts = append(opts, otlphttp.WithTLSClientConfig(tlsCfg))
+				} else {
+					log.Printf("error while parsing the cert file %s: %v", certFile, err)
 				}
 			} else {
-				log.Printf("error while creating tls credentials from cert path %s: %v", certFile, err)
+				log.Printf("error while reading the cert file %s: %v", certFile, err)
 			}
 		}
 

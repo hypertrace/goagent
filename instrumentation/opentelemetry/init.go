@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	otlphttp "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/exporters/zipkin"
@@ -146,6 +147,25 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			// TODO: Define if endpoint could be a filepath to write into a file.
 			return stdouttrace.New(stdouttrace.WithPrettyPrint())
 		}
+
+	case config.TraceReporterType_OTLP_HTTP:
+		opts := []otlphttp.Option{
+			otlphttp.WithEndpoint(cfg.GetReporting().GetEndpoint().GetValue()),
+		}
+
+		if !cfg.GetReporting().GetSecure().GetValue() {
+			opts = append(opts, otlphttp.WithInsecure())
+		}
+
+		certFile := cfg.GetReporting().GetCertFile().GetValue()
+		if len(certFile) > 0 {
+			opts = append(opts, otlphttp.WithTLSClientConfig(createTLSConfig(cfg.GetReporting())))
+		}
+
+		return func() (sdktrace.SpanExporter, error) {
+			return otlphttp.New(context.Background(), opts...)
+		}
+
 	default:
 		opts := []otlpgrpc.Option{
 			otlpgrpc.WithEndpoint(removeProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),

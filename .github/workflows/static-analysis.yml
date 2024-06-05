@@ -7,7 +7,10 @@ on:
 
 jobs:
   static-analysis:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4

@@ -21,4 +21,4 @@ jobs:
           path: .github/actions
 
       - name: GoSec Scanner
-        uses: ./.github/actions/gosec-scanner
+        uses: ./.github/actions/gosec-analysis

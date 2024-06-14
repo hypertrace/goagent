@@ -8,12 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/hypertrace/goagent/config"
-	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
-
 	"github.com/gorilla/mux"
+	"github.com/hypertrace/goagent/config"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/gorilla/hypermux"
+	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 )
 
 func main() {
@@ -26,7 +25,14 @@ func main() {
 	r := mux.NewRouter()
 	r.Use(hypermux.NewMiddleware(&sdkhttp.Options{})) // here we use the mux middleware
 	r.HandleFunc("/foo", http.HandlerFunc(fooHandler))
-	log.Fatal(http.ListenAndServe(":8081", r))
+	srv := http.Server{
+		Addr:              ":8081",
+		Handler:           r,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		ReadHeaderTimeout: 60 * time.Second,
+	}
+	log.Fatal(srv.ListenAndServe())
 }
 
 type person struct {
@@ -52,5 +58,7 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", p.Name)))
+	if _, err := w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", p.Name))); err != nil {
+		log.Printf("error while writing response body: %v", err)
+	}
 }

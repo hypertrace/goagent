@@ -36,6 +36,8 @@ type Span interface {
 
 	// AddEvent adds an event to the Span with the provided name, timestamp and attributes.
 	AddEvent(name string, ts time.Time, attributes map[string]interface{})
+	// RemoveEvent removes an event
+	RemoveEvent()
 }
 
 // SpanFromContext retrieves the existing span from a context

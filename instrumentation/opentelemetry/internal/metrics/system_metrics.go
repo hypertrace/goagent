@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-const meterName = "hypertrace.goagent.metrics"
+const meterName = "goagent.hypertrace.org/metrics"
 
 type systemMetrics struct {
 	memory          float64
@@ -41,7 +41,7 @@ func InitializeSystemMetrics() {
 	meter := meterProvider.Meter(meterName)
 	err := setUpMetricRecorder(meter)
 	if err != nil {
-		fmt.Println("error initialising metrics, failed to setup metric recorder")
+		log.Printf("error initialising metrics, failed to setup metric recorder: %v\n", err)
 	}
 }
 
@@ -74,6 +74,7 @@ func parseProcStatFile(bytesArr []byte, procFilepath string) (*processStats, err
 		rss:    parseFloat(infos[23]),
 	}, nil
 }
+
 func parseFloat(val string) float64 {
 	floatVal, _ := strconv.ParseFloat(val, 64)
 	return floatVal
@@ -93,11 +94,11 @@ func setUpMetricRecorder(meter metric.Meter) error {
 	if meter == nil {
 		return fmt.Errorf("error while setting up metric recorder: meter is nil")
 	}
-	cpuSeconds, err := meter.Float64ObservableCounter("cpu.seconds.total", metric.WithDescription("Metric to monitor total CPU seconds"))
+	cpuSeconds, err := meter.Float64ObservableCounter("hypertrace.agent.cpu.seconds.total", metric.WithDescription("Metric to monitor total CPU seconds"))
 	if err != nil {
 		return fmt.Errorf("error while setting up cpu seconds metric counter: %v", err)
 	}
-	memory, err := meter.Float64ObservableGauge("memory", metric.WithDescription("Metric to monitor memory usage"))
+	memory, err := meter.Float64ObservableGauge("hypertrace.agent.memory", metric.WithDescription("Metric to monitor memory usage"))
 	if err != nil {
 		return fmt.Errorf("error while setting up memory metric counter: %v", err)
 	}

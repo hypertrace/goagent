@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -37,7 +36,7 @@ var (
 	pageSize = float64(os.Getpagesize())
 )
 
-func InitialiseMetrics() {
+func InitializeSystemMetrics() {
 	meterProvider := otel.GetMeterProvider()
 	meter := meterProvider.Meter(meterName)
 	err := setUpMetricRecorder(meter)
@@ -65,7 +64,7 @@ func processStatsFromPid(pid int) (*systemMetrics, error) {
 func parseProcStatFile(bytesArr []byte, procFilepath string) (*processStats, error) {
 	infos := strings.Split(string(bytesArr), " ")
 	if len(infos) != procStatArrayLength {
-		return nil, errors.New(fmt.Sprintf("%s file could not be parsed", procFilepath))
+		return nil, fmt.Errorf("%s file could not be parsed", procFilepath)
 	}
 	return &processStats{
 		utime:  parseFloat(infos[13]),

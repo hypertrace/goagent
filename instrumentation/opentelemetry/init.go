@@ -435,7 +435,7 @@ func initializeMetrics(cfg *config.AgentConfig, versionInfoAttrs []attribute.Key
 	meterProvider := metric.NewMeterProvider(metric.WithReader(periodicReader), metric.WithResource(metricResources))
 	otel.SetMeterProvider(meterProvider)
 
-	metrics.InitialiseMetrics()
+	metrics.InitializeSystemMetrics()
 	return func() {
 		err = meterProvider.Shutdown(context.Background())
 		if err != nil {

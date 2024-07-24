@@ -29,20 +29,21 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		// round tripper.
 		return rt.delegate.RoundTrip(req)
 	}
+	reqHeadersAccessor := NewHeaderMapAccessor(req.Header)
 
 	for key, value := range rt.defaultAttributes {
 		span.SetAttribute(key, value)
 	}
 
 	if rt.dataCaptureConfig.HttpHeaders.Request.Value {
-		SetAttributesFromHeaders("request", headerMapAccessor{req.Header}, span)
+		SetAttributesFromHeaders("request", reqHeadersAccessor, span)
 	}
 
 	// Only records the body if it is not empty and the content type header
 	// is in the recording accept list. Notice in here we rely on the fact that
 	// the content type is not streamable, otherwise we could end up in a very
 	// expensive parsing of a big body in memory.
-	if req.Body != nil && rt.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{req.Header}) {
+	if req.Body != nil && rt.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(reqHeadersAccessor) {
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			return rt.delegate.RoundTrip(req)
@@ -51,7 +52,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 		if len(body) > 0 {
 			setTruncatedBodyAttribute("request", body, int(rt.dataCaptureConfig.BodyMaxSizeBytes.Value), span,
-				HasMultiPartFormDataContentTypeHeader(headerMapAccessor{req.Header}))
+				HasMultiPartFormDataContentTypeHeader(reqHeadersAccessor))
 		}
 
 		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -61,9 +62,10 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return res, err
 	}
+	resHeadersAccessor := NewHeaderMapAccessor(res.Header)
 
 	// Notice, parsing a streamed content in memory can be expensive.
-	if rt.dataCaptureConfig.HttpBody.Response.Value && ShouldRecordBodyOfContentType(headerMapAccessor{res.Header}) {
+	if rt.dataCaptureConfig.HttpBody.Response.Value && ShouldRecordBodyOfContentType(resHeadersAccessor) {
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			return res, nil
@@ -72,7 +74,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 		if len(body) > 0 {
 			setTruncatedBodyAttribute("response", body, int(rt.dataCaptureConfig.BodyMaxSizeBytes.Value), span,
-				HasMultiPartFormDataContentTypeHeader(headerMapAccessor{res.Header}))
+				HasMultiPartFormDataContentTypeHeader(resHeadersAccessor))
 		}
 
 		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -80,7 +82,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	if rt.dataCaptureConfig.HttpHeaders.Response.Value {
 		// Sets an attribute per each response header.
-		SetAttributesFromHeaders("response", headerMapAccessor{res.Header}, span)
+		SetAttributesFromHeaders("response", resHeadersAccessor, span)
 	}
 
 	return res, err

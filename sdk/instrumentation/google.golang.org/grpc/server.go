@@ -2,6 +2,7 @@ package grpc // import "github.com/hypertrace/goagent/sdk/instrumentation/google
 
 import (
 	"context"
+	"google.golang.org/grpc/metadata"
 	"net/http"
 	"strings"
 
@@ -109,6 +110,14 @@ func wrapHandler(
 		filterResult := filter.Evaluate(span)
 		if filterResult.Block {
 			return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
+		} else if filterResult.Decorations != nil {
+			if md, ok := metadata.FromIncomingContext(ctx); ok {
+				for _, header := range filterResult.Decorations.RequestHeaderInjections {
+					md.Append(header.Key, header.Value)
+					span.SetAttribute("rpc.request.metadata."+header.Key, header.Value)
+				}
+				ctx = metadata.NewIncomingContext(ctx, md)
+			}
 		}
 
 		res, err := delegateHandler(ctx, req)

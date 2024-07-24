@@ -2,7 +2,6 @@ package grpc // import "github.com/hypertrace/goagent/sdk/instrumentation/google
 
 import (
 	"context"
-	"google.golang.org/grpc/metadata"
 	"net/http"
 	"strings"
 
@@ -13,6 +12,7 @@ import (
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"

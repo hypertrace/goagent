@@ -3,9 +3,10 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
-	"log"
 )
 
 const meterName = "goagent.hypertrace.org/metrics"

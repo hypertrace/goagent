@@ -248,6 +248,130 @@ func TestServerInterceptorFilterWithMaxProcessingBodyLen(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestServerInterceptorFilterDecorations(t *testing.T) {
+	var spans []*mock.Span
+	mockInterceptor := makeMockUnaryServerInterceptor(&spans)
+	// wrap interceptor with filter
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			WrapUnaryServerInterceptor(mockInterceptor, mock.SpanFromContext, &Options{Filter: mock.Filter{
+				Evaluator: func(span sdk.Span) result.FilterResult {
+					return result.FilterResult{Block: false, Decorations: &result.Decorations{
+						RequestHeaderInjections: []result.KeyValueString{
+							{
+								Key:   "injected-header",
+								Value: "injected-value",
+							},
+						},
+					}}
+				},
+			}}, nil),
+		),
+	)
+	defer s.Stop()
+
+	mockServer := &server{}
+	helloworld.RegisterGreeterServer(s, mockServer)
+
+	dialer := createDialer(s)
+
+	ctx := context.Background()
+	conn, err := grpc.DialContext(
+		ctx,
+		"bufnet",
+		grpc.WithContextDialer(dialer),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		t.Fatalf("failed to dial bufnet: %v", err)
+	}
+	defer conn.Close()
+
+	client := helloworld.NewGreeterClient(conn)
+
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
+	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
+		Name: "Pupo",
+	})
+	assert.NoError(t, err)
+
+	md := mockServer.requestHeader
+	// assert original header
+	val, found := md["test_key"]
+	assert.True(t, found)
+	assert.Equal(t, "test_value", val[0])
+
+	// assert injected header
+	val, found = md["injected-header"]
+	assert.True(t, found)
+	assert.Equal(t, "injected-value", val[0])
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, len(spans))
+	span := spans[0]
+	spanAttributePresent := false
+	span.GetAttributes().Iterate(func(key string, value interface{}) bool {
+		if key == "rpc.request.metadata.injected-header" {
+			assert.Equal(t, "injected-value", value.(string))
+			spanAttributePresent = true
+			return false
+		}
+		return true
+	})
+	assert.True(t, spanAttributePresent)
+}
+
+func TestServerInterceptorFilterEmptyDecorations(t *testing.T) {
+	spans := []*mock.Span{}
+	mockInterceptor := makeMockUnaryServerInterceptor(&spans)
+	// wrap interceptor with filter
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			WrapUnaryServerInterceptor(mockInterceptor, mock.SpanFromContext, &Options{Filter: mock.Filter{
+				Evaluator: func(span sdk.Span) result.FilterResult {
+					return result.FilterResult{Block: false, Decorations: &result.Decorations{}}
+				},
+			}}, nil),
+		),
+	)
+	defer s.Stop()
+
+	mockServer := &server{}
+	helloworld.RegisterGreeterServer(s, mockServer)
+
+	dialer := createDialer(s)
+
+	ctx := context.Background()
+	conn, err := grpc.DialContext(
+		ctx,
+		"bufnet",
+		grpc.WithContextDialer(dialer),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		t.Fatalf("failed to dial bufnet: %v", err)
+	}
+	defer conn.Close()
+
+	client := helloworld.NewGreeterClient(conn)
+
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key", "test_value"))
+	_, err = client.SayHello(ctx, &helloworld.HelloRequest{
+		Name: "Pupo",
+	})
+	assert.NoError(t, err)
+
+	md := mockServer.requestHeader
+	// assert original header
+	val, found := md["test_key"]
+	assert.True(t, found)
+	assert.Equal(t, "test_value", val[0])
+
+	assert.Equal(t, 1, len(spans))
+}
+
 func TestServerHandlerHelloWorldSuccess(t *testing.T) {
 	defer internalconfig.ResetConfig()
 

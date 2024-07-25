@@ -18,17 +18,22 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 )
 
-var _ helloworld.GreeterServer = server{}
+// type assertion
+var _ helloworld.GreeterServer = (*server)(nil)
 
 type server struct {
-	err          error
-	replyHeader  metadata.MD
-	replyTrailer metadata.MD
+	err           error
+	requestHeader metadata.MD
+	replyHeader   metadata.MD
+	replyTrailer  metadata.MD
 	*helloworld.UnimplementedGreeterServer
 }
 
-func (s server) SayHello(ctx context.Context, req *helloworld.HelloRequest) (*helloworld.HelloReply, error) {
+func (s *server) SayHello(ctx context.Context, req *helloworld.HelloRequest) (*helloworld.HelloReply, error) {
 	var reply *helloworld.HelloReply
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		s.requestHeader = md
+	}
 	if s.err == nil {
 		reply = &helloworld.HelloReply{Message: fmt.Sprintf("Hello %s", req.GetName())}
 	}

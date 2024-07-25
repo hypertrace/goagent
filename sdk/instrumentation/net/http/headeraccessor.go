@@ -9,28 +9,34 @@ import "net/http"
 type HeaderAccessor interface {
 	Lookup(key string) []string
 	ForEachHeader(callback func(key string, values []string) error) error
+	AddHeader(key, values string)
 }
 
 type headerMapAccessor struct {
 	header http.Header
 }
 
-var _ HeaderAccessor = headerMapAccessor{}
+// type assertion
+var _ HeaderAccessor = (*headerMapAccessor)(nil)
 
 // NewHeaderMapAccessor returns a HeaderAccessor
 func NewHeaderMapAccessor(h http.Header) HeaderAccessor {
 	return &headerMapAccessor{h}
 }
 
-func (a headerMapAccessor) Lookup(key string) []string {
+func (a *headerMapAccessor) Lookup(key string) []string {
 	return a.header[http.CanonicalHeaderKey(key)]
 }
 
-func (a headerMapAccessor) ForEachHeader(callback func(key string, values []string) error) error {
+func (a *headerMapAccessor) ForEachHeader(callback func(key string, values []string) error) error {
 	for key, values := range a.header {
 		if err := callback(key, values); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (a *headerMapAccessor) AddHeader(key, value string) {
+	a.header.Set(key, value)
 }

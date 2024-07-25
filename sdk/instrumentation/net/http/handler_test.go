@@ -517,6 +517,82 @@ func TestProcessingBodyIsTrimmed(t *testing.T) {
 	ih.ServeHTTP(w, r)
 }
 
+func TestFilterResultDecorations(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
+	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "injected-value", r.Header.Values("injected-header")[0])
+	})
+
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{
+		Filter: mock.Filter{
+			Evaluator: func(span sdk.Span) result.FilterResult {
+				return result.FilterResult{Block: false, Decorations: &result.Decorations{
+					RequestHeaderInjections: []result.KeyValueString{
+						{
+							Key:   "injected-header",
+							Value: "injected-value",
+						},
+					},
+				}}
+			},
+		},
+	}, map[string]string{}, &metricsHandler{}).(*handler)
+	wh.dataCaptureConfig = emptyTestConfig
+
+	ih := &mockHandler{baseHandler: wh}
+
+	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", nil)
+	r.Header.Add("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	ih.ServeHTTP(w, r)
+
+	assert.Equal(t, 1, len(ih.spans))
+
+	span := ih.spans[0]
+	spanAttributePresent := false
+	span.GetAttributes().Iterate(func(key string, value interface{}) bool {
+		if key == "http.request.header.injected-header" {
+			assert.Equal(t, "injected-value", value.(string))
+			spanAttributePresent = true
+			return false
+		}
+		return true
+	})
+	assert.True(t, spanAttributePresent)
+}
+
+func TestFilterResultEmptyDecorations(t *testing.T) {
+	defer internalconfig.ResetConfig()
+
+	headersLen := 0
+	h := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		assert.NotZero(t, len(r.Header))
+		assert.Equal(t, headersLen, len(r.Header))
+	})
+
+	wh, _ := WrapHandler(h, mock.SpanFromContext, &Options{
+		Filter: mock.Filter{
+			Evaluator: func(span sdk.Span) result.FilterResult {
+				return result.FilterResult{Block: false, Decorations: &result.Decorations{}}
+			},
+		},
+	}, map[string]string{}, &metricsHandler{}).(*handler)
+	wh.dataCaptureConfig = emptyTestConfig
+
+	ih := &mockHandler{baseHandler: wh}
+
+	r, _ := http.NewRequest("GET", "http://traceable.ai/foo?user_id=1", nil)
+	r.Header.Add("Content-Type", "application/json")
+	headersLen = len(r.Header)
+	w := httptest.NewRecorder()
+
+	ih.ServeHTTP(w, r)
+
+	assert.Equal(t, 1, len(ih.spans))
+}
+
 func TestUrlAttribute(t *testing.T) {
 	defer internalconfig.ResetConfig()
 

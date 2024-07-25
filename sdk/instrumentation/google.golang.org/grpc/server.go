@@ -12,6 +12,7 @@ import (
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
@@ -109,6 +110,14 @@ func wrapHandler(
 		filterResult := filter.Evaluate(span)
 		if filterResult.Block {
 			return nil, status.Error(StatusCode(int(filterResult.ResponseStatusCode)), StatusText(int(filterResult.ResponseStatusCode)))
+		} else if filterResult.Decorations != nil {
+			if md, ok := metadata.FromIncomingContext(ctx); ok {
+				for _, header := range filterResult.Decorations.RequestHeaderInjections {
+					md.Append(header.Key, header.Value)
+					span.SetAttribute("rpc.request.metadata."+header.Key, header.Value)
+				}
+				ctx = metadata.NewIncomingContext(ctx, md)
+			}
 		}
 
 		res, err := delegateHandler(ctx, req)

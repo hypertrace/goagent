@@ -49,6 +49,7 @@ func WrapHandler(delegate http.Handler, spanFromContext sdk.SpanFromContext, opt
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	span := h.spanFromContextRetriever(ctx)
+	headersAccessor := NewHeaderMapAccessor(r.Header)
 
 	h.mh.AddToRequestCount(1, r)
 
@@ -77,19 +78,19 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Sets an attribute per each request header.
 	if h.dataCaptureConfig.HttpHeaders.Request.Value {
-		SetAttributesFromHeaders("request", NewHeaderMapAccessor(r.Header), span)
+		SetAttributesFromHeaders("request", headersAccessor, span)
 	}
 
 	// nil check for body is important as this block turns the body into another
 	// object that isn't nil and that will leverage the "Observer effect".
-	if r.Body != nil && h.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headerMapAccessor{r.Header}) {
+	if r.Body != nil && h.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(headersAccessor) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return
 		}
 		defer r.Body.Close()
 
-		isMultipartFormDataBody := HasMultiPartFormDataContentTypeHeader(headerMapAccessor{r.Header})
+		isMultipartFormDataBody := HasMultiPartFormDataContentTypeHeader(headersAccessor)
 
 		// Only records the body if it is not empty and the content type
 		// header is not streamable
@@ -106,6 +107,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if filterResult.Block {
 		w.WriteHeader(int(filterResult.ResponseStatusCode))
 		return
+	} else if filterResult.Decorations != nil {
+		for _, header := range filterResult.Decorations.RequestHeaderInjections {
+			headersAccessor.AddHeader(header.Key, header.Value)
+			span.SetAttribute("http.request.header."+header.Key, header.Value)
+		}
 	}
 
 	// create http.ResponseWriter interceptor for tracking status code
@@ -113,16 +119,17 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// tag found status code on exit
 	defer func() {
+		responseHeadersAccessor := NewHeaderMapAccessor(wi.Header())
 		if h.dataCaptureConfig.HttpBody.Response.Value &&
 			len(wi.body) > 0 &&
-			ShouldRecordBodyOfContentType(headerMapAccessor{wi.Header()}) {
+			ShouldRecordBodyOfContentType(responseHeadersAccessor) {
 			setTruncatedBodyAttribute("response", wi.body, int(h.dataCaptureConfig.BodyMaxSizeBytes.Value), span,
-				HasMultiPartFormDataContentTypeHeader(headerMapAccessor{wi.Header()}))
+				HasMultiPartFormDataContentTypeHeader(responseHeadersAccessor))
 		}
 
 		if h.dataCaptureConfig.HttpHeaders.Response.Value {
 			// Sets an attribute per each response header.
-			SetAttributesFromHeaders("response", headerMapAccessor{wi.Header()}, span)
+			SetAttributesFromHeaders("response", responseHeadersAccessor, span)
 		}
 	}()
 

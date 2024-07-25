@@ -11,9 +11,8 @@ import (
 const meterName = "goagent.hypertrace.org/metrics"
 
 type systemMetrics interface {
-	getMemory() (float64, error)
-	getCPU() (float64, error)
-	getCurrentMetrics() error
+	getMemory() float64
+	getCPU() float64
 }
 
 func InitializeSystemMetrics() {
@@ -40,21 +39,12 @@ func setUpMetricRecorder(meter metric.Meter) error {
 	// Register the callback function for both cpu_seconds and memory observable gauges
 	_, err = meter.RegisterCallback(
 		func(ctx context.Context, result metric.Observer) error {
-			sysMetrics := newSystemMetrics()
-			err := sysMetrics.getCurrentMetrics()
+			sysMetrics, err := newSystemMetrics()
 			if err != nil {
 				return err
 			}
-			cpus, err := sysMetrics.getCPU()
-			if err != nil {
-				return err
-			}
-			mem, err := sysMetrics.getMemory()
-			if err != nil {
-				return err
-			}
-			result.ObserveFloat64(cpuSeconds, cpus)
-			result.ObserveFloat64(memory, mem)
+			result.ObserveFloat64(cpuSeconds, sysMetrics.getCPU())
+			result.ObserveFloat64(memory, sysMetrics.getMemory())
 			return nil
 		},
 		cpuSeconds, memory,

@@ -4,18 +4,14 @@ package metrics
 
 type noopMetrics struct{}
 
-func newSystemMetrics() systemMetrics {
-	return &noopMetrics{}
+func newSystemMetrics() (systemMetrics, error) {
+	return &noopMetrics{}, nil
 }
 
-func (nm *noopMetrics) getMemory() (float64, error) {
-	return 0, nil
+func (nm *noopMetrics) getMemory() float64 {
+	return 0
 }
 
-func (nm *noopMetrics) getCPU() (float64, error) {
-	return 0, nil
-}
-
-func (nm *noopMetrics) getCurrentMetrics() error {
-	return nil
+func (nm *noopMetrics) getCPU() float64 {
+	return 0
 }

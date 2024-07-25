@@ -32,26 +32,23 @@ type linuxMetrics struct {
 	cpuSecondsTotal float64
 }
 
-func newSystemMetrics() systemMetrics {
-	return &linuxMetrics{}
-}
-
-func (lm *linuxMetrics) getCurrentMetrics() error {
+func newSystemMetrics() (systemMetrics, error) {
+	lm := &linuxMetrics{}
 	stats, err := lm.processStatsFromPid(os.Getpid())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	lm.memory = stats.rss * pageSize
 	lm.cpuSecondsTotal = (stats.stime + stats.utime + stats.cstime + stats.cutime) / clkTck
-	return nil
+	return lm, nil
 }
 
-func (lm *linuxMetrics) getMemory() (float64, error) {
-	return lm.memory, nil
+func (lm *linuxMetrics) getMemory() float64 {
+	return lm.memory
 }
 
-func (lm *linuxMetrics) getCPU() (float64, error) {
-	return lm.cpuSecondsTotal, nil
+func (lm *linuxMetrics) getCPU() float64 {
+	return lm.cpuSecondsTotal
 }
 
 func (lm *linuxMetrics) processStatsFromPid(pid int) (*processStats, error) {

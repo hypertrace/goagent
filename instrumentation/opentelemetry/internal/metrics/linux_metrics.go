@@ -53,7 +53,6 @@ func (lm *linuxMetrics) getCPU() float64 {
 
 func (lm *linuxMetrics) processStatsFromPid(pid int) (*processStats, error) {
 	procFilepath := filepath.Join("/proc", strconv.Itoa(pid), "stat")
-	var err error
 	procStatFileBytes, err := os.ReadFile(filepath.Clean(procFilepath))
 	if err != nil {
 		return nil, err

@@ -8,16 +8,17 @@ linters:
     - goconst
     #- gocyclo response wrapper for server handler is too complex
     - gofmt
-    - golint
+    # Removing golint for now
+    # - golint
     - govet
     - ineffassign
     #- interfacer
     - lll
     - misspell
     - nakedret
-    - structcheck
     - unparam
-    - varcheck
+     # Replaces structcheck and varcheck.
+    - unused
 
 linters-settings:
   dupl:

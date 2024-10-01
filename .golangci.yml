@@ -1,8 +1,5 @@
 run:
-  deadline: 5m
-
-  skip-files:
-    - "\\.pb\\.go$"
+  timeout: 5m
 
 linters:
   disable-all: true
@@ -33,6 +30,8 @@ linters-settings:
     min-confidence: 0.85
 
 issues:
+  exclude-files:
+    - "\\.pb\\.go$"
   exclude-rules:
     - path: config\/config\.go # constants are generated with underscore in *.pb.go files
       text: don't use underscores in Go names

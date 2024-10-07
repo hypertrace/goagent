@@ -2,10 +2,11 @@ package batchspanprocessor // import "github.com/hypertrace/goagent/instrumentat
 
 // Adapted from go.opentelemetry.io/otel/internal/global#internal_logging.go
 import (
+	"sync"
+
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
-	"sync"
 )
 
 // The logger uses stdr which is backed by the standard `log.Logger`

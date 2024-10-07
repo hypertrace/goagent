@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
@@ -13,8 +14,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-logr/zapr"
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	modbsp "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/error_handler"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/identifier"
 	"github.com/hypertrace/goagent/sdk"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
@@ -245,6 +248,18 @@ func Init(cfg *config.AgentConfig) func() {
 // and returns a shutdown function to flush data immediately on a termination signal.
 func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessorWrapper,
 	versionInfoAttrs []attribute.KeyValue) func() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		logger = zap.NewNop()
+	}
+	return InitWithSpanProcessorWrapperAndZap(cfg, wrapper, versionInfoAttrs, logger)
+}
+
+// InitWithSpanProcessorWrapperAndZap initializes opentelemetry tracing with a wrapper over span processor
+// and returns a shutdown function to flush data immediately on a termination signal.
+// Also sets opentelemetry internal error_handler to the provider zap error_handler
+func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanProcessorWrapper,
+	versionInfoAttrs []attribute.KeyValue, logger *zap.Logger) func() {
 	mu.Lock()
 	defer mu.Unlock()
 	if initialized {
@@ -257,7 +272,7 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 		initialized = true
 		otel.SetTracerProvider(noop.NewTracerProvider())
 		// even if the tracer isn't enabled, propagation is still enabled
-		// to not to break the full workflow of the tracing system. Even
+		// to not break the full workflow of the tracing system. Even
 		// if this service will not report spans and the trace might look
 		// broken, spans can still be grouped by trace ID.
 		otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
@@ -266,6 +281,13 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 			sdkconfig.ResetConfig()
 		}
 	}
+
+	// initialize opentelemetry's internal logger
+	logr := zapr.NewLogger(logger)
+	otel.SetLogger(logr)
+
+	// initialize opentelemetry's internal error handler
+	error_handler.Init(logger)
 
 	// Initialize metrics
 	metricsShutdownFn := initializeMetrics(cfg, versionInfoAttrs)

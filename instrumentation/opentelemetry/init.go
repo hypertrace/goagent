@@ -17,7 +17,7 @@ import (
 	"github.com/go-logr/zapr"
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	modbsp "github.com/hypertrace/goagent/instrumentation/opentelemetry/batchspanprocessor"
-	"github.com/hypertrace/goagent/instrumentation/opentelemetry/error_handler"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/errorhandler"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/identifier"
 	"github.com/hypertrace/goagent/sdk"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
@@ -250,14 +250,15 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 	versionInfoAttrs []attribute.KeyValue) func() {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		logger = zap.NewNop()
+		logger = nil
+		log.Printf("error while creating default zap logger %v", err)
 	}
 	return InitWithSpanProcessorWrapperAndZap(cfg, wrapper, versionInfoAttrs, logger)
 }
 
 // InitWithSpanProcessorWrapperAndZap initializes opentelemetry tracing with a wrapper over span processor
 // and returns a shutdown function to flush data immediately on a termination signal.
-// Also sets opentelemetry internal error_handler to the provider zap error_handler
+// Also sets opentelemetry internal errorhandler to the provider zap errorhandler
 func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanProcessorWrapper,
 	versionInfoAttrs []attribute.KeyValue, logger *zap.Logger) func() {
 	mu.Lock()
@@ -282,12 +283,14 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 		}
 	}
 
-	// initialize opentelemetry's internal logger
-	logr := zapr.NewLogger(logger)
-	otel.SetLogger(logr)
+	if logger != nil {
+		// initialize opentelemetry's internal logger
+		logr := zapr.NewLogger(logger)
+		otel.SetLogger(logr)
 
-	// initialize opentelemetry's internal error handler
-	error_handler.Init(logger)
+		// initialize opentelemetry's internal error handler
+		errorhandler.Init(logger)
+	}
 
 	// Initialize metrics
 	metricsShutdownFn := initializeMetrics(cfg, versionInfoAttrs)

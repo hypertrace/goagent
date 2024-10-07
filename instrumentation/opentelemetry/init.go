@@ -284,6 +284,8 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 	}
 
 	if logger != nil {
+		_ = zap.ReplaceGlobals(logger.With(zap.String("service", "hypertrace")))
+
 		// initialize opentelemetry's internal logger
 		logr := zapr.NewLogger(logger)
 		otel.SetLogger(logr)

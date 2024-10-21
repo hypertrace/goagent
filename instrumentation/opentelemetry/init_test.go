@@ -38,10 +38,29 @@ func ExampleRegisterService() {
 	shutdown := Init(cfg)
 	defer shutdown()
 
-	_, _, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	_, _, err := RegisterService("custom_env", "custom_service", map[string]string{"test1": "val1"})
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
 	}
+}
+
+func TestMultiRegisterService(t *testing.T) {
+	cfg := config.Load()
+	cfg.ServiceName = config.String("my_example_svc")
+	cfg.DataCapture.HttpHeaders.Request = config.Bool(true)
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_LOGGING
+
+	shutdown := Init(cfg)
+	defer shutdown()
+
+	_, _, err := RegisterService("custom_env", "custom_service", map[string]string{"test1": "val1"})
+	assert.Nil(t, err)
+
+	_, _, err = RegisterService("custom_env", "custom_service_2", map[string]string{"test2": "val2"})
+	assert.Nil(t, err)
+
+	_, _, err = RegisterService("custom_env_1", "custom_service", map[string]string{"test3": "val3"})
+	assert.Nil(t, err)
 }
 
 func TestInitDisabledAgent(t *testing.T) {
@@ -50,7 +69,7 @@ func TestInitDisabledAgent(t *testing.T) {
 	shutdown := Init(cfg)
 	defer shutdown()
 
-	startSpan, tp, err := RegisterService("test_service", nil)
+	startSpan, tp, err := RegisterService("custom_env", "test_service", nil)
 	require.NoError(t, err)
 	assert.Equal(t, noop.NewTracerProvider(), tp)
 	_, s, _ := startSpan(context.Background(), "test_span", nil)
@@ -80,7 +99,7 @@ func TestOtlpService(t *testing.T) {
 	shutdown := Init(cfg)
 	defer shutdown()
 
-	startSpan, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	startSpan, tp, err := RegisterService("custom_env", "custom_service", map[string]string{"test1": "val1"})
 	_, s, _ := startSpan(context.Background(), "test_span", nil)
 	assert.False(t, s.IsNoop())
 	assert.NotEqual(t, noop.NewTracerProvider(), tp)
@@ -102,7 +121,7 @@ func TestGrpcLoadBalancingConfig(t *testing.T) {
 	defer shutdown()
 
 	assert.Equal(t, resolver.GetDefaultScheme(), "dns")
-	_, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	_, tp, err := RegisterService("custom_env", "custom_service", map[string]string{"test1": "val1"})
 	assert.NotEqual(t, noop.NewTracerProvider(), tp)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)
@@ -165,7 +184,7 @@ func TestMultipleTraceProviders(t *testing.T) {
 	_, _, spanEnder := StartSpan(context.Background(), "example_span", nil)
 	spanEnder()
 
-	startServiceSpan, tp, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	startServiceSpan, tp, err := RegisterService("custom_env", "custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
@@ -208,7 +227,7 @@ func TestMultipleTraceProvidersCallAfterShutdown(t *testing.T) {
 	assert.True(t, initialized)
 	assert.Equal(t, 0, len(traceProviders))
 
-	startServiceSpan, _, err := RegisterService("custom_service", map[string]string{"test1": "val1"})
+	startServiceSpan, _, err := RegisterService("custom_env", "custom_service", map[string]string{"test1": "val1"})
 	assert.NoError(t, err)
 	assert.NotNil(t, startServiceSpan)
 	assert.True(t, initialized)
@@ -379,7 +398,7 @@ func TestInitWithSpanProcessorWrapper(t *testing.T) {
 	assert.Equal(t, 2, wrapper.onEndCount)
 
 	// test wrapper is called for spans created by service trace provider
-	startSpan, _, err := RegisterServiceWithSpanProcessorWrapper("custom_service", map[string]string{"test1": "val1"}, wrapper,
+	startSpan, _, err := RegisterServiceWithSpanProcessorWrapper("custom_env", "custom_service", map[string]string{"test1": "val1"}, wrapper,
 		versionInfoAttributes)
 	if err != nil {
 		log.Fatalf("Error while initializing service: %v", err)

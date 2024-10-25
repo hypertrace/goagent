@@ -13,6 +13,11 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
+const (
+	environmentKey     = "deployment.environment"
+	defaultEnvironment = "default"
+)
+
 // InitAsAdditional initializes opentelemetry tracing and returns a span processor and a shutdown
 // function to flush data immediately on a termination signal.
 // This is ideal for when we use goagent along with other opentelemetry setups.
@@ -150,4 +155,8 @@ func MakeRemoveGoAgentAttrs(attrsRemovalPrefixes []string) func(sp trace.SpanExp
 
 		return &attrsRemover{sp, attrsRemovalPrefixes}
 	}
+}
+
+func encodeEnvServicePair(environment string, serviceName string) string {
+	return environment + "::SEP::" + serviceName
 }

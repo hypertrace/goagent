@@ -46,7 +46,7 @@ import (
 
 var (
 	batchTimeout          = time.Duration(200) * time.Millisecond
-	traceProviders        map[string]map[string]*sdktrace.TracerProvider
+	traceProviders        map[string]*sdktrace.TracerProvider
 	globalSampler         sdktrace.Sampler
 	initialized           = false
 	enabled               = false
@@ -333,7 +333,7 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 
 	otel.SetTextMapPropagator(makePropagator(cfg.PropagationFormats))
 
-	traceProviders = make(map[string]map[string]*sdktrace.TracerProvider)
+	traceProviders = make(map[string]*sdktrace.TracerProvider)
 	globalSampler = sampler
 	initialized = true
 
@@ -351,17 +351,14 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 	return func() {
 		mu.Lock()
 		defer mu.Unlock()
-		for environment, serviceTraceProviders := range traceProviders {
-			for _, tracerProvider := range serviceTraceProviders {
-				err := tracerProvider.Shutdown(context.Background())
-				if err != nil {
-					log.Printf("error while shutting down tracer provider: %v\n", err)
-				}
+		for envServicePair, tracerProvider := range traceProviders {
+			err := tracerProvider.Shutdown(context.Background())
+			if err != nil {
+				log.Printf("error while shutting down tracer provider: %v\n", err)
 			}
-			delete(traceProviders, environment)
+			delete(traceProviders, envServicePair)
 		}
-
-		traceProviders = map[string]map[string]*sdktrace.TracerProvider{}
+		traceProviders = map[string]*sdktrace.TracerProvider{}
 		err := tp.Shutdown(context.Background())
 		if err != nil {
 			log.Printf("error while shutting down default tracer provider: %v\n", err)
@@ -389,14 +386,14 @@ func createResources(serviceName string, resources map[string]string,
 	return retValues
 }
 
-// RegisterService creates tracerprovider for a new service in given environment and returns a func which can be used to create spans and the TracerProvider
-func RegisterService(environment string, serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
-	return RegisterServiceWithSpanProcessorWrapper(environment, serviceName, resourceAttributes, nil, versionInfoAttributes)
+// RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans and the TracerProvider
+func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
+	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil, versionInfoAttributes)
 }
 
-// RegisterServiceWithSpanProcessorWrapper creates a tracerprovider for a new service in given environment with a wrapper over opentelemetry span processor
+// RegisterServiceWithSpanProcessorWrapper creates a tracerprovider for a new service with a wrapper over opentelemetry span processor
 // and returns a func which can be used to create spans and the TracerProvider
-func RegisterServiceWithSpanProcessorWrapper(environment string, serviceName string, resourceAttributes map[string]string,
+func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string,
 	wrapper SpanProcessorWrapper, versionInfoAttrs []attribute.KeyValue) (sdk.StartSpan, trace.TracerProvider, error) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -408,10 +405,13 @@ func RegisterServiceWithSpanProcessorWrapper(environment string, serviceName str
 		return NoopStartSpan, noop.NewTracerProvider(), nil
 	}
 
-	if stp, ok := traceProviders[environment]; ok {
-		if _, present := stp[serviceName]; present {
-			return nil, noop.NewTracerProvider(), fmt.Errorf("environment %v service %v already initialized", environment, serviceName)
-		}
+	environment, ok := resourceAttributes[environmentKey]
+	if !ok {
+		environment = defaultEnvironment
+	}
+	envServicePair := encodeEnvServicePair(environment, serviceName)
+	if _, ok := traceProviders[envServicePair]; ok {
+		return nil, noop.NewTracerProvider(), fmt.Errorf("service %v environment %v already initialized", serviceName, environment)
 	}
 
 	exporter, err := exporterFactory()
@@ -440,11 +440,7 @@ func RegisterServiceWithSpanProcessorWrapper(environment string, serviceName str
 		sdktrace.WithResource(resources),
 	)
 
-	if _, ok := traceProviders[environment]; !ok {
-		traceProviders[environment] = make(map[string]*sdktrace.TracerProvider)
-	}
-
-	traceProviders[environment][serviceName] = tp
+	traceProviders[envServicePair] = tp
 	return startSpan(func() trace.TracerProvider {
 		return tp
 	}), tp, nil

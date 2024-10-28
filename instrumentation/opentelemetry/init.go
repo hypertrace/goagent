@@ -316,7 +316,7 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 
 	resources, err := resource.New(
 		context.Background(),
-		resource.WithAttributes(createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes,
+		resource.WithAttributes(createResources(resourceAttrsWithServiceName(cfg.ResourceAttributes, cfg.GetServiceName().GetValue()),
 			versionInfoAttrs)...),
 	)
 	if err != nil {
@@ -351,12 +351,12 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 	return func() {
 		mu.Lock()
 		defer mu.Unlock()
-		for serviceName, tracerProvider := range traceProviders {
+		for key, tracerProvider := range traceProviders {
 			err := tracerProvider.Shutdown(context.Background())
 			if err != nil {
 				log.Printf("error while shutting down tracer provider: %v\n", err)
 			}
-			delete(traceProviders, serviceName)
+			delete(traceProviders, key)
 		}
 		traceProviders = map[string]*sdktrace.TracerProvider{}
 		err := tp.Shutdown(context.Background())
@@ -371,10 +371,9 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 	}
 }
 
-func createResources(serviceName string, resources map[string]string,
+func createResources(resources map[string]string,
 	versionInfo []attribute.KeyValue) []attribute.KeyValue {
 	retValues := []attribute.KeyValue{
-		semconv.ServiceNameKey.String(serviceName),
 		semconv.TelemetrySDKLanguageGo,
 	}
 
@@ -386,14 +385,14 @@ func createResources(serviceName string, resources map[string]string,
 	return retValues
 }
 
-// RegisterService creates tracerprovider for a new service and returns a func which can be used to create spans and the TracerProvider
-func RegisterService(serviceName string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
-	return RegisterServiceWithSpanProcessorWrapper(serviceName, resourceAttributes, nil, versionInfoAttributes)
+// RegisterService creates tracerprovider for a new service (represented via a unique key) and returns a func which can be used to create spans and the TracerProvider
+func RegisterService(key string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
+	return RegisterServiceWithSpanProcessorWrapper(key, resourceAttributes, nil, versionInfoAttributes)
 }
 
-// RegisterServiceWithSpanProcessorWrapper creates a tracerprovider for a new service with a wrapper over opentelemetry span processor
+// RegisterServiceWithSpanProcessorWrapper creates a tracerprovider for a new service (represented via a unique key) with a wrapper over opentelemetry span processor
 // and returns a func which can be used to create spans and the TracerProvider
-func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttributes map[string]string,
+func RegisterServiceWithSpanProcessorWrapper(key string, resourceAttributes map[string]string,
 	wrapper SpanProcessorWrapper, versionInfoAttrs []attribute.KeyValue) (sdk.StartSpan, trace.TracerProvider, error) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -405,8 +404,8 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 		return NoopStartSpan, noop.NewTracerProvider(), nil
 	}
 
-	if _, ok := traceProviders[serviceName]; ok {
-		return nil, noop.NewTracerProvider(), fmt.Errorf("service %v already initialized", serviceName)
+	if _, ok := traceProviders[key]; ok {
+		return nil, noop.NewTracerProvider(), fmt.Errorf("key %v is already used for initialization", key)
 	}
 
 	exporter, err := exporterFactory()
@@ -424,7 +423,7 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 
 	resources, err := resource.New(
 		context.Background(),
-		resource.WithAttributes(createResources(serviceName, resourceAttributes, versionInfoAttrs)...),
+		resource.WithAttributes(createResources(resourceAttributes, versionInfoAttrs)...),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -435,7 +434,7 @@ func RegisterServiceWithSpanProcessorWrapper(serviceName string, resourceAttribu
 		sdktrace.WithResource(resources),
 	)
 
-	traceProviders[serviceName] = tp
+	traceProviders[key] = tp
 	return startSpan(func() trace.TracerProvider {
 		return tp
 	}), tp, nil
@@ -453,7 +452,7 @@ func initializeMetrics(cfg *config.AgentConfig, versionInfoAttrs []attribute.Key
 	}
 	periodicReader := metric.NewPeriodicReader(metricsExporter)
 
-	resourceKvps := createResources(cfg.GetServiceName().GetValue(), cfg.ResourceAttributes, versionInfoAttrs)
+	resourceKvps := createResources(resourceAttrsWithServiceName(cfg.ResourceAttributes, cfg.GetServiceName().GetValue()), versionInfoAttrs)
 	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
 	metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
 	if err != nil {
@@ -490,6 +489,17 @@ func shouldDisableMetrics(cfg *config.AgentConfig) bool {
 func shouldUseCustomBatchSpanProcessor(cfg *config.AgentConfig) bool {
 	return (cfg.GetGoagent() != nil && cfg.GetGoagent().GetUseCustomBsp().GetValue()) && // bsp enabled AND
 		(cfg.GetTelemetry() != nil && cfg.GetTelemetry().GetMetricsEnabled().GetValue()) // metrics enabled
+}
+
+func resourceAttrsWithServiceName(resourceMap map[string]string, serviceName string) map[string]string {
+	if resourceMap == nil {
+		resourceMap = make(map[string]string)
+	}
+	if _, ok := resourceMap["service.name"]; !ok && (len(serviceName) > 0) {
+		resourceMap["service.name"] = serviceName
+	}
+
+	return resourceMap
 }
 
 // SpanProcessorWrapper wraps otel span processor

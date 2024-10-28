@@ -495,8 +495,9 @@ func resourceAttrsWithServiceName(resourceMap map[string]string, serviceName str
 	if resourceMap == nil {
 		resourceMap = make(map[string]string)
 	}
-	if _, ok := resourceMap["service.name"]; !ok && (len(serviceName) > 0) {
-		resourceMap["service.name"] = serviceName
+	serviceNameKey := string(semconv.ServiceNameKey)
+	if _, ok := resourceMap[serviceNameKey]; !ok && (len(serviceName) > 0) {
+		resourceMap[serviceNameKey] = serviceName
 	}
 
 	return resourceMap

@@ -35,7 +35,7 @@ func InitAsAdditional(cfg *config.AgentConfig) (trace.SpanProcessor, func()) {
 	if cfg.GetServiceName().GetValue() != "" {
 		resource, err := resource.New(
 			context.Background(),
-			resource.WithAttributes(createResources(resourceAttrsWithServiceName(cfg.ResourceAttributes, cfg.GetServiceName().GetValue()), versionInfoAttributes)...),
+			resource.WithAttributes(createResources(getResourceAttrsWithServiceName(cfg.ResourceAttributes, cfg.GetServiceName().GetValue()), versionInfoAttributes)...),
 		)
 		if err != nil {
 			log.Fatal(err)

@@ -316,7 +316,7 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 
 	resources, err := resource.New(
 		context.Background(),
-		resource.WithAttributes(createResources(resourceAttrsWithServiceName(cfg.ResourceAttributes, cfg.GetServiceName().GetValue()),
+		resource.WithAttributes(createResources(getResourceAttrsWithServiceName(cfg.ResourceAttributes, cfg.GetServiceName().GetValue()),
 			versionInfoAttrs)...),
 	)
 	if err != nil {
@@ -452,7 +452,7 @@ func initializeMetrics(cfg *config.AgentConfig, versionInfoAttrs []attribute.Key
 	}
 	periodicReader := metric.NewPeriodicReader(metricsExporter)
 
-	resourceKvps := createResources(resourceAttrsWithServiceName(cfg.ResourceAttributes, cfg.GetServiceName().GetValue()), versionInfoAttrs)
+	resourceKvps := createResources(getResourceAttrsWithServiceName(cfg.ResourceAttributes, cfg.GetServiceName().GetValue()), versionInfoAttrs)
 	resourceKvps = append(resourceKvps, identifier.ServiceInstanceKeyValue)
 	metricResources, err := resource.New(context.Background(), resource.WithAttributes(resourceKvps...))
 	if err != nil {
@@ -491,7 +491,7 @@ func shouldUseCustomBatchSpanProcessor(cfg *config.AgentConfig) bool {
 		(cfg.GetTelemetry() != nil && cfg.GetTelemetry().GetMetricsEnabled().GetValue()) // metrics enabled
 }
 
-func resourceAttrsWithServiceName(resourceMap map[string]string, serviceName string) map[string]string {
+func getResourceAttrsWithServiceName(resourceMap map[string]string, serviceName string) map[string]string {
 	if resourceMap == nil {
 		resourceMap = make(map[string]string)
 	}

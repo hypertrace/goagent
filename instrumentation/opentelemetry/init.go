@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
@@ -40,6 +39,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/resolver"
 )
@@ -51,6 +51,8 @@ var (
 	initialized           = false
 	enabled               = false
 	mu                    sync.Mutex
+	globalExporter        sdktrace.SpanExporter
+	globalExporterErr     error
 	exporterFactory       func() (sdktrace.SpanExporter, error)
 	configFactory         func() *config.AgentConfig
 	versionInfoAttributes = []attribute.KeyValue{
@@ -132,6 +134,11 @@ func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (metric.Exporter
 }
 
 func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter, error) {
+	if globalExporter != nil || globalExporterErr != nil {
+		return func() (sdktrace.SpanExporter, error) {
+			return globalExporter, globalExporterErr
+		}
+	}
 	switch cfg.Reporting.TraceReporterType {
 	case config.TraceReporterType_ZIPKIN:
 		client := &http.Client{
@@ -141,15 +148,17 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 		}
 
 		return func() (sdktrace.SpanExporter, error) {
-			return zipkin.New(
+			globalExporter, globalExporterErr = zipkin.New(
 				cfg.GetReporting().GetEndpoint().GetValue(),
 				zipkin.WithClient(client),
 			)
+			return globalExporter, globalExporterErr
 		}
 	case config.TraceReporterType_LOGGING:
 		return func() (sdktrace.SpanExporter, error) {
 			// TODO: Define if endpoint could be a filepath to write into a file.
-			return stdouttrace.New(stdouttrace.WithPrettyPrint())
+			globalExporter, globalExporterErr = stdouttrace.New(stdouttrace.WithPrettyPrint())
+			return globalExporter, globalExporterErr
 		}
 
 	case config.TraceReporterType_OTLP_HTTP:
@@ -167,7 +176,8 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 		}
 
 		return func() (sdktrace.SpanExporter, error) {
-			return otlphttp.New(context.Background(), opts...)
+			globalExporter, globalExporterErr = otlphttp.New(context.Background(), opts...)
+			return globalExporter, globalExporterErr
 		}
 
 	default:
@@ -194,10 +204,11 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 		}
 
 		return func() (sdktrace.SpanExporter, error) {
-			return otlptrace.New(
+			globalExporter, globalExporterErr = otlptrace.New(
 				context.Background(),
 				otlpgrpc.NewClient(opts...),
 			)
+			return globalExporter, globalExporterErr
 		}
 	}
 }
@@ -408,6 +419,7 @@ func RegisterServiceWithSpanProcessorWrapper(key string, resourceAttributes map[
 		return nil, noop.NewTracerProvider(), fmt.Errorf("key %v is already used for initialization", key)
 	}
 
+	// TODO: Invoking this to get a different exporter for each registered service is the offending code I believe. We need to have a single traces exporter used by all the services
 	exporter, err := exporterFactory()
 	if err != nil {
 		log.Fatal(err)

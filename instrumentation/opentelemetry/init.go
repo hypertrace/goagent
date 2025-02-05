@@ -132,6 +132,12 @@ func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (metric.Exporter
 }
 
 func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter, error) {
+	additionalHeaders := make(map[string]string)
+	if cfg.Reporting.GetToken() != nil {
+		// TODO - confirm what the header key should be, is this defined yet for go -> local-coll
+		additionalHeaders["TODO-traceable-agent-token"] = cfg.GetReporting().GetToken().GetValue()
+	}
+
 	switch cfg.Reporting.TraceReporterType {
 	case config.TraceReporterType_ZIPKIN:
 		client := &http.Client{
@@ -144,6 +150,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			return zipkin.New(
 				cfg.GetReporting().GetEndpoint().GetValue(),
 				zipkin.WithClient(client),
+				zipkin.WithHeaders(additionalHeaders),
 			)
 		}
 	case config.TraceReporterType_LOGGING:
@@ -160,6 +167,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 		if !cfg.GetReporting().GetSecure().GetValue() {
 			opts = append(opts, otlphttp.WithInsecure())
 		}
+		opts = append(opts, otlphttp.WithHeaders(additionalHeaders))
 
 		certFile := cfg.GetReporting().GetCertFile().GetValue()
 		if len(certFile) > 0 {
@@ -192,6 +200,8 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			resolver.SetDefaultScheme("dns")
 			opts = append(opts, otlpgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
 		}
+
+		opts = append(opts, otlpgrpc.WithHeaders(additionalHeaders))
 
 		return func() (sdktrace.SpanExporter, error) {
 			return otlptrace.New(

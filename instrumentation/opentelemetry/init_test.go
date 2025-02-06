@@ -3,6 +3,13 @@ package opentelemetry
 import (
 	"context"
 	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
 	v1 "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/config"
 	"github.com/stretchr/testify/assert"
@@ -14,12 +21,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/resolver"
-	"log"
-	"net"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
 
 	coltracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 )

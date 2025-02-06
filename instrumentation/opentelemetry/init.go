@@ -51,7 +51,7 @@ var (
 	initialized           = false
 	enabled               = false
 	mu                    sync.Mutex
-	exporterFactory       func() (sdktrace.SpanExporter, error)
+	exporterFactory       func(opts ...ServiceOption) (sdktrace.SpanExporter, error)
 	configFactory         func() *config.AgentConfig
 	versionInfoAttributes = []attribute.KeyValue{
 		semconv.TelemetrySDKNameKey.String("hypertrace"),
@@ -59,7 +59,22 @@ var (
 	}
 )
 
-const AgentTokenKey = "traceableai-agent-token"
+type ServiceOption func(*serviceOptions)
+
+type serviceOptions struct {
+	headers map[string]string
+}
+
+func WithHeaders(headers map[string]string) ServiceOption {
+	return func(opts *serviceOptions) {
+		if opts.headers == nil {
+			opts.headers = make(map[string]string)
+		}
+		for k, v := range headers {
+			opts.headers[k] = v
+		}
+	}
+}
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
 	var propagators []propagation.TextMapPropagator
@@ -133,12 +148,7 @@ func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (metric.Exporter
 	}
 }
 
-func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter, error) {
-	additionalHeaders := make(map[string]string)
-	if cfg.Reporting.GetToken() != nil {
-		additionalHeaders[AgentTokenKey] = cfg.GetReporting().GetToken().GetValue()
-	}
-
+func makeExporterFactory(cfg *config.AgentConfig) func(serviceOpts ...ServiceOption) (sdktrace.SpanExporter, error) {
 	switch cfg.Reporting.TraceReporterType {
 	case config.TraceReporterType_ZIPKIN:
 		client := &http.Client{
@@ -147,51 +157,66 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 			},
 		}
 
-		return func() (sdktrace.SpanExporter, error) {
+		return func(opts ...ServiceOption) (sdktrace.SpanExporter, error) {
+			serviceOpts := &serviceOptions{
+				headers: make(map[string]string),
+			}
+			for _, opt := range opts {
+				opt(serviceOpts)
+			}
 			return zipkin.New(
 				cfg.GetReporting().GetEndpoint().GetValue(),
 				zipkin.WithClient(client),
-				zipkin.WithHeaders(additionalHeaders),
+				zipkin.WithHeaders(serviceOpts.headers),
 			)
 		}
 	case config.TraceReporterType_LOGGING:
-		return func() (sdktrace.SpanExporter, error) {
+		return func(opts ...ServiceOption) (sdktrace.SpanExporter, error) {
 			// TODO: Define if endpoint could be a filepath to write into a file.
 			return stdouttrace.New(stdouttrace.WithPrettyPrint())
 		}
 
 	case config.TraceReporterType_OTLP_HTTP:
-		opts := []otlphttp.Option{
+		standardOpts := []otlphttp.Option{
 			otlphttp.WithEndpoint(cfg.GetReporting().GetEndpoint().GetValue()),
 		}
 
 		if !cfg.GetReporting().GetSecure().GetValue() {
-			opts = append(opts, otlphttp.WithInsecure())
+			standardOpts = append(standardOpts, otlphttp.WithInsecure())
 		}
-		opts = append(opts, otlphttp.WithHeaders(additionalHeaders))
 
 		certFile := cfg.GetReporting().GetCertFile().GetValue()
 		if len(certFile) > 0 {
-			opts = append(opts, otlphttp.WithTLSClientConfig(createTLSConfig(cfg.GetReporting())))
+			standardOpts = append(standardOpts, otlphttp.WithTLSClientConfig(createTLSConfig(cfg.GetReporting())))
 		}
 
-		return func() (sdktrace.SpanExporter, error) {
-			return otlphttp.New(context.Background(), opts...)
+		return func(opts ...ServiceOption) (sdktrace.SpanExporter, error) {
+			serviceOpts := &serviceOptions{
+				headers: make(map[string]string),
+			}
+			for _, opt := range opts {
+				opt(serviceOpts)
+			}
+
+			finalOpts := append([]otlphttp.Option{}, standardOpts...)
+			finalOpts = append(finalOpts, otlphttp.WithHeaders(serviceOpts.headers))
+
+			return otlphttp.New(context.Background(), finalOpts...)
 		}
 
 	default:
-		opts := []otlpgrpc.Option{
+		standardOpts := []otlpgrpc.Option{
 			otlpgrpc.WithEndpoint(removeProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),
 		}
 
 		if !cfg.GetReporting().GetSecure().GetValue() {
-			opts = append(opts, otlpgrpc.WithInsecure())
+			standardOpts = append(standardOpts, otlpgrpc.WithInsecure())
 		}
 
 		certFile := cfg.GetReporting().GetCertFile().GetValue()
 		if len(certFile) > 0 {
 			if tlsCredentials, err := credentials.NewClientTLSFromFile(certFile, ""); err == nil {
-				opts = append(opts, otlpgrpc.WithTLSCredentials(tlsCredentials))
+				standardOpts = append(standardOpts, otlpgrpc.WithTLSCredentials(tlsCredentials))
 			} else {
 				log.Printf("error while creating tls credentials from cert path %s: %v", certFile, err)
 			}
@@ -199,15 +224,24 @@ func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter,
 
 		if cfg.Reporting.GetEnableGrpcLoadbalancing().GetValue() {
 			resolver.SetDefaultScheme("dns")
-			opts = append(opts, otlpgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
+			standardOpts = append(standardOpts, otlpgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
 		}
 
-		opts = append(opts, otlpgrpc.WithHeaders(additionalHeaders))
+		return func(opts ...ServiceOption) (sdktrace.SpanExporter, error) {
+			// Process options
+			serviceOpts := &serviceOptions{
+				headers: make(map[string]string),
+			}
+			for _, opt := range opts {
+				opt(serviceOpts)
+			}
 
-		return func() (sdktrace.SpanExporter, error) {
+			finalOpts := append([]otlpgrpc.Option{}, standardOpts...)
+			finalOpts = append(finalOpts, otlpgrpc.WithHeaders(serviceOpts.headers))
+
 			return otlptrace.New(
 				context.Background(),
-				otlpgrpc.NewClient(opts...),
+				otlpgrpc.NewClient(finalOpts...),
 			)
 		}
 	}
@@ -397,14 +431,15 @@ func createResources(resources map[string]string,
 }
 
 // RegisterService creates tracerprovider for a new service (represented via a unique key) and returns a func which can be used to create spans and the TracerProvider
-func RegisterService(key string, resourceAttributes map[string]string) (sdk.StartSpan, trace.TracerProvider, error) {
-	return RegisterServiceWithSpanProcessorWrapper(key, resourceAttributes, nil, versionInfoAttributes)
+func RegisterService(key string, resourceAttributes map[string]string, opts ...ServiceOption) (sdk.StartSpan, trace.TracerProvider, error) {
+	return RegisterServiceWithSpanProcessorWrapper(key, resourceAttributes, nil, versionInfoAttributes, opts...)
 }
 
 // RegisterServiceWithSpanProcessorWrapper creates a tracerprovider for a new service (represented via a unique key) with a wrapper over opentelemetry span processor
 // and returns a func which can be used to create spans and the TracerProvider
 func RegisterServiceWithSpanProcessorWrapper(key string, resourceAttributes map[string]string,
-	wrapper SpanProcessorWrapper, versionInfoAttrs []attribute.KeyValue) (sdk.StartSpan, trace.TracerProvider, error) {
+	wrapper SpanProcessorWrapper, versionInfoAttrs []attribute.KeyValue, opts ...ServiceOption) (sdk.StartSpan, trace.TracerProvider, error) {
+
 	mu.Lock()
 	defer mu.Unlock()
 	if !initialized {
@@ -419,7 +454,7 @@ func RegisterServiceWithSpanProcessorWrapper(key string, resourceAttributes map[
 		return nil, noop.NewTracerProvider(), fmt.Errorf("key %v is already used for initialization", key)
 	}
 
-	exporter, err := exporterFactory()
+	exporter, err := exporterFactory(opts...)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -59,6 +59,8 @@ var (
 	}
 )
 
+const AgentTokenKey = "traceableai-agent-token"
+
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
 	var propagators []propagation.TextMapPropagator
 	for _, format := range formats {
@@ -134,8 +136,7 @@ func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (metric.Exporter
 func makeExporterFactory(cfg *config.AgentConfig) func() (sdktrace.SpanExporter, error) {
 	additionalHeaders := make(map[string]string)
 	if cfg.Reporting.GetToken() != nil {
-		// TODO - confirm what the header key should be, is this defined yet for go -> local-coll
-		additionalHeaders["TODO-traceable-agent-token"] = cfg.GetReporting().GetToken().GetValue()
+		additionalHeaders[AgentTokenKey] = cfg.GetReporting().GetToken().GetValue()
 	}
 
 	switch cfg.Reporting.TraceReporterType {

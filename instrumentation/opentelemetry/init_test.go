@@ -517,7 +517,7 @@ func TestMakeExporterFactory_Headers_WithMockGRPCServer(t *testing.T) {
 	select {
 	case capturedMetadata := <-metadataCh:
 		require.NotNil(t, capturedMetadata)
-		assert.Equal(t, []string{"test-token"}, capturedMetadata["todo-traceable-agent-token"])
+		assert.Equal(t, []string{"test-token"}, capturedMetadata[AgentTokenKey])
 	case <-time.After(1 * time.Second):
 		t.Fatal("Metadata was not captured")
 	}
@@ -577,7 +577,7 @@ func TestMakeExporterFactory_Headers_ZipkinAndOTLPHTTP(t *testing.T) {
 			select {
 			case capturedHeaders := <-headersCh:
 				require.NotNil(t, capturedHeaders)
-				assert.Equal(t, []string{"test-token"}, capturedHeaders.Values("TODO-traceable-agent-token"))
+				assert.Equal(t, []string{"test-token"}, capturedHeaders.Values(AgentTokenKey))
 			case <-time.After(2 * time.Second):
 				t.Fatal("Metadata was not captured")
 			}

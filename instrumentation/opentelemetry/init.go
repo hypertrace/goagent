@@ -59,14 +59,14 @@ var (
 	}
 )
 
-type ServiceOption func(*serviceOptions)
+type ServiceOption func(*ServiceOptions)
 
-type serviceOptions struct {
+type ServiceOptions struct {
 	headers map[string]string
 }
 
 func WithHeaders(headers map[string]string) ServiceOption {
-	return func(opts *serviceOptions) {
+	return func(opts *ServiceOptions) {
 		if opts.headers == nil {
 			opts.headers = make(map[string]string)
 		}
@@ -158,7 +158,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceOpts ...ServiceOpt
 		}
 
 		return func(opts ...ServiceOption) (sdktrace.SpanExporter, error) {
-			serviceOpts := &serviceOptions{
+			serviceOpts := &ServiceOptions{
 				headers: make(map[string]string),
 			}
 			for _, opt := range opts {
@@ -191,7 +191,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceOpts ...ServiceOpt
 		}
 
 		return func(opts ...ServiceOption) (sdktrace.SpanExporter, error) {
-			serviceOpts := &serviceOptions{
+			serviceOpts := &ServiceOptions{
 				headers: make(map[string]string),
 			}
 			for _, opt := range opts {
@@ -229,7 +229,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceOpts ...ServiceOpt
 
 		return func(opts ...ServiceOption) (sdktrace.SpanExporter, error) {
 			// Process options
-			serviceOpts := &serviceOptions{
+			serviceOpts := &ServiceOptions{
 				headers: make(map[string]string),
 			}
 			for _, opt := range opts {

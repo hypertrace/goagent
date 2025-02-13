@@ -2,7 +2,9 @@ package opentelemetry
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +18,11 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace/noop"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/resolver"
+
+	coltracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 )
 
 func ExampleInit() {
@@ -440,4 +446,146 @@ func TestConfigFactory(t *testing.T) {
 	cfg := config.Load()
 	factory := makeConfigFactory(cfg)
 	assert.Same(t, cfg, factory())
+}
+
+type MockTraceService struct {
+	coltracepb.UnimplementedTraceServiceServer
+	metadataCh chan metadata.MD
+}
+
+func (m *MockTraceService) Export(ctx context.Context, req *coltracepb.ExportTraceServiceRequest) (*coltracepb.ExportTraceServiceResponse, error) {
+	md, _ := metadata.FromIncomingContext(ctx)
+	fmt.Println("Received Metadata:", md)
+
+	m.metadataCh <- md
+	return &coltracepb.ExportTraceServiceResponse{}, nil
+}
+
+func waitForServer(address string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		conn, err := net.DialTimeout("tcp", address, 100*time.Millisecond)
+		if err == nil {
+			_ = conn.Close()
+			return nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return fmt.Errorf("server did not start within %v", timeout)
+}
+
+func TestMakeExporterFactory_Headers_WithMockGRPCServer(t *testing.T) {
+	metadataCh := make(chan metadata.MD, 1)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:49999")
+	require.NoError(t, err)
+
+	grpcServer := grpc.NewServer()
+	mockTraceService := &MockTraceService{metadataCh: metadataCh}
+	coltracepb.RegisterTraceServiceServer(grpcServer, mockTraceService)
+
+	go func() {
+		if err := grpcServer.Serve(listener); err != nil && err != grpc.ErrServerStopped {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
+	defer grpcServer.Stop()
+
+	require.NoError(t, waitForServer("127.0.0.1:49999", 5*time.Second))
+
+	cfg := &v1.AgentConfig{
+		Reporting: &v1.Reporting{
+			Token:             config.String("test-token"),
+			TraceReporterType: v1.TraceReporterType_OTLP,
+			Endpoint:          config.String("127.0.0.1:49999"),
+		},
+	}
+
+	exporterFactory := makeExporterFactory(cfg)
+
+	// Create the exporter
+	exporter, err := exporterFactory(WithHeaders(map[string]string{"test-token-key": "test-token-value"}))
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	tp := sdktrace.NewTracerProvider()
+	_, span := tp.Tracer("test-tracer").Start(context.Background(), "test-span")
+	span.End()
+
+	err = exporter.ExportSpans(context.Background(), []sdktrace.ReadOnlySpan{span.(sdktrace.ReadOnlySpan)})
+	assert.NoError(t, err)
+
+	select {
+	case capturedMetadata := <-metadataCh:
+		require.NotNil(t, capturedMetadata)
+		assert.Equal(t, []string{"test-token-value"}, capturedMetadata["test-token-key"])
+	case <-time.After(1 * time.Second):
+		t.Fatal("Metadata was not captured")
+	}
+
+	if exporter != nil {
+		_ = exporter.Shutdown(context.Background())
+	}
+}
+
+func TestMakeExporterFactory_Headers_ZipkinAndOTLPHTTP(t *testing.T) {
+	// Channel to capture headers
+	headersCh := make(chan http.Header, 1)
+
+	// Mock HTTP server to capture requests
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headersCh <- r.Header              // Capture headers
+		w.WriteHeader(http.StatusAccepted) // zipkin spec returns 202, otlp http doesnt care but zipkin exporter will fail otherwise
+	}))
+	defer mockServer.Close()
+
+	testCases := []struct {
+		reporterType v1.TraceReporterType
+	}{
+		{v1.TraceReporterType_ZIPKIN},
+		{v1.TraceReporterType_OTLP_HTTP},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Testing %v", tc.reporterType), func(t *testing.T) {
+			endpoint := mockServer.URL
+			// otlp http doesn't want scheme, zipkin does
+			if tc.reporterType == v1.TraceReporterType_OTLP_HTTP {
+				endpoint = removeProtocolPrefixForOTLP(endpoint)
+			}
+
+			cfg := &v1.AgentConfig{
+				Reporting: &v1.Reporting{
+					Token:             config.String("test-token"),
+					TraceReporterType: tc.reporterType,
+					Endpoint:          config.String(endpoint),
+				},
+			}
+
+			exporterFactory := makeExporterFactory(cfg)
+
+			exporter, err := exporterFactory(WithHeaders(map[string]string{"test-token-key": "test-token-value"}))
+			require.NoError(t, err)
+			require.NotNil(t, exporter)
+
+			tp := sdktrace.NewTracerProvider()
+			_, span := tp.Tracer("test-tracer").Start(context.Background(), "test-span")
+			span.End()
+
+			err = exporter.ExportSpans(context.Background(), []sdktrace.ReadOnlySpan{span.(sdktrace.ReadOnlySpan)})
+			assert.NoError(t, err)
+
+			select {
+			case capturedHeaders := <-headersCh:
+				require.NotNil(t, capturedHeaders)
+				assert.Equal(t, []string{"test-token-value"}, capturedHeaders.Values("test-token-key"))
+			case <-time.After(2 * time.Second):
+				t.Fatal("Metadata was not captured")
+			}
+
+			if exporter != nil {
+				_ = exporter.Shutdown(context.Background())
+			}
+		})
+	}
 }

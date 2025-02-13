@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"log"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -70,9 +71,7 @@ func WithHeaders(headers map[string]string) ServiceOption {
 		if opts.headers == nil {
 			opts.headers = make(map[string]string)
 		}
-		for k, v := range headers {
-			opts.headers[k] = v
-		}
+		maps.Copy(opts.headers, headers)
 	}
 }
 

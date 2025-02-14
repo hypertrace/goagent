@@ -148,3 +148,11 @@ func TestLen(t *testing.T) {
 	// service.instance.id is added implicitly in StartSpan so 3 attributes will be present.
 	assert.Equal(t, 3, s.GetAttributes().Len())
 }
+
+func TestGetSpanID(t *testing.T) {
+	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
+	spanId := s.GetSpanId()
+	if len(spanId) == 0 {
+		t.Error("span id should not be empty")
+	}
+}

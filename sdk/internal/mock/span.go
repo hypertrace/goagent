@@ -113,6 +113,11 @@ func (s *Span) AddEvent(name string, ts time.Time, attributes map[string]interfa
 	s.spanEvents = append(s.spanEvents, spanEvent{name, ts, attributes})
 }
 
+// This function has no use, it has been added just so that the interface in sdk/span.go remains implemented
+func (s *Span) GetSpanId() string {
+	return ""
+}
+
 type spanKey string
 
 func SpanFromContext(ctx context.Context) sdk.Span {

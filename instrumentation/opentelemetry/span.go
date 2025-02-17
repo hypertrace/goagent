@@ -112,6 +112,10 @@ func (s *Span) AddEvent(name string, ts time.Time, attributes map[string]interfa
 	s.Span.AddEvent(name, trace.WithTimestamp(ts), trace.WithAttributes(otAttributes...))
 }
 
+func (s *Span) GetSpanId() string {
+	return s.Span.SpanContext().SpanID().String()
+}
+
 func SpanFromContext(ctx context.Context) sdk.Span {
 	return &Span{trace.SpanFromContext(ctx)}
 }

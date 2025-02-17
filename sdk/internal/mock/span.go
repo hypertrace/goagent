@@ -113,6 +113,10 @@ func (s *Span) AddEvent(name string, ts time.Time, attributes map[string]interfa
 	s.spanEvents = append(s.spanEvents, spanEvent{name, ts, attributes})
 }
 
+func (s *Span) GetSpanId() string {
+	return ""
+}
+
 type spanKey string
 
 func SpanFromContext(ctx context.Context) sdk.Span {

@@ -152,7 +152,5 @@ func TestLen(t *testing.T) {
 func TestGetSpanID(t *testing.T) {
 	_, s, _ := StartSpan(context.Background(), "test_span", &sdk.SpanOptions{})
 	spanId := s.GetSpanId()
-	if len(spanId) == 0 {
-		t.Error("span id should not be empty")
-	}
+	assert.NotEqual(t, 0, len(spanId))
 }

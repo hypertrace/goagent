@@ -37,6 +37,7 @@ type Span interface {
 	// AddEvent adds an event to the Span with the provided name, timestamp and attributes.
 	AddEvent(name string, ts time.Time, attributes map[string]interface{})
 
+	//GetSpanId fetches the ID of the span that it is called upon
 	GetSpanId() string
 }
 

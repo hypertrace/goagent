@@ -27,8 +27,6 @@ linters-settings:
     line-length: 170
   gocyclo:
     min-complexity: 15
-  golint:
-    min-confidence: 0.85
 
 issues:
   exclude-files:

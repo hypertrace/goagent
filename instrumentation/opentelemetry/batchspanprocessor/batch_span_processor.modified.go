@@ -281,6 +281,7 @@ func (bsp *batchSpanProcessor) exportSpans(ctx context.Context) error {
 				Error(fmt.Errorf("panic value: %v.\n\n[stacktrace]:\n%s", r, string(debug.Stack())), "recovering from a panic")
 				// Reset the batch if len is greater than 0
 				if len(bsp.batch) > 0 {
+					clear(bsp.batch) // Erase elements to let GC collect objects
 					bsp.batch = bsp.batch[:0]
 				}
 			}
@@ -291,6 +292,7 @@ func (bsp *batchSpanProcessor) exportSpans(ctx context.Context) error {
 		//
 		// It is up to the exporter to implement any type of retry logic if a batch is failing
 		// to be exported, since it is specific to the protocol and backend being sent to.
+		clear(bsp.batch) // Erase elements to let GC collect objects
 		bsp.batch = bsp.batch[:0]
 
 		if err != nil {

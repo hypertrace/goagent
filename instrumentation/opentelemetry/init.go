@@ -103,46 +103,54 @@ func removeProtocolPrefixForOTLP(endpoint string) string {
 	return pieces[1]
 }
 
-func makeMetricsExporterFactory(cfg *config.AgentConfig) func() (metric.Exporter, error) {
+func makeMetricsExporterFactory(cfg *config.AgentConfig) func(opts ...ServiceOption) (metric.Exporter, error) {
 	// We are only supporting logging and otlp metric exporters for now. We will add support for prometheus
 	// metrics later
 	switch cfg.Reporting.MetricReporterType {
 	case config.MetricReporterType_METRIC_REPORTER_TYPE_LOGGING:
 		// stdout exporter
-		return func() (metric.Exporter, error) {
+		// currently only ServiceOption is WithHeaders so noop-ing ServiceOption for stdout for now
+		return func(_ ...ServiceOption) (metric.Exporter, error) {
 			// TODO: Define if endpoint could be a filepath to write into a file.
 			return stdoutmetric.New()
 		}
 	default:
-		endpoint := cfg.GetReporting().GetMetricEndpoint().GetValue()
-		if len(endpoint) == 0 {
-			endpoint = cfg.GetReporting().GetEndpoint().GetValue()
-		}
-
-		opts := []otlpmetricgrpc.Option{
-			otlpmetricgrpc.WithEndpoint(removeProtocolPrefixForOTLP(endpoint)),
-		}
-
-		if !cfg.GetReporting().GetSecure().GetValue() {
-			opts = append(opts, otlpmetricgrpc.WithInsecure())
-		}
-
-		certFile := cfg.GetReporting().GetCertFile().GetValue()
-		if len(certFile) > 0 {
-			if tlsCredentials, err := credentials.NewClientTLSFromFile(certFile, ""); err == nil {
-				opts = append(opts, otlpmetricgrpc.WithTLSCredentials(tlsCredentials))
-			} else {
-				log.Printf("error while creating tls credentials from cert path %s: %v", certFile, err)
+		return func(opts ...ServiceOption) (metric.Exporter, error) {
+			endpoint := cfg.GetReporting().GetMetricEndpoint().GetValue()
+			if len(endpoint) == 0 {
+				endpoint = cfg.GetReporting().GetEndpoint().GetValue()
 			}
-		}
 
-		if cfg.Reporting.GetEnableGrpcLoadbalancing().GetValue() {
-			resolver.SetDefaultScheme("dns")
-			opts = append(opts, otlpmetricgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
-		}
+			serviceOpts := &ServiceOptions{
+				headers: make(map[string]string),
+			}
+			for _, opt := range opts {
+				opt(serviceOpts)
+			}
 
-		return func() (metric.Exporter, error) {
-			return otlpmetricgrpc.New(context.Background(), opts...)
+			metricOpts := []otlpmetricgrpc.Option{
+				otlpmetricgrpc.WithEndpoint(removeProtocolPrefixForOTLP(endpoint)),
+				otlpmetricgrpc.WithHeaders(serviceOpts.headers),
+			}
+
+			if !cfg.GetReporting().GetSecure().GetValue() {
+				metricOpts = append(metricOpts, otlpmetricgrpc.WithInsecure())
+			}
+
+			certFile := cfg.GetReporting().GetCertFile().GetValue()
+			if len(certFile) > 0 {
+				if tlsCredentials, err := credentials.NewClientTLSFromFile(certFile, ""); err == nil {
+					metricOpts = append(metricOpts, otlpmetricgrpc.WithTLSCredentials(tlsCredentials))
+				} else {
+					log.Printf("error while creating tls credentials from cert path %s: %v", certFile, err)
+				}
+			}
+
+			if cfg.Reporting.GetEnableGrpcLoadbalancing().GetValue() {
+				resolver.SetDefaultScheme("dns")
+				metricOpts = append(metricOpts, otlpmetricgrpc.WithServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
+			}
+			return otlpmetricgrpc.New(context.Background(), metricOpts...)
 		}
 	}
 }
@@ -305,7 +313,7 @@ func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessor
 // and returns a shutdown function to flush data immediately on a termination signal.
 // Also sets opentelemetry internal errorhandler to the provider zap errorhandler
 func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanProcessorWrapper,
-	versionInfoAttrs []attribute.KeyValue, logger *zap.Logger) func() {
+	versionInfoAttrs []attribute.KeyValue, logger *zap.Logger, opts ...ServiceOption) func() {
 	mu.Lock()
 	defer mu.Unlock()
 	if initialized {
@@ -340,7 +348,7 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 	}
 
 	// Initialize metrics
-	metricsShutdownFn := initializeMetrics(cfg, versionInfoAttrs)
+	metricsShutdownFn := initializeMetrics(cfg, versionInfoAttrs, opts...)
 
 	exporterFactory = makeExporterFactory(cfg)
 	configFactory = makeConfigFactory(cfg)
@@ -485,13 +493,13 @@ func RegisterServiceWithSpanProcessorWrapper(key string, resourceAttributes map[
 	}), tp, nil
 }
 
-func initializeMetrics(cfg *config.AgentConfig, versionInfoAttrs []attribute.KeyValue) func() {
+func initializeMetrics(cfg *config.AgentConfig, versionInfoAttrs []attribute.KeyValue, opts ...ServiceOption) func() {
 	if shouldDisableMetrics(cfg) {
 		return func() {}
 	}
 
 	metricsExporterFactory := makeMetricsExporterFactory(cfg)
-	metricsExporter, err := metricsExporterFactory()
+	metricsExporter, err := metricsExporterFactory(opts...)
 	if err != nil {
 		log.Fatal(err)
 	}

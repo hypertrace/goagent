@@ -117,7 +117,9 @@ func (s *Span) GetSpanId() string {
 }
 
 func SpanFromContext(ctx context.Context) sdk.Span {
-	return &Span{trace.SpanFromContext(ctx)}
+	span := &Span{trace.SpanFromContext(ctx)}
+	span.SetAttributes(identifier.ServiceInstanceKeyValue)
+	return span
 }
 
 type getTracerProvider func() trace.TracerProvider

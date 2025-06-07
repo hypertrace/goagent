@@ -19,6 +19,8 @@ import (
 func main() {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("http-mux-server")
+	cfg.Reporting.Endpoint = config.String("localhost:5442")
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
 
 	flusher := hypertrace.Init(cfg)
 	defer flusher()

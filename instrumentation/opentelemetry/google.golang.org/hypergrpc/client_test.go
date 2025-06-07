@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/internal/helloworld"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/grpcunaryinterceptors"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -34,10 +35,10 @@ func TestClientHelloWorldSuccess(t *testing.T) {
 		ctx,
 		"bufnet",
 		grpc.WithContextDialer(dialer),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otelgrpc.UnaryClientInterceptor(),
+				grpcunaryinterceptors.UnaryClientInterceptor(),
 			),
 		),
 	)
@@ -108,10 +109,10 @@ func TestClientRegisterPersonFails(t *testing.T) {
 		ctx,
 		"bufnet",
 		grpc.WithContextDialer(dialer),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otelgrpc.UnaryClientInterceptor(),
+				grpcunaryinterceptors.UnaryClientInterceptor(),
 			),
 		),
 	)
@@ -154,10 +155,10 @@ func BenchmarkClientRequestResponseBodyMarshaling(b *testing.B) {
 		ctx,
 		"bufnet",
 		grpc.WithContextDialer(dialer),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(
 			WrapUnaryClientInterceptor(
-				otelgrpc.UnaryClientInterceptor(),
+				grpcunaryinterceptors.UnaryClientInterceptor(),
 			),
 		),
 	)
@@ -197,8 +198,8 @@ func BenchmarkClientRequestDefaultInterceptor(b *testing.B) {
 		ctx,
 		"bufnet",
 		grpc.WithContextDialer(dialer),
-		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(grpcunaryinterceptors.UnaryClientInterceptor()),
 	)
 	if err != nil {
 		b.Fatalf("failed to dial bufnet: %v", err)

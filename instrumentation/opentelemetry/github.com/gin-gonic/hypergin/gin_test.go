@@ -3,7 +3,7 @@ package hypergin
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -61,7 +61,8 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 	assert.Equal(t, span.SpanKind(), trace.SpanKindServer)
 
 	attrs := tracetesting.LookupAttributes(span.Attributes())
-	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
+	// "http.request.method" replaces "http.method"
+	assert.Equal(t, "POST", attrs.Get("http.request.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
 	assert.Equal(t, "xyz123abc", attrs.Get("http.response.header.request_id").AsString())
@@ -113,7 +114,7 @@ func TestTraceContextIsPropagated(t *testing.T) {
 			})
 			return
 		}
-		bodyBytes, _ := ioutil.ReadAll(res.Body)
+		bodyBytes, _ := io.ReadAll(res.Body)
 		bodyString := string(bodyBytes)
 		c.JSON(200, gin.H{
 			"success":              true,
@@ -133,7 +134,7 @@ func TestTraceContextIsPropagated(t *testing.T) {
 		fmt.Sprintf("http://localhost:%d/send_thing_request", p2), nil)
 
 	res, err := client.Do(req)
-	_, readErr := ioutil.ReadAll(res.Body)
+	_, readErr := io.ReadAll(res.Body)
 	require.NoError(t, readErr)
 
 	if err != nil {

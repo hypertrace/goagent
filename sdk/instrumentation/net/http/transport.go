@@ -2,7 +2,7 @@ package http // import "github.com/hypertrace/goagent/sdk/instrumentation/net/ht
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
@@ -44,7 +44,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// the content type is not streamable, otherwise we could end up in a very
 	// expensive parsing of a big body in memory.
 	if req.Body != nil && rt.dataCaptureConfig.HttpBody.Request.Value && ShouldRecordBodyOfContentType(reqHeadersAccessor) {
-		body, err := ioutil.ReadAll(req.Body)
+		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			return rt.delegate.RoundTrip(req)
 		}
@@ -55,7 +55,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 				HasMultiPartFormDataContentTypeHeader(reqHeadersAccessor))
 		}
 
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		req.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 
 	res, err := rt.delegate.RoundTrip(req)
@@ -66,7 +66,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	// Notice, parsing a streamed content in memory can be expensive.
 	if rt.dataCaptureConfig.HttpBody.Response.Value && ShouldRecordBodyOfContentType(resHeadersAccessor) {
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return res, nil
 		}
@@ -77,7 +77,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 				HasMultiPartFormDataContentTypeHeader(resHeadersAccessor))
 		}
 
-		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		res.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 
 	if rt.dataCaptureConfig.HttpHeaders.Response.Value {

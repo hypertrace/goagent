@@ -76,7 +76,8 @@ func TestSpanRecordedCorrectly(t *testing.T) {
 	assert.Equal(t, span.SpanKind(), trace.SpanKindServer)
 
 	attrs := tracetesting.LookupAttributes(span.Attributes())
-	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
+	// "http.request.method" replaces "http.method"
+	assert.Equal(t, "POST", attrs.Get("http.request.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
 	assert.Equal(t, "xyz123abc", attrs.Get("http.response.header.request_id").AsString())

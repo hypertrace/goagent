@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
@@ -66,7 +67,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	assert.Equal(t, 202, res.StatusCode)
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	assert.Nil(t, err)
 	assert.Equal(t, `{"id":123}`, string(resBody))
 
@@ -78,7 +79,8 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	assert.Equal(t, trace.SpanKindClient, span.SpanKind())
 
 	attrs := tracetesting.LookupAttributes(span.Attributes())
-	assert.Equal(t, "POST", attrs.Get("http.method").AsString())
+	// "http.request.method" replaces "http.method"
+	assert.Equal(t, "POST", attrs.Get("http.request.method").AsString())
 	assert.Equal(t, "abc123xyz", attrs.Get("http.request.header.api_key").AsString())
 	assert.Equal(t, `{"name":"Jacinto"}`, attrs.Get("http.request.body").AsString())
 	assert.Equal(t, "xyz123abc", attrs.Get("http.response.header.request_id").AsString())
@@ -176,7 +178,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			assert.Equal(t, 202, res.StatusCode)
 
-			_, err = ioutil.ReadAll(res.Body)
+			_, err = io.ReadAll(res.Body)
 			assert.Nil(t, err)
 
 			span := flusher()[0]

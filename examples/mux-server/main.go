@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -36,7 +36,7 @@ type person struct {
 }
 
 func fooHandler(w http.ResponseWriter, r *http.Request) {
-	sBody, err := ioutil.ReadAll(r.Body)
+	sBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

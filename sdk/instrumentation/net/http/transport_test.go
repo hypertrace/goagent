@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -65,7 +64,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	assert.Equal(t, 202, res.StatusCode)
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	assert.Nil(t, err)
 	assert.Equal(t, `{"id":123}`, string(resBody))
 
@@ -131,7 +130,7 @@ func TestClientRequestHeadersAreCapturedAccordingly(t *testing.T) {
 
 		assert.Equal(t, 202, res.StatusCode)
 
-		resBody, err := ioutil.ReadAll(res.Body)
+		resBody, err := io.ReadAll(res.Body)
 		assert.Nil(t, err)
 		assert.Equal(t, `{"id":123}`, string(resBody))
 
@@ -341,7 +340,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			assert.Equal(t, 202, res.StatusCode)
 
-			_, err = ioutil.ReadAll(res.Body)
+			_, err = io.ReadAll(res.Body)
 			assert.Nil(t, err)
 
 			span := tr.spans[0]

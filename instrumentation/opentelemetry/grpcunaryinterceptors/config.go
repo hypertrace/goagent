@@ -145,3 +145,17 @@ func newConfig(opts []Option, role string) *config {
 
 	return c
 }
+
+type tracerProviderOption struct{ tp trace.TracerProvider }
+
+func (o tracerProviderOption) apply(c *config) {
+	if o.tp != nil {
+		c.TracerProvider = o.tp
+	}
+}
+
+// WithTracerProvider returns an Option to use the TracerProvider when
+// creating a Tracer.
+func WithTracerProvider(tp trace.TracerProvider) Option {
+	return tracerProviderOption{tp: tp}
+}

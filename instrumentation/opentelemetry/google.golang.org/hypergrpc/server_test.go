@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/google.golang.org/hypergrpc/internal/helloworld"
+	"github.com/hypertrace/goagent/instrumentation/opentelemetry/grpcunaryinterceptors"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	sdkgrpc "github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -83,7 +83,7 @@ func TestServerRegisterPersonSuccess(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor(), &sdkgrpc.Options{}),
+			WrapUnaryServerInterceptor(grpcunaryinterceptors.UnaryServerInterceptor(), &sdkgrpc.Options{}),
 		),
 	)
 	defer s.Stop()
@@ -150,7 +150,7 @@ func TestServerRegisterPersonFails(t *testing.T) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor(), &sdkgrpc.Options{}),
+			WrapUnaryServerInterceptor(grpcunaryinterceptors.UnaryServerInterceptor(), &sdkgrpc.Options{}),
 		),
 	)
 	defer s.Stop()
@@ -196,7 +196,7 @@ func BenchmarkServerRequestResponseBodyMarshaling(b *testing.B) {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			WrapUnaryServerInterceptor(otelgrpc.UnaryServerInterceptor(), &sdkgrpc.Options{}),
+			WrapUnaryServerInterceptor(grpcunaryinterceptors.UnaryServerInterceptor(), &sdkgrpc.Options{}),
 		),
 	)
 	defer s.Stop()
@@ -237,7 +237,7 @@ func BenchmarkServerRequestDefaultInterceptor(b *testing.B) {
 	tracetesting.InitTracer()
 
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.UnaryInterceptor(grpcunaryinterceptors.UnaryServerInterceptor()),
 	)
 	defer s.Stop()
 

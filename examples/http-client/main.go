@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -22,6 +22,8 @@ type message struct {
 func main() {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("client")
+	cfg.Reporting.Endpoint = config.String("localhost:5442")
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
 
 	flusher := hypertrace.Init(cfg)
 	defer flusher()
@@ -41,7 +43,7 @@ func main() {
 		log.Fatalf("failed to perform the request: %v", err)
 	}
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatalf("failed to read the response body: %v", err)
 	}

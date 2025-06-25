@@ -28,7 +28,7 @@ var _ sdk.HttpOperationMetricsHandler = (*HttpOperationMetricsHandler)(nil)
 
 func NewHttpOperationMetricsHandler(nameGetter func(*http.Request) string) sdk.HttpOperationMetricsHandler {
 	mp := otel.GetMeterProvider()
-	meter := mp.Meter(meterName, metric.WithInstrumentationVersion(otelhttp.SemVersion()))
+	meter := mp.Meter(meterName, metric.WithInstrumentationVersion(otelhttp.Version()))
 
 	// Set up net http metrics
 	// RequestCount Counter

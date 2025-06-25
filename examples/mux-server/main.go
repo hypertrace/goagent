@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -19,6 +19,8 @@ import (
 func main() {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("http-mux-server")
+	cfg.Reporting.Endpoint = config.String("localhost:5442")
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
 
 	flusher := hypertrace.Init(cfg)
 	defer flusher()
@@ -34,7 +36,7 @@ type person struct {
 }
 
 func fooHandler(w http.ResponseWriter, r *http.Request) {
-	sBody, err := ioutil.ReadAll(r.Body)
+	sBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"strings"
 
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/sdk"
+	codes "github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 )
@@ -18,6 +21,7 @@ type roundTripper struct {
 	defaultAttributes        map[string]string
 	spanFromContextRetriever sdk.SpanFromContext
 	dataCaptureConfig        *config.DataCapture
+	filter                   filter.Filter
 }
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -58,6 +62,29 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 
+	filterResult := rt.filter.Evaluate(span)
+	if filterResult.Block {
+		span.SetStatus(codes.StatusCodeError, "Access Denied")
+		span.SetAttribute("http.status_code", filterResult.ResponseStatusCode)
+		return &http.Response{
+			Status:     "Access Denied",
+			StatusCode: int(filterResult.ResponseStatusCode),
+			Proto:      "HTTP/1.1",
+			ProtoMajor: 1,
+			ProtoMinor: 1,
+			Request:    req,
+			Header: map[string][]string{
+				"Content-Type": {"text/plain"},
+			},
+			Body: io.NopCloser(strings.NewReader(filterResult.ResponseMessage)),
+		}, nil
+	} else if filterResult.Decorations != nil {
+		for _, header := range filterResult.Decorations.RequestHeaderInjections {
+			req.Header.Add(header.Key, header.Value)
+			span.SetAttribute("http.request.header."+header.Key, header.Value)
+		}
+	}
+
 	res, err := rt.delegate.RoundTrip(req)
 	if err != nil {
 		return res, err
@@ -90,7 +117,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // WrapTransport returns a new http.RoundTripper that should be wrapped
 // by an instrumented http.RoundTripper
-func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext, spanAttributes map[string]string) http.RoundTripper {
+func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.SpanFromContext, options *Options, spanAttributes map[string]string) http.RoundTripper {
 	defaultAttributes := make(map[string]string)
 	for k, v := range spanAttributes {
 		defaultAttributes[k] = v
@@ -99,5 +126,15 @@ func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.Span
 		defaultAttributes["container_id"] = containerID
 	}
 
-	return &roundTripper{delegate, defaultAttributes, spanFromContextRetriever, internalconfig.GetConfig().GetDataCapture()}
+	var filter filter.Filter = &filter.NoopFilter{}
+	if options != nil && options.Filter != nil {
+		filter = options.Filter
+	}
+	return &roundTripper{
+		delegate:                 delegate,
+		defaultAttributes:        defaultAttributes,
+		spanFromContextRetriever: spanFromContextRetriever,
+		dataCaptureConfig:        internalconfig.GetConfig().GetDataCapture(),
+		filter:                   filter,
+	}
 }

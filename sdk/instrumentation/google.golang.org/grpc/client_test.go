@@ -6,12 +6,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter/result"
 	"github.com/hypertrace/goagent/sdk/instrumentation/google.golang.org/grpc/internal/helloworld"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func makeMockUnaryClientInterceptor(mockSpans *[]*mock.Span) grpc.UnaryClientInterceptor {
@@ -245,4 +249,88 @@ func TestBodyTruncation(t *testing.T) {
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
+}
+
+func TestClientFilter(t *testing.T) {
+
+	s := grpc.NewServer()
+	defer s.Stop()
+
+	helloworld.RegisterGreeterServer(s, &server{
+		replyHeader:  metadata.Pairs("test_header_key", "test_header_value"),
+		replyTrailer: metadata.Pairs("test_trailer_key", "test_trailer_value"),
+	})
+
+	dialer := createDialer(s)
+
+	tests := []struct {
+		name  string
+		block bool
+	}{
+		{
+			name:  "blocking disabled",
+			block: false,
+		},
+		{
+			name:  "blocking enabled",
+			block: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spans := []*mock.Span{}
+			ctx := context.Background()
+			conn, err := grpc.DialContext(
+				ctx,
+				"bufnet",
+				grpc.WithContextDialer(dialer),
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+				grpc.WithUnaryInterceptor(
+					WrapUnaryClientInterceptor(
+						makeMockUnaryClientInterceptor(&spans),
+						mock.SpanFromContext,
+						&Options{
+							Filter: mock.Filter{
+								Evaluator: func(span sdk.Span) result.FilterResult {
+									span.SetAttribute("filter.evaluated", true)
+									return result.FilterResult{
+										Block:              tt.block,
+										ResponseStatusCode: 403,
+										ResponseMessage:    "Access Denied",
+									}
+								},
+							},
+						},
+						map[string]string{"foo": "bar"},
+					),
+				),
+			)
+			if err != nil {
+				t.Fatalf("failed to dial bufnet: %v", err)
+			}
+			defer conn.Close()
+
+			client := helloworld.NewGreeterClient(conn)
+
+			ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("test_key_1", "test_value_1"))
+			_, err = client.SayHello(
+				ctx,
+				&helloworld.HelloRequest{
+					Name: "Cuchi",
+				},
+			)
+
+			if !tt.block {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Equal(t, codes.PermissionDenied, status.Code(err))
+			}
+
+			assert.Equal(t, 1, len(spans))
+			span := spans[0]
+			assert.True(t, span.ReadAttribute("filter.evaluated").(bool))
+		})
+	}
 }

@@ -10,17 +10,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	config "github.com/hypertrace/agent-config/gen/go/v1"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
 	sdkconfig "github.com/hypertrace/goagent/sdk/config"
-	"go.opentelemetry.io/otel/propagation"
-
+	sdkhttp "github.com/hypertrace/goagent/sdk/instrumentation/net/http"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
@@ -53,7 +52,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(
-			WrapTransport(http.DefaultTransport),
+			WrapTransport(http.DefaultTransport, &sdkhttp.Options{}),
 		),
 	}
 
@@ -104,7 +103,7 @@ func TestClientFailureRequestIsSuccessfullyTraced(t *testing.T) {
 	expectedErr := errors.New("roundtrip error")
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(
-			WrapTransport(failingTransport{expectedErr}),
+			WrapTransport(failingTransport{expectedErr}, &sdkhttp.Options{}),
 		),
 	}
 
@@ -164,7 +163,7 @@ func TestClientRecordsRequestAndResponseBodyAccordingly(t *testing.T) {
 
 			client := &http.Client{
 				Transport: otelhttp.NewTransport(
-					WrapTransport(http.DefaultTransport),
+					WrapTransport(http.DefaultTransport, &sdkhttp.Options{}),
 				),
 			}
 
@@ -216,7 +215,7 @@ func TestTransportRequestInjectsHeadersSuccessfully(t *testing.T) {
 
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(
-			WrapTransport(http.DefaultTransport),
+			WrapTransport(http.DefaultTransport, &sdkhttp.Options{}),
 		),
 	}
 

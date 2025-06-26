@@ -2,15 +2,16 @@ package grpc // import "github.com/hypertrace/goagent/sdk/instrumentation/google
 
 import (
 	"context"
-	"github.com/hypertrace/goagent/sdk/filter"
-	"google.golang.org/grpc/status"
 	"strings"
 
 	"github.com/hypertrace/goagent/sdk"
+	codes "github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
@@ -72,7 +73,11 @@ func WrapUnaryClientInterceptor(
 
 			fr := filter.Evaluate(span)
 			if fr.Block {
-				return status.Error(StatusCode(int(fr.ResponseStatusCode)), StatusText(int(fr.ResponseStatusCode)))
+				statusText := StatusText(int(fr.ResponseStatusCode))
+				statusCode := StatusCode(int(fr.ResponseStatusCode))
+				span.SetStatus(codes.StatusCodeError, statusText)
+				span.SetAttribute("rpc.grpc.status_code", statusCode)
+				return status.Error(statusCode, statusText)
 			} else if fr.Decorations != nil {
 				if md, ok := metadata.FromOutgoingContext(ctx); ok {
 					for _, header := range fr.Decorations.RequestHeaderInjections {

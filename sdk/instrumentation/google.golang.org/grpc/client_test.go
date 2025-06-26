@@ -46,6 +46,7 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 			WrapUnaryClientInterceptor(
 				makeMockUnaryClientInterceptor(&spans),
 				mock.SpanFromContext,
+				&Options{},
 				map[string]string{"foo": "bar"},
 			),
 		),
@@ -191,6 +192,7 @@ func TestBodyTruncation(t *testing.T) {
 			WrapUnaryClientInterceptor(
 				makeMockUnaryClientInterceptor(&spans),
 				mock.SpanFromContext,
+				&Options{},
 				map[string]string{"foo": "bar"},
 			),
 		),

@@ -2,6 +2,8 @@ package grpc // import "github.com/hypertrace/goagent/sdk/instrumentation/google
 
 import (
 	"context"
+	"github.com/hypertrace/goagent/sdk/filter"
+	"google.golang.org/grpc/status"
 	"strings"
 
 	"github.com/hypertrace/goagent/sdk"
@@ -13,8 +15,16 @@ import (
 
 // WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON.
-func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor, spanFromContext sdk.SpanFromContext,
+func WrapUnaryClientInterceptor(
+	delegateInterceptor grpc.UnaryClientInterceptor,
+	spanFromContext sdk.SpanFromContext,
+	options *Options,
 	spanAttributes map[string]string) grpc.UnaryClientInterceptor {
+	var filter filter.Filter = &filter.NoopFilter{}
+	if options != nil && options.Filter != nil {
+		filter = options.Filter
+	}
+
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
 	}
@@ -58,6 +68,19 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 
 			if dataCaptureConfig.RpcMetadata.Request.Value {
 				setAttributesFromRequestOutgoingMetadata(ctx, span)
+			}
+
+			fr := filter.Evaluate(span)
+			if fr.Block {
+				return status.Error(StatusCode(int(fr.ResponseStatusCode)), StatusText(int(fr.ResponseStatusCode)))
+			} else if fr.Decorations != nil {
+				if md, ok := metadata.FromOutgoingContext(ctx); ok {
+					for _, header := range fr.Decorations.RequestHeaderInjections {
+						md.Append(header.Key, header.Value)
+						span.SetAttribute("rpc.request.metadata."+header.Key, header.Value)
+					}
+					ctx = metadata.NewIncomingContext(ctx, md)
+				}
 			}
 
 			err = invoker(ctx, method, req, reply, cc, opts...)

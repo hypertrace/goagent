@@ -345,20 +345,20 @@ func createCaCertPoolFromFile(certFile string) *x509.CertPool {
 
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately
 // on a termination signal.
-func Init(cfg *config.AgentConfig) func() {
-	return InitWithSpanProcessorWrapper(cfg, nil, versionInfoAttributes)
+func Init(cfg *config.AgentConfig, opts ...ServiceOption) func() {
+	return InitWithSpanProcessorWrapper(cfg, nil, versionInfoAttributes, opts...)
 }
 
 // InitWithSpanProcessorWrapper initializes opentelemetry tracing with a wrapper over span processor
 // and returns a shutdown function to flush data immediately on a termination signal.
 func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessorWrapper,
-	versionInfoAttrs []attribute.KeyValue) func() {
+	versionInfoAttrs []attribute.KeyValue, opts ...ServiceOption) func() {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		logger = nil
 		log.Printf("error while creating default zap logger %v", err)
 	}
-	return InitWithSpanProcessorWrapperAndZap(cfg, wrapper, versionInfoAttrs, logger)
+	return InitWithSpanProcessorWrapperAndZap(cfg, wrapper, versionInfoAttrs, logger, opts...)
 }
 
 // InitWithSpanProcessorWrapperAndZap initializes opentelemetry tracing with a wrapper over span processor

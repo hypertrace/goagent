@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	port = ":50051"
+	port = ":50151"
 )
 
 // server is used to implement helloworld.GreeterServer.
@@ -33,6 +33,8 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 func main() {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("grpc-server")
+	cfg.Reporting.Endpoint = config.String("localhost:5442")
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
 
 	flusher := hypertrace.Init(cfg)
 	defer flusher()

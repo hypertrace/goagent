@@ -13,16 +13,19 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/google.golang.org/hypergrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
-	address     = "localhost:50051"
+	address     = "localhost:50151"
 	defaultName = "world"
 )
 
 func main() {
 	cfg := config.Load()
 	cfg.ServiceName = config.String("grpc-client")
+	cfg.Reporting.Endpoint = config.String("localhost:5442")
+	cfg.Reporting.TraceReporterType = config.TraceReporterType_OTLP
 
 	flusher := hypertrace.Init(cfg)
 	defer flusher()
@@ -30,7 +33,7 @@ func main() {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(
 		address,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(hypergrpc.UnaryClientInterceptor()),
 	)
@@ -45,12 +48,15 @@ func main() {
 	if len(os.Args) > 1 {
 		name = os.Args[1]
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := client.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Printf("could not greet: %v", err)
+	} else {
+		log.Printf("Greeting: %v", r.GetMessage())
 	}
-
-	log.Printf("Greeting: %v", r.GetMessage())
+	// some time to flush the spans
+	time.Sleep(2000 * time.Millisecond)
 }

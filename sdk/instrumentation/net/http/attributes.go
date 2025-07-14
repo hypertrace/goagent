@@ -9,7 +9,7 @@ import (
 
 // SetAttributesFromHeaders set attributes into span from a HeaderAccessor
 func SetAttributesFromHeaders(_type string, headers HeaderAccessor, span sdk.Span) {
-	headers.ForEachHeader(func(key string, values []string) error {
+	_ = headers.ForEachHeader(func(key string, values []string) error {
 		if len(values) == 1 {
 			span.SetAttribute(
 				fmt.Sprintf("http.%s.header.%s", _type, strings.ToLower(key)),

@@ -263,6 +263,8 @@ func multipartFormHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	// G303 (CWE-377): File creation in shared tmp directory without using ioutil.Tempfile (Confidence: HIGH, Severity: MEDIUM)
+	// #nosec G303
 	err = os.WriteFile("/tmp/gadat1.png", buf, 0600)
 	if err != nil {
 		fmt.Printf("error while writing file: %v\n", err)
@@ -317,7 +319,7 @@ func outgoingCallHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, sb)
+	_, _ = io.WriteString(w, sb)
 }
 
 func echoUpperCaseHandler(w http.ResponseWriter, r *http.Request) {

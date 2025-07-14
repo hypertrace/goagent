@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/resolver"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	coltracepb "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 )
@@ -588,4 +589,41 @@ func TestMakeExporterFactory_Headers_ZipkinAndOTLPHTTP(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateGrpcConn(t *testing.T) {
+	lis, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer lis.Close()
+
+	server := grpc.NewServer()
+	defer server.Stop()
+
+	go func() {
+		if err := server.Serve(lis); err != nil {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
+
+	cfg := &v1.AgentConfig{
+		Reporting: &v1.Reporting{
+			Endpoint: &wrapperspb.StringValue{
+				Value: lis.Addr().String(),
+			},
+			Secure: &wrapperspb.BoolValue{
+				Value: false,
+			},
+		},
+	}
+
+	conn, err := CreateGrpcConn(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	conn.Close()
+
+	cfg.Reporting.EnableGrpcLoadbalancing = &wrapperspb.BoolValue{Value: true}
+	conn, err = CreateGrpcConn(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	conn.Close()
 }

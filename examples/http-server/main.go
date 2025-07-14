@@ -90,6 +90,8 @@ func main() {
 	))
 	// Uncomment to enable TLS server
 	// log.Fatal(http.ListenAndServeTLS(":8081", certFile, keyFile, r))
+	// G114 (CWE-676): Use of net/http serve function that has no support for setting timeouts (Confidence: HIGH, Severity: MEDIUM)
+	// #nosec G114
 	log.Fatal(http.ListenAndServe(":8081", r))
 }
 
@@ -135,7 +137,7 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	w.Write([]byte(fmt.Sprintf("{\"param0\": \"Hello %s\", \"authorization\": \"Bearer some-jwt-token\", \"param2\":{\"param3\":\"param4\",\"value\":\"00000\"}}", p.Name)))
+	_, _ = w.Write([]byte(fmt.Sprintf("{\"param0\": \"Hello %s\", \"authorization\": \"Bearer some-jwt-token\", \"param2\":{\"param3\":\"param4\",\"value\":\"00000\"}}", p.Name)))
 }
 
 var responseBody string = `{"serviceCount":4,"personalDetailChildren":[{"id":"41d29bf9-3d7b-4e7b-90f1-e405693b592f","firstName":"Bruce","lastName":"Meyer","dateOfBirth":"1951-4-20",` +
@@ -192,7 +194,7 @@ func payloadHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(responseBody))
+	_, _ = w.Write([]byte(responseBody))
 }
 
 // Should be a GET request
@@ -215,7 +217,7 @@ func barHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", author)))
+	_, _ = w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", author)))
 }
 
 // Should be a POST request.
@@ -234,7 +236,7 @@ func barBodyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Set-Cookie", "timothercookie789=cval1;secure")
 	w.Header().Add("Set-Cookie", "timothercookie=cval2;secure")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", author)))
+	_, _ = w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", author)))
 }
 
 const multipartMaxSize int64 = 1024 * 1024
@@ -261,7 +263,7 @@ func multipartFormHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = os.WriteFile("/tmp/gadat1.png", buf, 0644)
+	err = os.WriteFile("/tmp/gadat1.png", buf, 0600)
 	if err != nil {
 		fmt.Printf("error while writing file: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -275,7 +277,7 @@ func multipartFormHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Set-Cookie", "othercookie789=cval1;secure")
 	w.Header().Add("Set-Cookie", "othercookie=cval2;secure")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", author)))
+	_, _ = w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", author)))
 }
 
 func outgoingCallHandler(w http.ResponseWriter, r *http.Request) {
@@ -330,7 +332,7 @@ func echoUpperCaseHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(strings.ToUpper(string(sBody))))
+	_, _ = w.Write([]byte(strings.ToUpper(string(sBody))))
 }
 
 func echoHandler(w http.ResponseWriter, r *http.Request) {
@@ -350,7 +352,7 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(string(sBody)))
+	_, _ = w.Write([]byte(string(sBody)))
 }
 
 func getXmlHandler(w http.ResponseWriter, r *http.Request) {
@@ -372,5 +374,5 @@ func getXmlHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(xmlSampleBody))
+	_, _ = w.Write([]byte(xmlSampleBody))
 }

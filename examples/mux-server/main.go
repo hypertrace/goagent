@@ -28,6 +28,8 @@ func main() {
 	r := mux.NewRouter()
 	r.Use(hypermux.NewMiddleware(&sdkhttp.Options{})) // here we use the mux middleware
 	r.HandleFunc("/foo", http.HandlerFunc(fooHandler))
+	// G114 (CWE-676): Use of net/http serve function that has no support for setting timeouts (Confidence: HIGH, Severity: MEDIUM)
+	// #nosec G114
 	log.Fatal(http.ListenAndServe(":8081", r))
 }
 
@@ -54,5 +56,5 @@ func fooHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", p.Name)))
+	_, _ = w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", p.Name)))
 }

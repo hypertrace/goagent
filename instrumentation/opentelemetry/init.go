@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"maps"
 	"net/http"
@@ -41,7 +40,10 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -63,7 +65,8 @@ var (
 type ServiceOption func(*ServiceOptions)
 
 type ServiceOptions struct {
-	headers map[string]string
+	headers  map[string]string
+	grpcConn *grpc.ClientConn
 }
 
 func WithHeaders(headers map[string]string) ServiceOption {
@@ -73,6 +76,49 @@ func WithHeaders(headers map[string]string) ServiceOption {
 		}
 		maps.Copy(opts.headers, headers)
 	}
+}
+
+// Please ref https://pkg.go.dev/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc#WithGRPCConn
+// To create the grpc connection with same logic as goagent please use CreateGrpcConn
+func WithGrpcConn(conn *grpc.ClientConn) ServiceOption {
+	return func(opts *ServiceOptions) {
+		opts.grpcConn = conn
+	}
+}
+
+// Can be used for external clients to reference the underlying connection for otlp grpc exporter
+func CreateGrpcConn(cfg *config.AgentConfig) (*grpc.ClientConn, error) {
+	endpoint := removeProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())
+
+	dialOpts := []grpc.DialOption{}
+
+	if !cfg.GetReporting().GetSecure().GetValue() {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	} else {
+		certFile := cfg.GetReporting().GetCertFile().GetValue()
+		if len(certFile) > 0 {
+			tlsCredentials, err := credentials.NewClientTLSFromFile(certFile, "")
+			if err != nil {
+				return nil, fmt.Errorf("error creating TLS credentials from cert path %s: %v", certFile, err)
+			}
+			dialOpts = append(dialOpts, grpc.WithTransportCredentials(tlsCredentials))
+		} else {
+			// Default to system certs
+			dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+		}
+	}
+
+	if cfg.Reporting.GetEnableGrpcLoadbalancing().GetValue() {
+		resolver.SetDefaultScheme("dns")
+		dialOpts = append(dialOpts, grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ]}`))
+	}
+
+	conn, err := grpc.NewClient(endpoint, dialOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gRPC connection to %s: %v", endpoint, err)
+	}
+
+	return conn, nil
 }
 
 func makePropagator(formats []config.PropagationFormat) propagation.TextMapPropagator {
@@ -177,6 +223,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceOpts ...ServiceOpt
 				zipkin.WithHeaders(serviceOpts.headers),
 			)
 		}
+
 	case config.TraceReporterType_LOGGING:
 		return func(opts ...ServiceOption) (sdktrace.SpanExporter, error) {
 			// TODO: Define if endpoint could be a filepath to write into a file.
@@ -211,7 +258,7 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceOpts ...ServiceOpt
 			return otlphttp.New(context.Background(), finalOpts...)
 		}
 
-	default:
+	default: // OTLP GRPC
 		standardOpts := []otlpgrpc.Option{
 			otlpgrpc.WithEndpoint(removeProtocolPrefixForOTLP(cfg.GetReporting().GetEndpoint().GetValue())),
 		}
@@ -245,6 +292,11 @@ func makeExporterFactory(cfg *config.AgentConfig) func(serviceOpts ...ServiceOpt
 
 			finalOpts := append([]otlpgrpc.Option{}, standardOpts...)
 			finalOpts = append(finalOpts, otlpgrpc.WithHeaders(serviceOpts.headers))
+
+			// Important: gRPC connection takes precedence over other connection based options
+			if serviceOpts.grpcConn != nil {
+				finalOpts = append(finalOpts, otlpgrpc.WithGRPCConn(serviceOpts.grpcConn))
+			}
 
 			return otlptrace.New(
 				context.Background(),
@@ -293,20 +345,20 @@ func createCaCertPoolFromFile(certFile string) *x509.CertPool {
 
 // Init initializes opentelemetry tracing and returns a shutdown function to flush data immediately
 // on a termination signal.
-func Init(cfg *config.AgentConfig) func() {
-	return InitWithSpanProcessorWrapper(cfg, nil, versionInfoAttributes)
+func Init(cfg *config.AgentConfig, opts ...ServiceOption) func() {
+	return InitWithSpanProcessorWrapper(cfg, nil, versionInfoAttributes, opts...)
 }
 
 // InitWithSpanProcessorWrapper initializes opentelemetry tracing with a wrapper over span processor
 // and returns a shutdown function to flush data immediately on a termination signal.
 func InitWithSpanProcessorWrapper(cfg *config.AgentConfig, wrapper SpanProcessorWrapper,
-	versionInfoAttrs []attribute.KeyValue) func() {
+	versionInfoAttrs []attribute.KeyValue, opts ...ServiceOption) func() {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		logger = nil
 		log.Printf("error while creating default zap logger %v", err)
 	}
-	return InitWithSpanProcessorWrapperAndZap(cfg, wrapper, versionInfoAttrs, logger)
+	return InitWithSpanProcessorWrapperAndZap(cfg, wrapper, versionInfoAttrs, logger, opts...)
 }
 
 // InitWithSpanProcessorWrapperAndZap initializes opentelemetry tracing with a wrapper over span processor
@@ -349,11 +401,11 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 
 	// Initialize metrics
 	metricsShutdownFn := initializeMetrics(cfg, versionInfoAttrs, opts...)
-
 	exporterFactory = makeExporterFactory(cfg)
 	configFactory = makeConfigFactory(cfg)
 
-	exporter, err := exporterFactory()
+	exporter, err := exporterFactory(opts...)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -374,8 +426,8 @@ func InitWithSpanProcessorWrapperAndZap(cfg *config.AgentConfig, wrapper SpanPro
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	sampler := sdktrace.AlwaysSample()
+
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sampler),
 		sdktrace.WithSpanProcessor(sp),

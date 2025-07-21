@@ -8,17 +8,27 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
-	"github.com/hypertrace/goagent/sdk/filter"
+	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter/result"
+	sdkSQL "github.com/hypertrace/goagent/sdk/instrumentation/database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
+type mockFilter struct {
+	evaluator func(span sdk.Span) result.FilterResult
+}
+
+func (f *mockFilter) Evaluate(span sdk.Span) result.FilterResult {
+	return f.evaluator(span)
+}
+
 func createDB(t *testing.T) (*sql.DB, func() []sdktrace.ReadOnlySpan) {
 	_, flusher := tracetesting.InitTracer()
 
-	driverName, err := Register("sqlite3", filter.NoopFilter{})
+	driverName, err := Register("sqlite3", nil)
 	if err != nil {
 		t.Fatalf("unable to register driver")
 	}
@@ -185,6 +195,60 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 		attrs := tracetesting.LookupAttributes(spans[i].Attributes())
 		assert.False(t, attrs.Has("error"))
 	}
+
+	db.Close()
+}
+
+func TestFilter(t *testing.T) {
+	_, flusher := tracetesting.InitTracer()
+
+	driverName, err := Register("sqlite3", &sdkSQL.Options{
+		Filter: &mockFilter{
+			evaluator: func(span sdk.Span) result.FilterResult {
+				assert.Equal(t, span.GetAttributes().GetValue("span.kind"), "client")
+
+				span.SetAttribute("span.type", "nospan")
+				return result.FilterResult{}
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unable to register driver")
+	}
+
+	db, err := sql.Open(driverName, "file:test.db?cache=shared&mode=memory")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rows, err := db.Query("SELECT 1 WHERE 1 = ?", 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var n int
+		if err = rows.Scan(&n); err != nil {
+			t.Fatalf("unexpected error: %s", err.Error())
+		}
+	}
+	if err = rows.Err(); err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
+
+	spans := flusher()
+	assert.Equal(t, 1, len(spans))
+
+	span := spans[0]
+	assert.Equal(t, "db:query", span.Name())
+	assert.Equal(t, apitrace.SpanKindClient, span.SpanKind())
+
+	attrs := tracetesting.LookupAttributes(span.Attributes())
+	assert.Equal(t, "SELECT 1 WHERE 1 = ?", attrs.Get("db.statement").AsString())
+	assert.Equal(t, "sqlite", attrs.Get("db.system").AsString())
+	assert.False(t, attrs.Has("error"))
+	assert.Equal(t, "nospan", attrs.Get("span.type").AsString())
 
 	db.Close()
 }

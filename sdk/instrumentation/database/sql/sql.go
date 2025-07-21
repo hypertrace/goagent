@@ -15,6 +15,10 @@ import (
 
 var regMu sync.Mutex
 
+type Options struct {
+	Filter filter.Filter
+}
+
 type interceptor struct {
 	sqlmw.NullInterceptor
 	startSpan         sdk.StartSpan
@@ -188,9 +192,13 @@ func (w *dsnReadWrapper) parseDSNAttributes(dsn string) map[string]string {
 }
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.
-func Wrap(d driver.Driver, startSpan sdk.StartSpan, filter filter.Filter) driver.Driver {
+func Wrap(d driver.Driver, startSpan sdk.StartSpan, options *Options) driver.Driver {
 	driverName := getDriverName(d)
 
+	var filter filter.Filter = filter.NoopFilter{}
+	if options != nil && options.Filter != nil {
+		filter = options.Filter
+	}
 	filteringSpanStarter := func(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
 		ctx, span, end := startSpan(ctx, name, opts)
 		span.SetAttribute("span.kind", "client")
@@ -209,7 +217,7 @@ func Wrap(d driver.Driver, startSpan sdk.StartSpan, filter filter.Filter) driver
 // Register initializes and registers the hypersql wrapped database driver
 // identified by its driverName. On success it
 // returns the generated driverName to use when calling hypersql.Open.
-func Register(driverName string, startSpan sdk.StartSpan, filter filter.Filter) (string, error) {
+func Register(driverName string, startSpan sdk.StartSpan, options *Options) (string, error) {
 	// retrieve the driver implementation we need to wrap with instrumentation
 	db, err := stdSQL.Open(driverName, "")
 	if err != nil {
@@ -224,6 +232,6 @@ func Register(driverName string, startSpan sdk.StartSpan, filter filter.Filter) 
 	defer regMu.Unlock()
 
 	hyperDriverName := fmt.Sprintf("hyper-%s-%d", driverName, len(stdSQL.Drivers()))
-	stdSQL.Register(hyperDriverName, Wrap(dri, startSpan, filter))
+	stdSQL.Register(hyperDriverName, Wrap(dri, startSpan, options))
 	return hyperDriverName, nil
 }

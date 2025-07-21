@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/sdk"
-	"github.com/hypertrace/goagent/sdk/filter"
 	"github.com/hypertrace/goagent/sdk/filter/result"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	_ "github.com/mattn/go-sqlite3"
@@ -31,7 +30,7 @@ func (sb *spansBuffer) StartSpan(ctx context.Context, name string, opts *sdk.Spa
 func createDB(t *testing.T) (*sql.DB, func() []*mock.Span) {
 	b := &spansBuffer{}
 
-	driverName, err := Register("sqlite3", b.StartSpan, filter.NoopFilter{})
+	driverName, err := Register("sqlite3", b.StartSpan, nil)
 	if err != nil {
 		t.Fatalf("unable to register driver")
 	}
@@ -74,6 +73,7 @@ func TestQuerySuccess(t *testing.T) {
 	assert.Equal(t, "SELECT 1 WHERE 1 = ?", span.ReadAttribute("db.statement").(string))
 	assert.Equal(t, "sqlite", span.ReadAttribute("db.system").(string))
 	assert.Nil(t, span.ReadAttribute("error"))
+	assert.Equal(t, span.ReadAttribute("span.kind"), "client")
 	assert.Zero(t, span.RemainingAttributes())
 
 	db.Close()
@@ -121,6 +121,7 @@ func TestExecSuccess(t *testing.T) {
 	assert.Equal(t, sdk.SpanKindClient, span.Options.Kind)
 	assert.Equal(t, "db:exec", span.Name)
 	assert.Nil(t, span.ReadAttribute("error"))
+	assert.Equal(t, span.ReadAttribute("span.kind"), "client")
 }
 
 func TestTxWithCommitSuccess(t *testing.T) {
@@ -167,6 +168,7 @@ func TestTxWithCommitSuccess(t *testing.T) {
 		assert.Equal(t, sdk.SpanKindClient, spans[i].Options.Kind)
 		assert.Equal(t, sdk.StatusCodeOk, spans[i].Status.Code)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
+		assert.Equal(t, spans[i].ReadAttribute("span.kind"), "client")
 	}
 
 	db.Close()
@@ -213,6 +215,7 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 		assert.Equal(t, sdk.SpanKindClient, spans[i].Options.Kind)
 		assert.Equal(t, sdk.StatusCodeOk, spans[i].Status.Code)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
+		assert.Equal(t, spans[i].ReadAttribute("span.kind"), "client")
 	}
 
 	db.Close()
@@ -221,11 +224,13 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 func TestFilter(t *testing.T) {
 	b := &spansBuffer{}
 
-	driverName, err := Register("sqlite3", b.StartSpan, mock.Filter{
-		Evaluator: func(span sdk.Span) result.FilterResult {
-			assert.Equal(t, span.GetAttributes().GetValue("span.kind"), "client")
-			span.SetAttribute("span.type", "nospan")
-			return result.FilterResult{}
+	driverName, err := Register("sqlite3", b.StartSpan, &Options{
+		Filter: mock.Filter{
+			Evaluator: func(span sdk.Span) result.FilterResult {
+				assert.Equal(t, span.GetAttributes().GetValue("span.kind"), "client")
+				span.SetAttribute("span.type", "nospan")
+				return result.FilterResult{}
+			},
 		},
 	})
 	if err != nil {

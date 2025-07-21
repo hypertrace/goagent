@@ -2,10 +2,11 @@ package hyperpgx // import "github.com/hypertrace/goagent/instrumentation/opente
 
 import (
 	"context"
-	"database/sql/driver"
 
+	"database/sql/driver"
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry"
 	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype/pgxtype"
 	"github.com/jackc/pgx/v4"
@@ -34,11 +35,17 @@ type PGXConn interface {
 	Close(ctx context.Context) error
 }
 
+type Options struct {
+	Filter filter.Filter
+}
+
 var _ PGXConn = (*wrappedConn)(nil)
 
 type wrappedConn struct {
 	delegate  *pgx.Conn
 	connAttrs map[string]string
+	filter    filter.Filter
+	startSpan func(ctx context.Context, name string) (context.Context, sdk.Span, func())
 }
 
 var _ pgx.Row = (*wrappedRow)(nil)
@@ -58,7 +65,7 @@ func (r *wrappedRow) Scan(dest ...interface{}) error {
 }
 
 func (w *wrappedConn) Query(ctx context.Context, query string, optionsAndArgs ...interface{}) (pgx.Rows, error) {
-	ctx, span, closer := opentelemetry.StartSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
+	ctx, span, closer := w.startSpan(ctx, "db:query")
 	defer closer()
 
 	for k, v := range w.connAttrs {
@@ -75,7 +82,7 @@ func (w *wrappedConn) Query(ctx context.Context, query string, optionsAndArgs ..
 }
 
 func (w *wrappedConn) QueryRow(ctx context.Context, sql string, optionsAndArgs ...interface{}) pgx.Row {
-	ctx, span, closer := opentelemetry.StartSpan(ctx, "db:query", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
+	ctx, span, closer := w.startSpan(ctx, "db:query")
 	defer closer()
 
 	for k, v := range w.connAttrs {
@@ -87,7 +94,7 @@ func (w *wrappedConn) QueryRow(ctx context.Context, sql string, optionsAndArgs .
 }
 
 func (w *wrappedConn) Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error) {
-	ctx, span, closer := opentelemetry.StartSpan(ctx, "exec", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
+	ctx, span, closer := w.startSpan(ctx, "exec")
 	defer closer()
 
 	for k, v := range w.connAttrs {
@@ -108,7 +115,7 @@ func (w *wrappedConn) Ping(ctx context.Context) error {
 }
 
 func (w *wrappedConn) QueryFunc(ctx context.Context, sql string, args []interface{}, scans []interface{}, f func(pgx.QueryFuncRow) error) (pgconn.CommandTag, error) {
-	ctx, span, closer := opentelemetry.StartSpan(ctx, "exec", &sdk.SpanOptions{Kind: sdk.SpanKindClient})
+	ctx, span, closer := w.startSpan(ctx, "exec")
 	defer closer()
 
 	for k, v := range w.connAttrs {
@@ -134,7 +141,7 @@ func (w *wrappedConn) Close(ctx context.Context) error {
 
 var _ PGXConn = (*wrappedConn)(nil)
 
-func Connect(ctx context.Context, connString string) (PGXConn, error) {
+func Connect(ctx context.Context, connString string, options *Options) (PGXConn, error) {
 	conn, err := pgx.Connect(ctx, connString)
 	if err != nil {
 		return conn, err
@@ -145,5 +152,23 @@ func Connect(ctx context.Context, connString string) (PGXConn, error) {
 		connAttrs["db.system"] = "postgres"
 	}
 
-	return &wrappedConn{conn, connAttrs}, nil
+	var filter filter.Filter = filter.NoopFilter{}
+	if options != nil && options.Filter != nil {
+		filter = options.Filter
+	}
+	samplingSpanStarter := func(ctx context.Context, name string) (context.Context, sdk.Span, func()) {
+		ctx, span, closer := opentelemetry.StartSpan(ctx, name, &sdk.SpanOptions{Kind: sdk.SpanKindClient})
+		span.SetAttribute("span.kind", "client")
+
+		return ctx, span, func() {
+			_ = filter.Evaluate(span)
+			closer()
+		}
+	}
+
+	return &wrappedConn{
+		delegate:  conn,
+		connAttrs: connAttrs,
+		startSpan: samplingSpanStarter,
+	}, nil
 }

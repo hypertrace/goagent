@@ -16,6 +16,7 @@ import (
 	"github.com/hypertrace/goagent/instrumentation/hypertrace"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/database/hypersql"
 	"github.com/hypertrace/goagent/instrumentation/hypertrace/net/hyperhttp"
+	"github.com/hypertrace/goagent/sdk/filter"
 )
 
 const mysqlLoopCount int = 5
@@ -73,7 +74,7 @@ func fooHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
 
 func dbConn() (db *sql.DB) {
 	// Explicitly wrap the MySQLDriver driver with hypersql.
-	driver := hypersql.Wrap(&mysql.MySQLDriver{})
+	driver := hypersql.Wrap(&mysql.MySQLDriver{}, filter.NoopFilter{})
 
 	// Register our hypersql wrapper as a database driver.
 	sql.Register("ht-mysql", driver)

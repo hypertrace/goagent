@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/instrumentation/opentelemetry/internal/tracetesting"
+	"github.com/hypertrace/goagent/sdk/filter"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -17,7 +18,7 @@ import (
 func createDB(t *testing.T) (*sql.DB, func() []sdktrace.ReadOnlySpan) {
 	_, flusher := tracetesting.InitTracer()
 
-	driverName, err := Register("sqlite3")
+	driverName, err := Register("sqlite3", filter.NoopFilter{})
 	if err != nil {
 		t.Fatalf("unable to register driver")
 	}

@@ -47,6 +47,7 @@ func WrapUnaryClientInterceptor(
 		// span).
 		wrappedInvoker := func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, opts ...grpc.CallOption) error {
 			span := spanFromContext(ctx)
+			span.SetAttribute("span.kind", "client")
 			if span.IsNoop() || span == nil {
 				// isNoop means either the span is not sampled or there was no span
 				// in the request context which means this invoker is not used

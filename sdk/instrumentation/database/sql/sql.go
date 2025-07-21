@@ -2,15 +2,15 @@ package sql // import "github.com/hypertrace/goagent/sdk/instrumentation/databas
 
 import (
 	"context"
-	stdSQL "database/sql"
-	"database/sql/driver"
 	"fmt"
+	"reflect"
 	"sync"
 
+	stdSQL "database/sql"
+	"database/sql/driver"
 	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
 	"github.com/ngrok/sqlmw"
-
-	"reflect"
 )
 
 var regMu sync.Mutex
@@ -188,16 +188,28 @@ func (w *dsnReadWrapper) parseDSNAttributes(dsn string) map[string]string {
 }
 
 // Wrap takes a SQL driver and wraps it with Hypertrace instrumentation.
-func Wrap(d driver.Driver, startSpan sdk.StartSpan) driver.Driver {
+func Wrap(d driver.Driver, startSpan sdk.StartSpan, filter filter.Filter) driver.Driver {
 	driverName := getDriverName(d)
-	in := &interceptor{startSpan: startSpan}
+
+	filteringSpanStarter := func(ctx context.Context, name string, opts *sdk.SpanOptions) (context.Context, sdk.Span, func()) {
+		ctx, span, end := startSpan(ctx, name, opts)
+		span.SetAttribute("span.kind", "client")
+
+		return ctx, span, func() {
+			_ = filter.Evaluate(span)
+			end()
+		}
+	}
+	in := &interceptor{
+		startSpan: filteringSpanStarter,
+	}
 	return &dsnReadWrapper{Driver: sqlmw.Driver(d, in), driverName: driverName, inDefaultAttributes: &in.defaultAttributes}
 }
 
 // Register initializes and registers the hypersql wrapped database driver
 // identified by its driverName. On success it
 // returns the generated driverName to use when calling hypersql.Open.
-func Register(driverName string, startSpan sdk.StartSpan) (string, error) {
+func Register(driverName string, startSpan sdk.StartSpan, filter filter.Filter) (string, error) {
 	// retrieve the driver implementation we need to wrap with instrumentation
 	db, err := stdSQL.Open(driverName, "")
 	if err != nil {
@@ -212,6 +224,6 @@ func Register(driverName string, startSpan sdk.StartSpan) (string, error) {
 	defer regMu.Unlock()
 
 	hyperDriverName := fmt.Sprintf("hyper-%s-%d", driverName, len(stdSQL.Drivers()))
-	stdSQL.Register(hyperDriverName, Wrap(dri, startSpan))
+	stdSQL.Register(hyperDriverName, Wrap(dri, startSpan, filter))
 	return hyperDriverName, nil
 }

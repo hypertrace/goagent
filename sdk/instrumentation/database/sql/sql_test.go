@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
+	"github.com/hypertrace/goagent/sdk/filter/result"
 	"github.com/hypertrace/goagent/sdk/internal/mock"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +31,7 @@ func (sb *spansBuffer) StartSpan(ctx context.Context, name string, opts *sdk.Spa
 func createDB(t *testing.T) (*sql.DB, func() []*mock.Span) {
 	b := &spansBuffer{}
 
-	driverName, err := Register("sqlite3", b.StartSpan)
+	driverName, err := Register("sqlite3", b.StartSpan, filter.NoopFilter{})
 	if err != nil {
 		t.Fatalf("unable to register driver")
 	}
@@ -212,6 +214,43 @@ func TestTxWithRollbackSuccess(t *testing.T) {
 		assert.Equal(t, sdk.StatusCodeOk, spans[i].Status.Code)
 		assert.Nil(t, spans[i].ReadAttribute("error"))
 	}
+
+	db.Close()
+}
+
+func TestFilter(t *testing.T) {
+	b := &spansBuffer{}
+
+	driverName, err := Register("sqlite3", b.StartSpan, mock.Filter{
+		Evaluator: func(span sdk.Span) result.FilterResult {
+			assert.Equal(t, span.GetAttributes().GetValue("span.kind"), "client")
+			span.SetAttribute("span.type", "nospan")
+			return result.FilterResult{}
+		},
+	})
+	if err != nil {
+		t.Fatalf("unable to register driver")
+	}
+
+	db, err := sql.Open(driverName, "file:test.db?cache=shared&mode=memory")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	flusher := func() []*mock.Span { return b.spans }
+
+	_, err = db.Query("SELECT * FROM unexistent")
+	require.Error(t, err)
+
+	spans := flusher()
+	assert.Equal(t, 1, len(spans))
+
+	span := spans[0]
+	assert.Equal(t, "db:query", span.Name)
+	assert.Equal(t, "no such table: unexistent", span.Err.Error())
+	assert.Equal(t, sdk.SpanKindClient, span.Options.Kind)
+	assert.Equal(t, sdk.StatusCodeError, span.Status.Code)
+	assert.Equal(t, "nospan", span.GetAttributes().GetValue("span.type"))
 
 	db.Close()
 }

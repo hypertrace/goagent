@@ -34,6 +34,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return rt.delegate.RoundTrip(req)
 	}
 	reqHeadersAccessor := NewHeaderMapAccessor(req.Header)
+	span.SetAttribute("span.kind", "client")
 
 	for key, value := range rt.defaultAttributes {
 		span.SetAttribute(key, value)

@@ -21,7 +21,7 @@ func WrapUnaryClientInterceptor(
 	spanFromContext sdk.SpanFromContext,
 	options *Options,
 	spanAttributes map[string]string) grpc.UnaryClientInterceptor {
-	var filter filter.Filter = &filter.NoopFilter{}
+	var filter filter.Filter = filter.NoopFilter{}
 	if options != nil && options.Filter != nil {
 		filter = options.Filter
 	}

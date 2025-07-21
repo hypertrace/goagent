@@ -127,7 +127,7 @@ func WrapTransport(delegate http.RoundTripper, spanFromContextRetriever sdk.Span
 		defaultAttributes["container_id"] = containerID
 	}
 
-	var filter filter.Filter = &filter.NoopFilter{}
+	var filter filter.Filter = filter.NoopFilter{}
 	if options != nil && options.Filter != nil {
 		filter = options.Filter
 	}

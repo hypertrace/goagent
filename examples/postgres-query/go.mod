@@ -6,7 +6,9 @@ toolchain go1.24.2
 
 replace github.com/hypertrace/goagent => ../..
 
-replace github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/jackc/hyperpgx => ../../instrumentation/opentelemetry/github.com/jackc/hyperpgx
+replace github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/jackc/hyperpgx => ../../instrumentation/hypertrace/github.com/jackc/hyperpgx
+
+replace github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/jackc/hyperpgx => ../../instrumentation/opentelemetry/github.com/jackc/hyperpgx
 
 require github.com/hypertrace/goagent/instrumentation/hypertrace/github.com/jackc/hyperpgx v0.0.0-00010101000000-000000000000
 
@@ -21,6 +23,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/hypertrace/agent-config/gen/go v0.0.0-20240523214336-1259231da906 // indirect
 	github.com/hypertrace/goagent v0.0.0-00010101000000-000000000000 // indirect
+	github.com/hypertrace/goagent/instrumentation/opentelemetry/github.com/jackc/hyperpgx v0.0.0-00010101000000-000000000000 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.8.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

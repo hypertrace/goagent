@@ -5,16 +5,27 @@ import (
 	"strings"
 
 	"github.com/hypertrace/goagent/sdk"
+	codes "github.com/hypertrace/goagent/sdk"
+	"github.com/hypertrace/goagent/sdk/filter"
 	internalconfig "github.com/hypertrace/goagent/sdk/internal/config"
 	"github.com/hypertrace/goagent/sdk/internal/container"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // WrapUnaryClientInterceptor returns an interceptor that records the request and response message's body
 // and serialize it as JSON.
-func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor, spanFromContext sdk.SpanFromContext,
+func WrapUnaryClientInterceptor(
+	delegateInterceptor grpc.UnaryClientInterceptor,
+	spanFromContext sdk.SpanFromContext,
+	options *Options,
 	spanAttributes map[string]string) grpc.UnaryClientInterceptor {
+	var filter filter.Filter = filter.NoopFilter{}
+	if options != nil && options.Filter != nil {
+		filter = options.Filter
+	}
+
 	defaultAttributes := map[string]string{
 		"rpc.system": "grpc",
 	}
@@ -36,6 +47,7 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 		// span).
 		wrappedInvoker := func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, opts ...grpc.CallOption) error {
 			span := spanFromContext(ctx)
+			span.SetAttribute("span.kind", "client")
 			if span.IsNoop() || span == nil {
 				// isNoop means either the span is not sampled or there was no span
 				// in the request context which means this invoker is not used
@@ -58,6 +70,23 @@ func WrapUnaryClientInterceptor(delegateInterceptor grpc.UnaryClientInterceptor,
 
 			if dataCaptureConfig.RpcMetadata.Request.Value {
 				setAttributesFromRequestOutgoingMetadata(ctx, span)
+			}
+
+			fr := filter.Evaluate(span)
+			if fr.Block {
+				statusText := StatusText(int(fr.ResponseStatusCode))
+				statusCode := StatusCode(int(fr.ResponseStatusCode))
+				span.SetStatus(codes.StatusCodeError, statusText)
+				span.SetAttribute("rpc.grpc.status_code", statusCode)
+				return status.Error(statusCode, statusText)
+			} else if fr.Decorations != nil {
+				if md, ok := metadata.FromOutgoingContext(ctx); ok {
+					for _, header := range fr.Decorations.RequestHeaderInjections {
+						md.Append(header.Key, header.Value)
+						span.SetAttribute("rpc.request.metadata."+header.Key, header.Value)
+					}
+					ctx = metadata.NewIncomingContext(ctx, md)
+				}
 			}
 
 			err = invoker(ctx, method, req, reply, cc, opts...)

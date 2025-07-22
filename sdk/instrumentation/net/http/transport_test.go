@@ -78,6 +78,7 @@ func TestClientRequestIsSuccessfullyTraced(t *testing.T) {
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	// custom attribute
 	assert.Equal(t, "bar", span.ReadAttribute("foo").(string))
+	assert.Equal(t, "client", span.ReadAttribute("span.kind"))
 	// We make sure we read all attributes and covered them with tests
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 }
@@ -458,6 +459,7 @@ func TestFilter(t *testing.T) {
 				// custom attribute
 				assert.Equal(t, "bar", span.ReadAttribute("foo").(string))
 				assert.True(t, span.ReadAttribute("filter.evaluated").(bool))
+				assert.Equal(t, "client", span.ReadAttribute("span.kind").(string))
 				// We make sure we read all attributes and covered them with tests
 				assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 			} else {
@@ -476,6 +478,7 @@ func TestFilter(t *testing.T) {
 				assert.Equal(t, "bar", span.ReadAttribute("foo").(string))
 				assert.Equal(t, int32(403), span.ReadAttribute("http.status_code").(int32))
 				assert.True(t, span.ReadAttribute("filter.evaluated").(bool))
+				assert.Equal(t, "client", span.ReadAttribute("span.kind").(string))
 				// We make sure we read all attributes and covered them with tests
 				assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
 

@@ -101,6 +101,7 @@ func TestUnaryClientHelloWorldSuccess(t *testing.T) {
 	} else {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	assert.Equal(t, "client", span.ReadAttribute("span.kind").(string))
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
@@ -246,6 +247,7 @@ func TestBodyTruncation(t *testing.T) {
 	actualBody = span.ReadAttribute("rpc.response.body").(string)
 	// direct comparison of the body since it will be truncated
 	assert.Equal(t, expectedBody, actualBody)
+	assert.Equal(t, "client", span.ReadAttribute("span.kind").(string))
 
 	_ = span.ReadAttribute("container_id") // needed in containarized envs
 	assert.Zero(t, span.RemainingAttributes(), "unexpected remaining attribute: %v", span.Attributes)
@@ -331,6 +333,7 @@ func TestClientFilter(t *testing.T) {
 			assert.Equal(t, 1, len(spans))
 			span := spans[0]
 			assert.True(t, span.ReadAttribute("filter.evaluated").(bool))
+			assert.Equal(t, "client", span.ReadAttribute("span.kind"))
 		})
 	}
 }

@@ -1,4 +1,7 @@
 # Go Agent
+## [DEPRECATED] This repo is deprecated and new changes will no longer be made to this repo.
+
+Please use [Traceableai/goagent](https://github.com/TraceableAI/goagent).
 
 ![test](https://github.com/hypertrace/goagent/workflows/test/badge.svg)
 [![codecov](https://codecov.io/gh/hypertrace/goagent/branch/master/graph/badge.svg)](https://codecov.io/gh/hypertrace/goagent)
